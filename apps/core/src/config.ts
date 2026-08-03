@@ -24,10 +24,20 @@ export interface Config {
   smtpUser: string;
   smtpPass: string;
   fromEmail: string;
+  /** Force TLS (SMTPS). Default true only when port is 465. */
+  smtpSecure: boolean;
+  /** Skip STARTTLS — required for MailHog / Mailpit. */
+  smtpIgnoreTls: boolean;
 }
 
 function env(key: string, fallback = ""): string {
   return process.env[key] ?? fallback;
+}
+
+function envBool(key: string, fallback: boolean): boolean {
+  const v = process.env[key];
+  if (v === undefined || v === "") return fallback;
+  return ["1", "true", "yes", "on"].includes(v.toLowerCase());
 }
 
 function envInt(key: string, fallback: number): number {
@@ -94,5 +104,10 @@ export function loadConfig(): Config {
     smtpUser: env("FOLIYO_SMTP_USER", y("smtp_user", "")),
     smtpPass: env("FOLIYO_SMTP_PASS", y("smtp_pass", "")),
     fromEmail: env("FOLIYO_FROM_EMAIL", y("from_email", "")),
+    smtpSecure: envBool(
+      "FOLIYO_SMTP_SECURE",
+      envInt("FOLIYO_SMTP_PORT", Number.parseInt(y("smtp_port", "587"), 10)) === 465,
+    ),
+    smtpIgnoreTls: envBool("FOLIYO_SMTP_IGNORE_TLS", false),
   };
 }

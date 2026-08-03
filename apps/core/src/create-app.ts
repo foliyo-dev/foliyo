@@ -12,16 +12,23 @@ import { experienceRoutes } from "./routes/experience.js";
 import { educationRoutes } from "./routes/education.js";
 import { certificationsRoutes } from "./routes/certifications.js";
 import { languagesRoutes } from "./routes/languages.js";
+import { socialLinksRoutes } from "./routes/social-links.js";
 import { portfoliosRoutes } from "./routes/portfolios.js";
 import { resumesRoutes } from "./routes/resumes.js";
 import { blogRoutes } from "./routes/blog.js";
 import { settingsRoutes, uploadRoutes } from "./routes/settings.js";
+import { previewRoutes } from "./routes/preview.js";
 import { publicRoutes } from "./routes/public.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 export type CreateFoliyoAppOptions = {
-  /** Mount public / SaaS routes here (after /api/auth, before authed /api/*). */
+  /** Mount public / SaaS routes here (after mesh/public, before core /api/auth). */
   beforeProtectedApi?: (app: Hono) => void;
+  /**
+   * Add authed routes to the /api sub-app before it is mounted.
+   * Required for Hono: routes added to `api` after `app.route("/api", api)` are ignored.
+   */
+  extendApi?: (api: Hono) => void;
 };
 
 /** Build the Foliyo Hono app without starting the server — used by foliyo-cloud to mount SaaS routes. */
@@ -45,12 +52,13 @@ export function createFoliyoApp(
   );
 
   app.route("/", createMeshRouter(db));
-  app.route("/api/auth", authRoutes(db));
   app.route("/", publicRoutes(db, config));
 
-  // Public SaaS routes (signup, handle check, health) must register before the
-  // authenticated /api catch-all or they return 401.
+  // SaaS public routes (signup, verify, handle check) before core /api/auth
+  // so hosted signup is not shadowed by OSS auth routes.
   options.beforeProtectedApi?.(app);
+
+  app.route("/api/auth", authRoutes(db));
 
   const api = new Hono();
   api.use("*", authMiddleware(db));
@@ -61,11 +69,15 @@ export function createFoliyoApp(
   api.route("/education", educationRoutes(db));
   api.route("/certifications", certificationsRoutes(db));
   api.route("/languages", languagesRoutes(db));
+  api.route("/social-links", socialLinksRoutes(db));
   api.route("/portfolios", portfoliosRoutes(db, config));
   api.route("/resumes", resumesRoutes(db, config));
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));
   api.route("/settings", settingsRoutes(db));
+  api.route("/preview", previewRoutes(db, config));
+  // Cloud (and other hosts) must register here — not after createFoliyoApp returns.
+  options.extendApi?.(api);
   app.route("/api", api);
 
   return { app, api };

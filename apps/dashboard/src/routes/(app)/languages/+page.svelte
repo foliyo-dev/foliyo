@@ -4,6 +4,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listLanguages,
 		createLanguage,
@@ -15,6 +16,7 @@
 	} from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let items: Language[] = [];
 	let loading = true;
 	let saving = false;
@@ -63,6 +65,7 @@
 			items = await createLanguage(payload());
 			showToast('Language added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add language', 'error');
 		} finally {
@@ -85,6 +88,7 @@
 			await load();
 			showToast('Language updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update language', 'error');
 		} finally {
@@ -98,18 +102,20 @@
 			items = items.filter((l) => l.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Language deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete language', 'error');
 		}
 	}
 </script>
 
-<PageHeader
-	title="Languages"
-	description="Spoken and written languages for your public profile and resume."
-/>
+<EditorWithPreview bind:this={shell}>
+	<PageHeader
+		title="Languages"
+		description="Spoken and written languages for your public profile and resume."
+	/>
 
-<Card>
+	<Card>
 	<h2 class="section-title">{editingId ? 'Edit language' : 'Add language'}</h2>
 	<div class="fields">
 		<Input label="Language" bind:value={name} placeholder="Hindi" />
@@ -157,6 +163,7 @@
 		{/each}
 	</ul>
 {/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listCertifications,
 		createCertification,
@@ -14,6 +15,7 @@
 	} from '$lib/api/certifications';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let items: Certification[] = [];
 	let loading = true;
 	let saving = false;
@@ -79,6 +81,7 @@
 			items = await createCertification(payload());
 			showToast('Certification added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add certification', 'error');
 		} finally {
@@ -107,6 +110,7 @@
 			await load();
 			showToast('Certification updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update certification', 'error');
 		} finally {
@@ -120,18 +124,20 @@
 			items = items.filter((c) => c.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Certification deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete certification', 'error');
 		}
 	}
 </script>
 
-<PageHeader
-	title="Certifications"
-	description="Credentials and licenses — select which ones appear on your public profile and resume."
-/>
+<EditorWithPreview bind:this={shell}>
+	<PageHeader
+		title="Certifications"
+		description="Credentials and licenses — select which ones appear on your public profile and resume."
+	/>
 
-<Card>
+	<Card>
 	<h2 class="section-title">{editingId ? 'Edit certification' : 'Add certification'}</h2>
 	<div class="fields">
 		<Input label="Name" bind:value={name} placeholder="AWS Solutions Architect Associate" />
@@ -198,6 +204,7 @@
 		{/each}
 	</ul>
 {/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

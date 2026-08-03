@@ -46,6 +46,7 @@ function clearUserLibrary(db: FoliyoDb, userId: string): void {
   run(db, "DELETE FROM education WHERE user_id = ?", [userId]);
   run(db, "DELETE FROM certifications WHERE user_id = ?", [userId]);
   run(db, "DELETE FROM languages WHERE user_id = ?", [userId]);
+  run(db, "DELETE FROM social_links WHERE user_id = ?", [userId]);
 }
 
 function ensureUser(
@@ -178,6 +179,21 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
       userId,
     ],
   );
+
+  const socialSeed: Array<{ provider: string; value: string; sort: number }> = [
+    { provider: "website", value: p.website, sort: 0 },
+    { provider: "github", value: p.github, sort: 1 },
+    { provider: "linkedin", value: p.linkedin, sort: 2 },
+    { provider: "twitter", value: p.twitter, sort: 3 },
+  ];
+  for (const s of socialSeed) {
+    if (!s.value?.trim()) continue;
+    run(
+      db,
+      `INSERT INTO social_links (id, user_id, provider, label, value, sort_order) VALUES (?,?,?,?,?,?)`,
+      [id(), userId, s.provider, "", s.value.trim(), s.sort],
+    );
+  }
 
   const skillIds: string[] = [];
   data.skills.forEach((s, i) => {

@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listProjects,
 		createProject,
@@ -14,6 +15,7 @@
 	} from '$lib/api/projects';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let items: Project[] = [];
 	let loading = true;
 	let saving = false;
@@ -97,6 +99,7 @@
 			items = await createProject(payload());
 			showToast('Project added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add project', 'error');
 		} finally {
@@ -125,6 +128,7 @@
 			await load();
 			showToast('Project updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update project', 'error');
 		} finally {
@@ -138,94 +142,97 @@
 			items = items.filter((p) => p.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Project deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete project', 'error');
 		}
 	}
 </script>
 
-<PageHeader
-	title="Projects"
-	description="Showcase your work — demos, repos, and write-ups (Foliyo or any external blog)."
-/>
+<EditorWithPreview bind:this={shell}>
+	<PageHeader
+		title="Projects"
+		description="Showcase your work — demos, repos, and write-ups (Foliyo or any external blog)."
+	/>
 
-<Card>
-	<h2 class="section-title">{editingId ? 'Edit project' : 'Add project'}</h2>
-	<div class="fields">
-		<Input label="Title" bind:value={title} placeholder="My awesome app" />
-		<Textarea label="Description" bind:value={description} rows={4} />
-		<div class="row">
-			<Input label="Live URL" bind:value={url} placeholder="https://…" />
-			<Input label="Repo URL" bind:value={repoUrl} placeholder="https://github.com/…" />
+	<Card>
+		<h2 class="section-title">{editingId ? 'Edit project' : 'Add project'}</h2>
+		<div class="fields">
+			<Input label="Title" bind:value={title} placeholder="My awesome app" />
+			<Textarea label="Description" bind:value={description} rows={4} />
+			<div class="row">
+				<Input label="Live URL" bind:value={url} placeholder="https://…" />
+				<Input label="Repo URL" bind:value={repoUrl} placeholder="https://github.com/…" />
+			</div>
+			<Input
+				label="Write-up / article URL"
+				bind:value={articleUrl}
+				placeholder="https://dev.to/… or Medium, docs, future Foliyo post…"
+			/>
+			<Input label="Image URL" bind:value={imageUrl} placeholder="https://…" />
+			<Input label="Tags (comma-separated)" bind:value={tagsInput} placeholder="react, node" />
+			<div class="row">
+				<Input label="Sort order" bind:value={sortOrder} />
+				<label class="checkbox">
+					<input type="checkbox" bind:checked={featured} />
+					Featured project
+				</label>
+			</div>
 		</div>
-		<Input
-			label="Write-up / article URL"
-			bind:value={articleUrl}
-			placeholder="https://dev.to/… or Medium, docs, future Foliyo post…"
-		/>
-		<Input label="Image URL" bind:value={imageUrl} placeholder="https://…" />
-		<Input label="Tags (comma-separated)" bind:value={tagsInput} placeholder="react, node" />
-		<div class="row">
-			<Input label="Sort order" bind:value={sortOrder} />
-			<label class="checkbox">
-				<input type="checkbox" bind:checked={featured} />
-				Featured project
-			</label>
+		<div class="form-actions">
+			{#if editingId}
+				<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
+				<Button variant="ghost" on:click={resetForm}>Cancel</Button>
+			{:else}
+				<Button disabled={saving} on:click={addProject}>{saving ? 'Adding…' : 'Add project'}</Button>
+			{/if}
 		</div>
-	</div>
-	<div class="form-actions">
-		{#if editingId}
-			<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
-			<Button variant="ghost" on:click={resetForm}>Cancel</Button>
-		{:else}
-			<Button disabled={saving} on:click={addProject}>{saving ? 'Adding…' : 'Add project'}</Button>
-		{/if}
-	</div>
-</Card>
+	</Card>
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else if items.length === 0}
-	<p class="muted empty">No projects yet — add your first one above.</p>
-{:else}
-	<ul class="list">
-		{#each items as project (project.id)}
-			<li>
-				<Card>
-					<div class="item-row">
-						<div>
-							<h3>
-								{project.title}
-								{#if project.featured}<span class="tag">featured</span>{/if}
-							</h3>
-							{#if project.description}
-								<p class="desc">{project.description}</p>
-							{/if}
-							<p class="meta">
-								{#if project.url}<a href={project.url} target="_blank" rel="noreferrer">Live</a>{/if}
-								{#if project.repo_url}
-									{#if project.url} · {/if}
-									<a href={project.repo_url} target="_blank" rel="noreferrer">Repo</a>
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else if items.length === 0}
+		<p class="muted empty">No projects yet — add your first one above.</p>
+	{:else}
+		<ul class="list">
+			{#each items as project (project.id)}
+				<li>
+					<Card>
+						<div class="item-row">
+							<div>
+								<h3>
+									{project.title}
+									{#if project.featured}<span class="tag">featured</span>{/if}
+								</h3>
+								{#if project.description}
+									<p class="desc">{project.description}</p>
 								{/if}
-								{#if project.article_url}
-									{#if project.url || project.repo_url} · {/if}
-									<a href={project.article_url} target="_blank" rel="noreferrer">Write-up</a>
-								{/if}
-								{#if tagsFromJson(project.tags)}
-									 · {tagsFromJson(project.tags)}
-								{/if}
-							</p>
+								<p class="meta">
+									{#if project.url}<a href={project.url} target="_blank" rel="noreferrer">Live</a>{/if}
+									{#if project.repo_url}
+										{#if project.url} · {/if}
+										<a href={project.repo_url} target="_blank" rel="noreferrer">Repo</a>
+									{/if}
+									{#if project.article_url}
+										{#if project.url || project.repo_url} · {/if}
+										<a href={project.article_url} target="_blank" rel="noreferrer">Write-up</a>
+									{/if}
+									{#if tagsFromJson(project.tags)}
+										 · {tagsFromJson(project.tags)}
+									{/if}
+								</p>
+							</div>
+							<div class="row-actions">
+								<Button variant="ghost" on:click={() => startEdit(project)}>Edit</Button>
+								<Button variant="ghost" on:click={() => remove(project.id)}>Delete</Button>
+							</div>
 						</div>
-						<div class="row-actions">
-							<Button variant="ghost" on:click={() => startEdit(project)}>Edit</Button>
-							<Button variant="ghost" on:click={() => remove(project.id)}>Delete</Button>
-						</div>
-					</div>
-				</Card>
-			</li>
-		{/each}
-	</ul>
-{/if}
+					</Card>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listExperience,
 		createExperience,
@@ -14,6 +15,7 @@
 	} from '$lib/api/experience';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let items: Experience[] = [];
 	let loading = true;
 	let saving = false;
@@ -79,6 +81,7 @@
 			items = await createExperience(payload());
 			showToast('Experience added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add experience', 'error');
 		} finally {
@@ -107,6 +110,7 @@
 			await load();
 			showToast('Experience updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update experience', 'error');
 		} finally {
@@ -120,18 +124,20 @@
 			items = items.filter((e) => e.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Experience deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete experience', 'error');
 		}
 	}
 </script>
 
-<PageHeader
-	title="Experience"
-	description="Work history — optional case-study / write-up links for resume deep dives."
-/>
+<EditorWithPreview bind:this={shell}>
+	<PageHeader
+		title="Experience"
+		description="Work history — optional case-study / write-up links for resume deep dives."
+	/>
 
-<Card>
+	<Card>
 	<h2 class="section-title">{editingId ? 'Edit role' : 'Add role'}</h2>
 	<div class="fields">
 		<div class="row">
@@ -200,6 +206,7 @@
 		{/each}
 	</ul>
 {/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

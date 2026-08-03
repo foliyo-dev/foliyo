@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listEducation,
 		createEducation,
@@ -14,6 +15,7 @@
 	} from '$lib/api/education';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let items: Education[] = [];
 	let loading = true;
 	let saving = false;
@@ -76,6 +78,7 @@
 			items = await createEducation(payload());
 			showToast('Education added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add education', 'error');
 		} finally {
@@ -103,6 +106,7 @@
 			await load();
 			showToast('Education updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update education', 'error');
 		} finally {
@@ -116,15 +120,17 @@
 			items = items.filter((e) => e.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Education deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete education', 'error');
 		}
 	}
 </script>
 
-<PageHeader title="Education" description="Degrees and schools — shared with your public profile and resume." />
+<EditorWithPreview bind:this={shell}>
+	<PageHeader title="Education" description="Degrees and schools — shared with your public profile and resume." />
 
-<Card>
+	<Card>
 	<h2 class="section-title">{editingId ? 'Edit education' : 'Add education'}</h2>
 	<div class="fields">
 		<Input label="Institution" bind:value={institution} placeholder="University of Mumbai" />
@@ -183,6 +189,7 @@
 		{/each}
 	</ul>
 {/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

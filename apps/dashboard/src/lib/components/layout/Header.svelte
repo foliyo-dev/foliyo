@@ -21,5 +21,6 @@
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--color-border);
 		background: var(--color-surface);
+		flex-shrink: 0;
 	}
 </style>

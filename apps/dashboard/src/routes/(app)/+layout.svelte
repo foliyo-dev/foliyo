@@ -18,15 +18,22 @@
 <style>
   .app-shell {
     display: flex;
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
   .main {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    min-height: 0;
   }
   .content {
     padding: 1.5rem;
     flex: 1;
+    min-height: 0;
+    overflow: auto;
+    container-type: size;
+    container-name: app-content;
   }
 </style>

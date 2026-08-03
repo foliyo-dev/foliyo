@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { queryOne, run, type FoliyoDb } from "../db.js";
 import type { Config } from "../config.js";
+import { p, renderTransactionalEmail, ul } from "./layout.js";
 import { sendMail } from "./send.js";
 
 const VERIFY_HOURS = 24;
@@ -57,11 +58,17 @@ export async function sendVerificationEmail(
     `${opts.verifyUrl}\n\n` +
     `If you did not create a Foliyo account, you can ignore this email.`;
 
-  const html =
-    `<p>Verify your Foliyo account</p>` +
-    `<p><a href="${opts.verifyUrl}">Click here to verify your email</a></p>` +
-    `<p>This link expires in ${VERIFY_HOURS} hours.</p>` +
-    `<p>If you did not create a Foliyo account, you can ignore this email.</p>`;
+  const html = renderTransactionalEmail({
+    preheader: `Confirm your email within ${VERIFY_HOURS} hours to activate Foliyo.`,
+    title: "Verify your email",
+    paragraphs: [
+      p("Thanks for signing up for Foliyo. Confirm your email address to finish creating your account."),
+      p(`This link expires in ${VERIFY_HOURS} hours.`),
+    ],
+    cta: { label: "Verify email", url: opts.verifyUrl },
+    secondaryLink: { label: "Or open this link in your browser", url: opts.verifyUrl },
+    footnote: "If you did not create a Foliyo account, you can ignore this email.",
+  });
 
   await sendMail(config, {
     to: opts.to,
@@ -84,15 +91,19 @@ export async function sendWelcomeEmail(
     `3. Publish a portfolio and share a resume link\n\n` +
     `Open your dashboard: ${opts.dashboardUrl}\n`;
 
-  const html =
-    `<p>Welcome to Foliyo, ${greeting}!</p>` +
-    `<p>Your email is verified. Next steps:</p>` +
-    `<ol>` +
-    `<li>Claim your handle and finish onboarding</li>` +
-    `<li>Add projects and experience to your library</li>` +
-    `<li>Publish a portfolio and share a resume link</li>` +
-    `</ol>` +
-    `<p><a href="${opts.dashboardUrl}">Open your dashboard</a></p>`;
+  const html = renderTransactionalEmail({
+    preheader: "Your email is verified — finish onboarding and publish your folio.",
+    title: `Welcome to Foliyo, ${greeting}!`,
+    paragraphs: [
+      p("Your email is verified. Here is a short path to a shareable portfolio:"),
+      ul([
+        "Claim your handle and finish onboarding",
+        "Add projects and experience to your library",
+        "Publish a portfolio and share a resume link",
+      ]),
+    ],
+    cta: { label: "Open dashboard", url: opts.dashboardUrl },
+  });
 
   await sendMail(config, {
     to: opts.to,

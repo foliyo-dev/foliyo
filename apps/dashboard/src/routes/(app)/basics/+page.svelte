@@ -5,9 +5,11 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import { getProfile, updateProfile, type Profile } from '$lib/api/profile';
 	import { showToast } from '$lib/stores/toast';
 
+	let shell: EditorWithPreview;
 	let loading = true;
 	let saving = false;
 	let profile: Profile = {
@@ -43,13 +45,10 @@
 				bio: profile.bio,
 				avatar_url: profile.avatar_url,
 				location: profile.location,
-				email: profile.email,
-				website: profile.website,
-				github: profile.github,
-				linkedin: profile.linkedin,
-				twitter: profile.twitter
+				email: profile.email
 			});
 			showToast('Basics saved', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to save basics', 'error');
 		} finally {
@@ -58,34 +57,38 @@
 	}
 </script>
 
-<PageHeader
-	title="Basics"
-	description="Name, default bio, and links — shared across portfolios and resumes. Headline/bio can be overridden per portfolio."
-/>
+<EditorWithPreview bind:this={shell}>
+	<PageHeader
+		title="Basics"
+		description="Name, bio, and contact — shared across portfolios and resumes. Social links live under Social."
+	/>
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else}
-	<Card>
-		<div class="fields">
-			<Input label="Name" bind:value={profile.name} placeholder="Jane Doe" />
-			<Input label="Headline" bind:value={profile.headline} placeholder="Full-stack developer" />
-			<Textarea label="Bio" bind:value={profile.bio} placeholder="A short introduction…" rows={5} />
-			<Input label="Avatar URL" bind:value={profile.avatar_url} placeholder="https://…" />
-			<Input label="Location" bind:value={profile.location} placeholder="Mumbai, India" />
-			<Input label="Public email" type="email" bind:value={profile.email} placeholder="hello@example.com" />
-			<Input label="Website" bind:value={profile.website} placeholder="https://yoursite.com" />
-			<div class="row">
-				<Input label="GitHub" bind:value={profile.github} placeholder="username" />
-				<Input label="LinkedIn" bind:value={profile.linkedin} placeholder="username" />
-				<Input label="Twitter / X" bind:value={profile.twitter} placeholder="username" />
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else}
+		<Card>
+			<div class="fields">
+				<Input label="Name" bind:value={profile.name} placeholder="Jane Doe" />
+				<Input label="Headline" bind:value={profile.headline} placeholder="Full-stack developer" />
+				<Textarea label="Bio" bind:value={profile.bio} placeholder="A short introduction…" rows={5} />
+				<Input label="Avatar URL" bind:value={profile.avatar_url} placeholder="https://…" />
+				<Input label="Location" bind:value={profile.location} placeholder="Mumbai, India" />
+				<Input
+					label="Public email"
+					type="email"
+					bind:value={profile.email}
+					placeholder="hello@example.com"
+				/>
 			</div>
-		</div>
-		<div class="actions">
-			<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save basics'}</Button>
-		</div>
-	</Card>
-{/if}
+			<p class="hint">
+				Add GitHub, LinkedIn, website, and more in <a href="/social">Social</a>.
+			</p>
+			<div class="actions">
+				<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save basics'}</Button>
+			</div>
+		</Card>
+	{/if}
+</EditorWithPreview>
 
 <style>
 	.muted {
@@ -96,10 +99,10 @@
 		flex-direction: column;
 		gap: 1rem;
 	}
-	.row {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-		gap: 1rem;
+	.hint {
+		margin: 1rem 0 0;
+		font-size: 0.875rem;
+		color: var(--color-muted);
 	}
 	.actions {
 		margin-top: 1.5rem;

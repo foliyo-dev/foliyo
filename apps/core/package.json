@@ -48,7 +48,9 @@
     "./auth/tokens": "./src/auth/tokens.ts",
     "./email/send": "./src/email/send.ts",
     "./email/verify": "./src/email/verify.ts",
+    "./email/layout": "./src/email/layout.ts",
     "./public/pages": "./src/public/pages.ts",
-    "./public/themes": "./src/public/themes.ts"
+    "./public/themes": "./src/public/themes.ts",
+    "./social/providers": "./src/social/providers.ts"
   }
 }

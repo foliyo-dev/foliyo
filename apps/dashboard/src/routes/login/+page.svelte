@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { login } from '$lib/stores/auth';
-	import { isSaas } from '$lib/config';
+	import { login, postAuthPath } from '$lib/stores/auth';
+	import { isSaas, siteUrl } from '$lib/config';
 	import { showToast } from '$lib/stores/toast';
 	import { Logo } from '@foliyo/ui';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -16,10 +16,16 @@
 		e.preventDefault();
 		loading = true;
 		try {
-			await login(email, password);
-			goto('/');
-		} catch {
-			showToast('Invalid email or password', 'error');
+			const u = await login(email, password);
+			goto(postAuthPath(u));
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : '';
+			if (msg === 'pending_deletion') {
+				showToast('Account scheduled for deletion — cancel it first.', 'error');
+				goto('/cancel-delete');
+			} else {
+				showToast('Invalid email or password', 'error');
+			}
 		} finally {
 			loading = false;
 		}
@@ -35,13 +41,19 @@
 			width="220"
 			height="53"
 		/>
+		<p class="muted intro">Sign in to manage your portfolio</p>
 		<form on:submit={handleSubmit}>
 			<Input label="Email" type="email" name="email" bind:value={email} />
 			<Input label="Password" type="password" name="password" bind:value={password} />
 			<Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
 		</form>
 		{#if isSaas}
-			<p class="footer muted">New here? <a href="/signup">Create an account</a></p>
+			<p class="footer muted">
+				New here? <a href="/signup">Create an account</a>
+				· <a href="/cancel-delete">Cancel deletion</a>
+			</p>
+		{:else}
+			<p class="footer muted">Self-host · {siteUrl}</p>
 		{/if}
 	</Card>
 </div>
@@ -60,6 +72,14 @@
 		margin: 0 auto 1.5rem;
 		max-width: 100%;
 		height: auto;
+	}
+	.intro {
+		text-align: center;
+		margin: -0.5rem 0 1rem;
+		font-size: 0.875rem;
+	}
+	.muted {
+		color: var(--color-muted);
 	}
 	form {
 		display: flex;

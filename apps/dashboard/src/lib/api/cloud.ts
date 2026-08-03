@@ -7,7 +7,7 @@ export async function signup(
 	email: string,
 	password: string,
 	consentPrivacyPolicy: boolean
-): Promise<{ token: string; user: User }> {
+): Promise<{ token: string; user: User; needs_verification?: boolean }> {
 	const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'}/auth/signup`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -26,14 +26,17 @@ export async function signup(
 
 export const checkHandle = (handle: string) =>
 	api<{ available: boolean; handle?: string; reason?: string }>(
-		`/handle/check?handle=${encodeURIComponent(handle)}`
+		`/handle/check?handle=${encodeURIComponent(handle.toLowerCase().trim())}`
 	);
 
 export const claimHandle = (handle: string) =>
 	api<{ ok: boolean; handle: string }>('/handle/claim', {
 		method: 'POST',
-		body: JSON.stringify({ handle })
+		body: JSON.stringify({ handle: handle.toLowerCase().trim() })
 	});
+
+export const skipHandleClaim = () =>
+	api<{ ok: boolean; handle: string | null }>('/handle/skip', { method: 'POST' });
 
 export type PlanInfo = {
 	plan: string;
@@ -91,4 +94,26 @@ export const requestDelete = () =>
 	api<{ ok: boolean; message: string; signed_out?: boolean; grace_days?: number }>('/account', {
 		method: 'DELETE',
 		body: JSON.stringify({ confirm: 'DELETE' })
+	});
+
+export const verifyEmail = (token: string) =>
+	api<{ token: string; user: User }>('/auth/verify', {
+		method: 'POST',
+		body: JSON.stringify({ token })
+	});
+
+export const resendVerification = () =>
+	api<{ ok: boolean; already_verified?: boolean }>('/auth/resend-verification', {
+		method: 'POST'
+	});
+
+export const cancelAccountDeletion = (email: string, password: string) =>
+	fetch(`${API_BASE}/auth/cancel-delete`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password })
+	}).then(async (res) => {
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) throw new Error(data.error || res.statusText);
+		return data as { ok: boolean; message?: string };
 	});

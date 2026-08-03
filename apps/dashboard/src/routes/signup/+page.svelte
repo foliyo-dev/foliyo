@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { user } from '$lib/stores/auth';
+	import { user, postAuthPath } from '$lib/stores/auth';
 	import { accessToken } from '$lib/stores/token';
 	import { signup as signupApi } from '$lib/api/cloud';
 	import { showToast } from '$lib/stores/toast';
-	import { siteUrl } from '$lib/config';
+	import { privacyUrl, publicHost } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -30,9 +30,30 @@
 			const data = await signupApi(email, password, consent);
 			accessToken.set(data.token);
 			user.set(data.user);
-			goto('/onboarding');
-		} catch {
-			showToast('Could not create account. Email may already be registered.', 'error');
+			goto(postAuthPath(data.user));
+		} catch (err) {
+			const raw = err instanceof Error ? err.message : '';
+			let msg = 'Could not create account.';
+			try {
+				const body = JSON.parse(raw) as { error?: string; message?: string };
+				if (body.error === 'email already registered') {
+					msg = 'That email is already registered. Try signing in.';
+				} else if (body.error === 'signup_unavailable' || body.message?.includes('foliyo-cloud')) {
+					msg =
+						'Signup needs the cloud API on :8080. Stop OSS core, then run: pnpm --filter @foliyo/cloud-api dev';
+				} else if (body.message) {
+					msg = body.message;
+				} else if (raw.includes('unauthorized') || raw.includes('401')) {
+					msg =
+						'Signup needs the cloud API on :8080 (OSS core is running instead). Stop foliyo core and start foliyo-cloud API.';
+				}
+			} catch {
+				if (raw.includes('unauthorized') || raw.includes('501') || raw.includes('signup_unavailable')) {
+					msg =
+						'Signup needs the cloud API on :8080. Stop OSS core, then start foliyo-cloud API.';
+				}
+			}
+			showToast(msg, 'error');
 		} finally {
 			loading = false;
 		}
@@ -42,18 +63,14 @@
 <div class="auth-page">
 	<Card>
 		<h1>Create your account</h1>
-		<p class="muted">Start building your portfolio on foliyo.dev</p>
+		<p class="muted">Start building your portfolio at {publicHost()}</p>
 		<form on:submit={handleSubmit}>
 			<Input label="Email" type="email" bind:value={email} />
 			<Input label="Password" type="password" bind:value={password} />
-			<Input
-				label="Confirm password"
-				type="password"
-				bind:value={confirm}
-			/>
+			<Input label="Confirm password" type="password" bind:value={confirm} />
 			<label class="consent">
 				<input type="checkbox" bind:checked={consent} />
-				I agree to the <a href="{siteUrl}/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+				I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
 				(DPDP Act 2023)
 			</label>
 			<Button type="submit" disabled={loading}>{loading ? 'Creating…' : 'Create account'}</Button>
@@ -79,12 +96,12 @@
 	.muted {
 		color: var(--color-muted);
 		text-align: center;
-		margin: 0 0 1.25rem;
 	}
 	form {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		margin-top: 1rem;
 	}
 	.consent {
 		display: flex;
@@ -95,5 +112,6 @@
 	.footer {
 		margin-top: 1.25rem;
 		text-align: center;
+		font-size: 0.875rem;
 	}
 </style>

@@ -15,6 +15,7 @@
       label: 'My content',
       items: [
         { href: '/basics', label: 'Basics' },
+        { href: '/social', label: 'Social' },
         { href: '/skills', label: 'Skills' },
         { href: '/projects', label: 'Projects' },
         { href: '/experience', label: 'Experience' },

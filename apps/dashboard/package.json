@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:saas": "VITE_SAAS=true VITE_API_URL=http://localhost:8080/api VITE_SITE_URL=http://localhost:8080 VITE_LANDING_URL=http://localhost:5175 vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

@@ -16,6 +16,19 @@ const profileSchema = z.object({
   twitter: z.string().optional(),
 });
 
+type ProfileRow = {
+  name: string;
+  headline: string;
+  bio: string;
+  avatar_url: string;
+  location: string;
+  email: string;
+  website: string;
+  github: string;
+  linkedin: string;
+  twitter: string;
+};
+
 export function profileRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
@@ -31,8 +44,25 @@ export function profileRoutes(db: FoliyoDb) {
     const body = profileSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
 
-    const existing = queryOne(db, "SELECT id FROM profile WHERE user_id = ?", [userId]);
+    const existing = queryOne<ProfileRow & { id: string }>(
+      db,
+      "SELECT * FROM profile WHERE user_id = ?",
+      [userId],
+    );
     const d = body.data;
+    const next: ProfileRow = {
+      name: d.name ?? existing?.name ?? "",
+      headline: d.headline ?? existing?.headline ?? "",
+      bio: d.bio ?? existing?.bio ?? "",
+      avatar_url: d.avatar_url ?? existing?.avatar_url ?? "",
+      location: d.location ?? existing?.location ?? "",
+      email: d.email ?? existing?.email ?? "",
+      website: d.website ?? existing?.website ?? "",
+      github: d.github ?? existing?.github ?? "",
+      linkedin: d.linkedin ?? existing?.linkedin ?? "",
+      twitter: d.twitter ?? existing?.twitter ?? "",
+    };
+
     if (existing) {
       run(
         db,
@@ -40,9 +70,17 @@ export function profileRoutes(db: FoliyoDb) {
          email=?, website=?, github=?, linkedin=?, twitter=?, updated_at=CURRENT_TIMESTAMP
          WHERE user_id=?`,
         [
-          d.name ?? "", d.headline ?? "", d.bio ?? "", d.avatar_url ?? "",
-          d.location ?? "", d.email ?? "", d.website ?? "", d.github ?? "",
-          d.linkedin ?? "", d.twitter ?? "", userId,
+          next.name,
+          next.headline,
+          next.bio,
+          next.avatar_url,
+          next.location,
+          next.email,
+          next.website,
+          next.github,
+          next.linkedin,
+          next.twitter,
+          userId,
         ],
       );
     } else {
@@ -51,9 +89,17 @@ export function profileRoutes(db: FoliyoDb) {
         `INSERT INTO profile (user_id, name, headline, bio, avatar_url, location, email, website, github, linkedin, twitter)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [
-          userId, d.name ?? "", d.headline ?? "", d.bio ?? "", d.avatar_url ?? "",
-          d.location ?? "", d.email ?? "", d.website ?? "", d.github ?? "",
-          d.linkedin ?? "", d.twitter ?? "",
+          userId,
+          next.name,
+          next.headline,
+          next.bio,
+          next.avatar_url,
+          next.location,
+          next.email,
+          next.website,
+          next.github,
+          next.linkedin,
+          next.twitter,
         ],
       );
     }

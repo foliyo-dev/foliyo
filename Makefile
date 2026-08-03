@@ -13,9 +13,14 @@ export FOLIYO_ADMIN_PASSWORD ?= changeme
 export FOLIYO_DATA_DIR ?= $(DATA_DIR)
 export FOLIYO_DB_PATH ?= $(DATA_DIR)/foliyo.db
 
+# Sibling private SaaS DB (foliyo-cloud API cwd resolves ./data → apps/api/data)
+CLOUD_ROOT := $(ROOT)/../foliyo-cloud
+CLOUD_API_DATA := $(CLOUD_ROOT)/apps/api/data
+CLOUD_DB_PATH := $(CLOUD_API_DATA)/foliyo-cloud.db
+
 .PHONY: all help setup deps build test clean release
 .PHONY: dev dev-all-tmux dev-stop-tmux dev-attach-tmux dev-status-tmux
-.PHONY: dev-core dev-dashboard dev-landing sync-brand migrate migrate-fresh seed-demo health
+.PHONY: dev-core dev-dashboard dev-landing sync-brand migrate migrate-fresh seed-demo seed-demo-cloud health
 
 dev: deps dev-all-tmux
 
@@ -98,6 +103,13 @@ migrate-fresh:
 seed-demo:
 	@cd apps/core && pnpm seed:demo $(ARGS)
 
+# Seed the cloud API sqlite (what :8080 uses when foliyo-cloud is running).
+# Always use absolute paths — relative FOLIYO_DB_PATH breaks because seed cwd is apps/core.
+seed-demo-cloud:
+	@mkdir -p "$(CLOUD_API_DATA)"
+	@echo "Seeding cloud DB → $(CLOUD_DB_PATH)"
+	@cd apps/core && FOLIYO_DB_PATH="$(CLOUD_DB_PATH)" FOLIYO_DATA_DIR="$(CLOUD_API_DATA)" pnpm seed:demo $(ARGS)
+
 health:
 	@curl -sf -o /dev/null $(CORE_URL)/welcome && echo "Core OK" || echo "Core DOWN"
 	@curl -sf -o /dev/null $(DASHBOARD_URL) && echo "Dashboard OK" || echo "Dashboard DOWN"
@@ -110,7 +122,8 @@ help:
 	@echo "  make sync-brand   copy @foliyo/brand assets into static dirs"
 	@echo "  make build        turbo build"
 	@echo "  make migrate      run SQL migrations"
-	@echo "  make seed-demo    fill admin + sample users (ARGS=--force to reset)"
+	@echo "  make seed-demo    fill OSS DB data/foliyo.db (ARGS=--force to reset)"
+	@echo "  make seed-demo-cloud  fill cloud DB (foliyo-cloud apps/api/data)"
 	@echo "  make migrate-fresh wipe DB + migrate"
 
 .DEFAULT_GOAL := help

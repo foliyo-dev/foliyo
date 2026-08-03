@@ -4,6 +4,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import {
 		listSkills,
 		createSkill,
@@ -15,6 +16,7 @@
 
 	const levels = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
 
+	let shell: EditorWithPreview;
 	let items: Skill[] = [];
 	let loading = true;
 	let adding = false;
@@ -62,6 +64,7 @@
 			});
 			showToast('Skill added', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to add skill', 'error');
 		} finally {
@@ -89,6 +92,7 @@
 			await load();
 			showToast('Skill updated', 'success');
 			resetForm();
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to update skill', 'error');
 		}
@@ -100,63 +104,66 @@
 			items = items.filter((s) => s.id !== id);
 			if (editingId === id) resetForm();
 			showToast('Skill deleted', 'success');
+			await shell?.refreshPreview();
 		} catch {
 			showToast('Failed to delete skill', 'error');
 		}
 	}
 </script>
 
-<PageHeader title="Skills" description="Master list of skills — attach them to portfolios later." />
+<EditorWithPreview bind:this={shell}>
+	<PageHeader title="Skills" description="Master list of skills — attach them to portfolios later." />
 
-<Card>
-	<h2 class="section-title">{editingId ? 'Edit skill' : 'Add skill'}</h2>
-	<div class="form-grid">
-		<Input label="Name" bind:value={name} placeholder="TypeScript" />
-		<label class="field">
-			<span class="label">Level</span>
-			<select bind:value={level}>
-				{#each levels as l}
-					<option value={l}>{l}</option>
-				{/each}
-			</select>
-		</label>
-		<Input label="Category" bind:value={category} placeholder="frontend" />
-		<Input label="Sort order" bind:value={sortOrder} placeholder="0" />
-	</div>
-	<div class="form-actions">
-		{#if editingId}
-			<Button on:click={saveEdit}>Save changes</Button>
-			<Button variant="ghost" on:click={resetForm}>Cancel</Button>
-		{:else}
-			<Button disabled={adding} on:click={addSkill}>{adding ? 'Adding…' : 'Add skill'}</Button>
-		{/if}
-	</div>
-</Card>
+	<Card>
+		<h2 class="section-title">{editingId ? 'Edit skill' : 'Add skill'}</h2>
+		<div class="form-grid">
+			<Input label="Name" bind:value={name} placeholder="TypeScript" />
+			<label class="field">
+				<span class="label">Level</span>
+				<select bind:value={level}>
+					{#each levels as l}
+						<option value={l}>{l}</option>
+					{/each}
+				</select>
+			</label>
+			<Input label="Category" bind:value={category} placeholder="frontend" />
+			<Input label="Sort order" bind:value={sortOrder} placeholder="0" />
+		</div>
+		<div class="form-actions">
+			{#if editingId}
+				<Button on:click={saveEdit}>Save changes</Button>
+				<Button variant="ghost" on:click={resetForm}>Cancel</Button>
+			{:else}
+				<Button disabled={adding} on:click={addSkill}>{adding ? 'Adding…' : 'Add skill'}</Button>
+			{/if}
+		</div>
+	</Card>
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else if items.length === 0}
-	<p class="muted empty">No skills yet — add your first one above.</p>
-{:else}
-	<ul class="list">
-		{#each items as skill (skill.id)}
-			<li>
-				<Card>
-					<div class="row">
-						<div>
-							<strong>{skill.name}</strong>
-							<span class="meta">{skill.level} · {skill.category} · order {skill.sort_order}</span>
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else if items.length === 0}
+		<p class="muted empty">No skills yet — add your first one above.</p>
+	{:else}
+		<ul class="list">
+			{#each items as skill (skill.id)}
+				<li>
+					<Card>
+						<div class="row">
+							<div>
+								<strong>{skill.name}</strong>
+								<span class="meta">{skill.level} · {skill.category} · order {skill.sort_order}</span>
+							</div>
+							<div class="row-actions">
+								<Button variant="ghost" on:click={() => startEdit(skill)}>Edit</Button>
+								<Button variant="ghost" on:click={() => remove(skill.id)}>Delete</Button>
+							</div>
 						</div>
-						<div class="row-actions">
-							<Button variant="ghost" on:click={() => startEdit(skill)}>Edit</Button>
-							<Button variant="ghost" on:click={() => remove(skill.id)}>Delete</Button>
-						</div>
-					</div>
-				</Card>
-			</li>
-		{/each}
-	</ul>
-{/if}
+					</Card>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</EditorWithPreview>
 
 <style>
 	.section-title {

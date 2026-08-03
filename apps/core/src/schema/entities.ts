@@ -53,6 +53,11 @@ export const foliyoSchema: MeshSchema = {
       fields: ["id", "user_id", "name", "proficiency", "sort_order"],
       table: "languages",
     },
+    social_link: {
+      type: {},
+      fields: ["id", "user_id", "provider", "label", "value", "sort_order"],
+      table: "social_links",
+    },
     portfolio: {
       type: {},
       fields: [

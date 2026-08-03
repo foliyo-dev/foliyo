@@ -6,9 +6,11 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import {
 		listPortfolios,
 		createPortfolio,
+		updatePortfolioContent,
 		deletePortfolio,
 		setDefaultPortfolio,
 		slugify,
@@ -20,6 +22,12 @@
 	} from '$lib/api/portfolios';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { getPlan, isProPlan } from '$lib/api/plan';
+	import { listSkills, type Skill } from '$lib/api/skills';
+	import { listProjects, type Project } from '$lib/api/projects';
+	import { listExperience, type Experience } from '$lib/api/experience';
+	import { listEducation, type Education } from '$lib/api/education';
+	import { listCertifications, type Certification } from '$lib/api/certifications';
+	import { listLanguages, type Language } from '$lib/api/languages';
 	import { user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
@@ -37,7 +45,29 @@
 	let isPublic = false;
 	let slugTouched = false;
 
+	let skills: Skill[] = [];
+	let projects: Project[] = [];
+	let experiences: Experience[] = [];
+	let educations: Education[] = [];
+	let certifications: Certification[] = [];
+	let languages: Language[] = [];
+
+	let selectedSkills = new Set<string>();
+	let selectedProjects = new Set<string>();
+	let selectedExperience = new Set<string>();
+	let selectedEducation = new Set<string>();
+	let selectedCertifications = new Set<string>();
+	let selectedLanguages = new Set<string>();
+
+	let showSkills = true;
+	let showProjects = true;
+	let showExperience = true;
+	let showEducation = true;
+	let showCertifications = true;
+	let showLanguages = true;
+
 	$: atLimit = !pro && items.length >= FREE_PORTFOLIO_LIMIT;
+	$: overLimit = !pro && items.length > FREE_PORTFOLIO_LIMIT;
 
 	onMount(async () => {
 		try {
@@ -54,7 +84,31 @@
 	async function load() {
 		loading = true;
 		try {
-			items = await listPortfolios();
+			const [portfolios, sk, pr, ex, ed, certs, langs] = await Promise.all([
+				listPortfolios(),
+				listSkills(),
+				listProjects(),
+				listExperience(),
+				listEducation(),
+				listCertifications(),
+				listLanguages()
+			]);
+			items = portfolios;
+			skills = sk;
+			projects = pr;
+			experiences = ex;
+			educations = ed;
+			certifications = certs;
+			languages = langs;
+			// First-time create: include everything by default
+			if (selectedSkills.size === 0 && selectedProjects.size === 0) {
+				selectedSkills = new Set(sk.map((s) => s.id));
+				selectedProjects = new Set(pr.map((p) => p.id));
+				selectedExperience = new Set(ex.map((e) => e.id));
+				selectedEducation = new Set(ed.map((e) => e.id));
+				selectedCertifications = new Set(certs.map((c) => c.id));
+				selectedLanguages = new Set(langs.map((l) => l.id));
+			}
 		} catch {
 			items = [];
 			showToast('Failed to load portfolios', 'error');
@@ -64,6 +118,27 @@
 	}
 
 	$: if (!slugTouched && name) slug = slugify(name);
+
+	function resetForm() {
+		name = '';
+		slug = '';
+		description = '';
+		themeSlug = 'minimal';
+		isPublic = false;
+		slugTouched = false;
+		showSkills = true;
+		showProjects = true;
+		showExperience = true;
+		showEducation = true;
+		showCertifications = true;
+		showLanguages = true;
+		selectedSkills = new Set(skills.map((s) => s.id));
+		selectedProjects = new Set(projects.map((p) => p.id));
+		selectedExperience = new Set(experiences.map((e) => e.id));
+		selectedEducation = new Set(educations.map((e) => e.id));
+		selectedCertifications = new Set(certifications.map((c) => c.id));
+		selectedLanguages = new Set(languages.map((l) => l.id));
+	}
 
 	async function add() {
 		if (atLimit) {
@@ -75,21 +150,37 @@
 			return;
 		}
 		creating = true;
+		const createdSlug = slug.trim();
 		try {
 			items = await createPortfolio({
 				name: name.trim(),
-				slug: slug.trim(),
+				slug: createdSlug,
 				description,
 				theme_slug: themeSlug,
 				is_public: isPublic ? 1 : 0,
 				is_default: items.length === 0 ? 1 : 0,
+				show_skills: showSkills ? 1 : 0,
+				show_projects: showProjects ? 1 : 0,
+				show_experience: showExperience ? 1 : 0,
+				show_education: showEducation ? 1 : 0,
+				show_certifications: showCertifications ? 1 : 0,
+				show_languages: showLanguages ? 1 : 0,
 				sort_order: items.length
 			});
-			name = '';
-			slug = '';
-			description = '';
-			slugTouched = false;
+			const created = items.find((p) => p.slug === createdSlug);
+			if (created) {
+				await updatePortfolioContent(created.id, {
+					skill_ids: [...selectedSkills],
+					project_ids: [...selectedProjects],
+					experience_ids: [...selectedExperience],
+					education_ids: [...selectedEducation],
+					certification_ids: [...selectedCertifications],
+					language_ids: [...selectedLanguages]
+				});
+			}
+			resetForm();
 			showToast('Portfolio created', 'success');
+			if (created) await goto(`/portfolios/${created.id}`);
 		} catch (err) {
 			const parsed = parseApiError(err);
 			showToast(parsed.message, 'error');
@@ -130,8 +221,10 @@
 
 {#if atLimit}
 	<UpgradePrompt
-		title="Portfolio limit reached"
-		message={`Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
+		title={overLimit ? 'Pro expired — over Free portfolio limit' : 'Portfolio limit reached'}
+		message={overLimit
+			? `Free includes ${FREE_PORTFOLIO_LIMIT} portfolio. Your ${items.length} portfolios stay live and editable — delete extras or renew Pro to create more.`
+			: `Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
 		pricing={planPricing}
 		billingAvailable={billingAvailable}
 		on:upgraded={() => {
@@ -160,7 +253,32 @@
 				Publish publicly
 			</label>
 		</div>
-		<Button disabled={creating} on:click={add}>{creating ? 'Creating…' : 'Create portfolio'}</Button>
+
+		<PortfolioLibraryPicker
+			{skills}
+			{projects}
+			{experiences}
+			{educations}
+			{certifications}
+			{languages}
+			bind:selectedSkills
+			bind:selectedProjects
+			bind:selectedExperience
+			bind:selectedEducation
+			bind:selectedCertifications
+			bind:selectedLanguages
+			bind:showSkills
+			bind:showProjects
+			bind:showExperience
+			bind:showEducation
+			bind:showCertifications
+			bind:showLanguages
+			hint="Choose which library items this portfolio includes. Everything is selected by default."
+		/>
+
+		<div class="form-actions">
+			<Button disabled={creating} on:click={add}>{creating ? 'Creating…' : 'Create portfolio'}</Button>
+		</div>
 	</Card>
 {/if}
 
@@ -228,6 +346,9 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.875rem;
+	}
+	.form-actions {
+		margin-top: 1.25rem;
 	}
 	.muted {
 		color: var(--color-muted);

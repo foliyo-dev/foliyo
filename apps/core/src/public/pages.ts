@@ -14,9 +14,11 @@ export type PublicPortfolio = {
   education: Record<string, unknown>[];
   certifications: Record<string, unknown>[];
   languages: Record<string, unknown>[];
+  social_links: Record<string, unknown>[];
   handle: string;
-  /** Stored user plan (`free` | `pro` | …). Branding uses effective plan + config.mode. */
+  /** Stored user plan (`free` | `pro` | …). Branding uses effective plan + expiry + config.mode. */
   plan: string;
+  plan_expires?: string | null;
 };
 
 function handleFromEmail(email: string): string {
@@ -52,9 +54,9 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
 
   const userId = portfolio.user_id as string;
   const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
-  const user = queryOne<{ handle: string; plan: string }>(
+  const user = queryOne<{ handle: string; plan: string; plan_expires: string | null }>(
     db,
-    "SELECT handle, plan FROM users WHERE id = ?",
+    "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
     [userId],
   );
 
@@ -96,8 +98,14 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
     certifications:
       portfolio.show_certifications === 1 ? fetchByIds("certifications", certificationIds) : [],
     languages: portfolio.show_languages === 1 ? fetchByIds("languages", languageIds) : [],
+    social_links: queryAll(
+      db,
+      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      [userId],
+    ),
     handle: user?.handle ?? "",
     plan: user?.plan ?? "free",
+    plan_expires: user?.plan_expires ?? null,
   };
 }
 
@@ -125,6 +133,82 @@ export function getPublicPortfolioBySlug(
   );
   if (!portfolio) return null;
   return loadPortfolioContent(db, portfolio.id as string);
+}
+
+/**
+ * Synthetic portfolio from the user's full content library (no portfolio required).
+ * Used by the dashboard live preview pane.
+ */
+export function loadLibraryPreview(
+  db: FoliyoDb,
+  userId: string,
+  themeOverride?: string,
+): PublicPortfolio | null {
+  const user = queryOne<{ handle: string | null; plan: string; plan_expires: string | null }>(
+    db,
+    "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
+    [userId],
+  );
+  if (!user) return null;
+
+  const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+  const settings = queryOne<{ theme_slug: string }>(
+    db,
+    "SELECT theme_slug FROM settings WHERE user_id = ?",
+    [userId],
+  );
+
+  const themeSlug = themeOverride || settings?.theme_slug || "minimal";
+
+  return {
+    portfolio: {
+      id: "library-preview",
+      user_id: userId,
+      name: "Library preview",
+      slug: "preview",
+      description: "",
+      headline: "",
+      bio: "",
+      theme_slug: themeSlug,
+      is_public: 1,
+      is_default: 1,
+      show_skills: 1,
+      show_projects: 1,
+      show_experience: 1,
+      show_education: 1,
+      show_certifications: 1,
+      show_languages: 1,
+    },
+    profile: profile ?? { name: "", headline: "", bio: "" },
+    skills: queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [
+      userId,
+    ]),
+    projects: queryAll(db, "SELECT * FROM projects WHERE user_id = ? ORDER BY sort_order, title", [
+      userId,
+    ]),
+    experience: queryAll(db, "SELECT * FROM experience WHERE user_id = ? ORDER BY sort_order", [
+      userId,
+    ]),
+    education: queryAll(db, "SELECT * FROM education WHERE user_id = ? ORDER BY sort_order", [
+      userId,
+    ]),
+    certifications: queryAll(
+      db,
+      "SELECT * FROM certifications WHERE user_id = ? ORDER BY sort_order",
+      [userId],
+    ),
+    languages: queryAll(db, "SELECT * FROM languages WHERE user_id = ? ORDER BY sort_order", [
+      userId,
+    ]),
+    social_links: queryAll(
+      db,
+      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      [userId],
+    ),
+    handle: user.handle ?? "",
+    plan: user.plan ?? "free",
+    plan_expires: user.plan_expires ?? null,
+  };
 }
 
 export function renderWelcome(config: Config): string {

@@ -1,20 +1,60 @@
 <script lang="ts">
+	type AutocompleteAttribute = HTMLInputElement['autocomplete'] | undefined;
+
 	export let label = '';
 	export let type = 'text';
 	export let value = '';
 	export let name = '';
 	export let placeholder = '';
 	export let disabled = false;
+	export let autocomplete: AutocompleteAttribute = undefined;
+
+	/** Svelte 5 callback props (preferred over on:input forwarding). */
+	export let oninput: ((e: Event) => void) | undefined = undefined;
+	export let onfocus: ((e: FocusEvent) => void) | undefined = undefined;
 </script>
 
 <label>
 	{#if label}<span class="label">{label}</span>{/if}
 	{#if type === 'password'}
-		<input type="password" {name} {placeholder} {disabled} bind:value on:focus on:input />
+		<input
+			type="password"
+			{name}
+			{placeholder}
+			{disabled}
+			{autocomplete}
+			bind:value
+			on:input={oninput}
+			on:focus={onfocus}
+			on:input
+			on:focus
+		/>
 	{:else if type === 'email'}
-		<input type="email" {name} {placeholder} {disabled} bind:value on:focus on:input />
+		<input
+			type="email"
+			{name}
+			{placeholder}
+			{disabled}
+			{autocomplete}
+			bind:value
+			on:input={oninput}
+			on:focus={onfocus}
+			on:input
+			on:focus
+		/>
 	{:else}
-		<input type="text" {name} {placeholder} {disabled} bind:value on:focus on:input />
+		<input
+			type="text"
+			{name}
+			{placeholder}
+			{disabled}
+			{autocomplete}
+			bind:value
+			on:input={oninput}
+			on:focus={onfocus}
+			on:input
+			on:focus
+		/>
 	{/if}
 </label>
 

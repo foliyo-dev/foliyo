@@ -72,6 +72,34 @@ export function languagesRoutes(db: FoliyoDb) {
   }));
 }
 
+const socialProviders = [
+  "github",
+  "linkedin",
+  "twitter",
+  "youtube",
+  "instagram",
+  "dribbble",
+  "behance",
+  "medium",
+  "bluesky",
+  "mastodon",
+  "website",
+  "other",
+] as const;
+
+export function socialLinksRoutes(db: FoliyoDb) {
+  return crudRoutes(
+    db,
+    "social_links",
+    z.object({
+      provider: z.enum(socialProviders),
+      label: z.string().default(""),
+      value: z.string().min(1),
+      sort_order: z.number().int().default(0),
+    }),
+  );
+}
+
 function crudRoutes(db: FoliyoDb, table: string, schema: z.ZodObject<z.ZodRawShape>) {
   const r = new Hono<AppEnv>();
 

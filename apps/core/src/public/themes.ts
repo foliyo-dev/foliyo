@@ -4,14 +4,47 @@ import { fileURLToPath } from "node:url";
 import type { Config } from "../config.js";
 import type { PublicPortfolio } from "./pages.js";
 import { effectivePlan, showFoliyoBranding } from "../plan.js";
+import {
+  resolveSocialUrl,
+  socialDisplayLabel,
+  socialIconSvg,
+} from "../social/providers.js";
 
 const PORTFOLIO_SLUGS = new Set(["minimal", "modern", "creative"]);
 const RESUME_SLUGS = new Set(["classic", "compact", "academic"]);
 
-const themesRoot = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../../packages/themes",
-);
+const here = dirname(fileURLToPath(import.meta.url));
+
+/** Resolve packages/themes for OSS core and pnpm file: copies used by foliyo-cloud. */
+function resolveThemesRoot(): string {
+  const marker = join("portfolio", "minimal", "style.css");
+  const candidates = [
+    // apps/core/src/public → ../../../../packages/themes (real monorepo layout)
+    join(here, "../../../../packages/themes"),
+    // cwd = apps/core
+    join(process.cwd(), "../../packages/themes"),
+    join(process.cwd(), "packages/themes"),
+    // cwd = foliyo-cloud/apps/api
+    join(process.cwd(), "../../foliyo/packages/themes"),
+    join(process.cwd(), "../../../foliyo/packages/themes"),
+  ];
+
+  let dir = here;
+  for (let i = 0; i < 12; i++) {
+    candidates.push(join(dir, "packages/themes"));
+    candidates.push(join(dir, "foliyo/packages/themes"));
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  for (const root of candidates) {
+    if (existsSync(join(root, marker))) return root;
+  }
+  return candidates[0]!;
+}
+
+const themesRoot = resolveThemesRoot();
 
 export type ResumeMeta = {
   name: string;
@@ -159,19 +192,6 @@ function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): stri
   const contactBits: string[] = [];
   const profile = data.profile;
   if (profile.email) contactBits.push(`<a href="mailto:${esc(profile.email)}">${esc(profile.email)}</a>`);
-  if (profile.website) {
-    contactBits.push(`<a href="${esc(profile.website)}" rel="noopener noreferrer">Website</a>`);
-  }
-  if (profile.github) {
-    contactBits.push(
-      `<a href="https://github.com/${esc(profile.github)}" rel="noopener noreferrer">GitHub</a>`,
-    );
-  }
-  if (profile.linkedin) {
-    contactBits.push(
-      `<a href="https://linkedin.com/in/${esc(profile.linkedin)}" rel="noopener noreferrer">LinkedIn</a>`,
-    );
-  }
   if (profile.location) contactBits.push(`<span>${esc(profile.location)}</span>`);
 
   const contactHtml =
@@ -180,6 +200,24 @@ function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): stri
       : "";
 
   return `${contactHtml}${skillsHtml}${projectsHtml}${expHtml}${eduHtml}${certHtml}${langHtml}`;
+}
+
+function socialLinksHtml(data: PublicPortfolio): string {
+  const links = data.social_links ?? [];
+  if (!links.length) return "";
+  const items = links
+    .map((link) => {
+      const provider = String(link.provider ?? "other");
+      const url = resolveSocialUrl(provider, String(link.value ?? ""));
+      if (!url) return "";
+      const label = socialDisplayLabel(provider, String(link.label ?? ""));
+      const icon = socialIconSvg(provider);
+      return `<li><a class="social-link" href="${esc(url)}" rel="noopener noreferrer" title="${esc(label)}" aria-label="${esc(label)}">${icon}<span>${esc(label)}</span></a></li>`;
+    })
+    .filter(Boolean)
+    .join("");
+  if (!items) return "";
+  return `<ul class="social-links">${items}</ul>`;
 }
 
 function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
@@ -191,12 +229,14 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
   const avatarHtml = avatar
     ? `<img class="avatar" src="${esc(avatar)}" alt="" width="88" height="88" />`
     : "";
+  const social = socialLinksHtml(data);
 
   if (mode === "resume") {
     return `<header class="hero">
       <div>
         <h1>${name}</h1>
         ${headline ? `<p class="headline">${headline}</p>` : ""}
+        ${social}
       </div>
     </header>`;
   }
@@ -208,6 +248,7 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
       ${headline ? `<p class="headline">${headline}</p>` : ""}
       ${bio ? `<p class="bio">${bio}</p>` : ""}
       ${desc ? `<p class="desc">${desc}</p>` : ""}
+      ${social}
     </div>
   </header>`;
 }
@@ -229,7 +270,14 @@ function documentShell(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${opts.title}</title>
   <link rel="icon" href="/static/images/foliyo-icon.svg" type="image/svg+xml">
-  <style>${opts.css}</style>
+  <style>${opts.css}
+.social-links{display:flex;flex-wrap:wrap;gap:0.5rem;list-style:none;margin:1rem 0 0;padding:0}
+.social-links a{display:inline-flex;align-items:center;gap:0.4rem;padding:0.4rem 0.75rem;border-radius:999px;border:1px solid var(--line,#e7e5e4);background:var(--surface,#fff);color:var(--ink,inherit);font-size:0.8125rem;font-weight:500;line-height:1;text-decoration:none;transition:border-color .15s ease,color .15s ease,background .15s ease}
+.social-links a:hover{border-color:var(--accent,#0f766e);color:var(--accent,#0f766e)}
+.social-links svg{width:1rem;height:1rem;flex-shrink:0;display:block}
+.theme-creative .social-links a{background:rgba(255,255,255,.08);border-color:rgba(232,196,160,.35);color:#f8f1e8}
+.theme-creative .social-links a:hover{border-color:#e8c4a0;color:#f0a06a;background:rgba(255,255,255,.12)}
+</style>
 </head>
 <body class="${opts.themeClass}">
   ${opts.topbar ?? ""}
@@ -250,7 +298,7 @@ export function renderPortfolioHtml(data: PublicPortfolio, config: Config): stri
     <a class="brand" href="/">Foliyo</a>
     ${data.handle ? `<a class="handle" href="/u/${esc(data.handle)}">@${esc(data.handle)}</a>` : ""}
   </nav>`;
-  const plan = effectivePlan(data.plan, config);
+  const plan = effectivePlan(data.plan, config, data.plan_expires);
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";
@@ -273,7 +321,7 @@ export function renderResumeHtml(
   const slug = normalizeSlug("resume", resume.theme_slug);
   const css = loadThemeCss("resume", slug);
   const resumeTitle = esc(resume.name || `${displayName(data)} — Resume`);
-  const plan = effectivePlan(data.plan, config);
+  const plan = effectivePlan(data.plan, config, data.plan_expires);
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";

@@ -1,6 +1,7 @@
 import { get, writable } from 'svelte/store';
-import { api } from '$lib/api/client';
+import { api, ApiError } from '$lib/api/client';
 import { accessToken } from '$lib/stores/token';
+import { isSaas } from '$lib/config';
 
 export type User = {
 	id: string;
@@ -8,6 +9,7 @@ export type User = {
 	plan?: string;
 	handle?: string | null;
 	onboarding_complete?: number;
+	email_verified?: number;
 };
 
 export const user = writable<User | null>(null);
@@ -28,13 +30,21 @@ export async function loadSession(): Promise<boolean> {
 	}
 }
 
-export async function login(email: string, password: string): Promise<void> {
-	const data = await api<{ token: string; user: User }>('/auth/login', {
-		method: 'POST',
-		body: JSON.stringify({ email, password })
-	});
-	accessToken.set(data.token);
-	user.set(data.user);
+export async function login(email: string, password: string): Promise<User> {
+	try {
+		const data = await api<{ token: string; user: User }>('/auth/login', {
+			method: 'POST',
+			body: JSON.stringify({ email, password })
+		});
+		accessToken.set(data.token);
+		user.set(data.user);
+		return data.user;
+	} catch (err) {
+		if (err instanceof ApiError && err.message.includes('pending_deletion')) {
+			throw new Error('pending_deletion');
+		}
+		throw err;
+	}
 }
 
 export async function logout(): Promise<void> {
@@ -49,4 +59,16 @@ export async function logout(): Promise<void> {
 export function needsOnboarding(u: User | null): boolean {
 	if (!u) return false;
 	return !u.handle || u.onboarding_complete !== 1;
+}
+
+export function needsEmailVerification(u: User | null): boolean {
+	if (!isSaas || !u) return false;
+	return !u.email_verified;
+}
+
+/** After login/signup/verify on the dashboard (same origin). */
+export function postAuthPath(u: User): string {
+	if (needsEmailVerification(u)) return '/check-email';
+	if (isSaas && needsOnboarding(u)) return '/onboarding';
+	return '/';
 }

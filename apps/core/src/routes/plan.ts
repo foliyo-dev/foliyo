@@ -6,6 +6,7 @@ import {
   PRICING,
   effectivePlan,
   entitlementsFor,
+  reconcileExpiredPlan,
   type PlanSlug,
 } from "../plan.js";
 
@@ -21,7 +22,8 @@ export function planRoutes(db: FoliyoDb, config: Config) {
     );
     if (!user) return c.json({ error: "not found" }, 404);
 
-    const plan: PlanSlug = effectivePlan(user.plan, config);
+    const plan: PlanSlug = effectivePlan(user.plan, config, user.plan_expires);
+    reconcileExpiredPlan(db, userId, user.plan, user.plan_expires);
     return c.json({
       plan,
       stored_plan: user.plan,

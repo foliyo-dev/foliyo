@@ -7,6 +7,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import {
 		getPortfolio,
 		updatePortfolio,
@@ -123,13 +124,6 @@
 
 	$: if (!slugTouched && name) slug = slugify(name);
 
-	function toggle(selected: Set<string>, id: string, checked: boolean): Set<string> {
-		const next = new Set(selected);
-		if (checked) next.add(id);
-		else next.delete(id);
-		return next;
-	}
-
 	async function save() {
 		if (!portfolio || !name.trim() || !slug.trim()) return;
 		saving = true;
@@ -240,161 +234,31 @@
 			<div class="toggles">
 				<label class="checkbox"><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label>
 				<label class="checkbox"><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label>
-				<label class="checkbox"><input type="checkbox" bind:checked={showSkills} /> Show skills</label>
-				<label class="checkbox"><input type="checkbox" bind:checked={showProjects} /> Show projects</label>
-				<label class="checkbox"
-					><input type="checkbox" bind:checked={showExperience} /> Show experience</label
-				>
-				<label class="checkbox"
-					><input type="checkbox" bind:checked={showEducation} /> Show education</label
-				>
-				<label class="checkbox"
-					><input type="checkbox" bind:checked={showCertifications} /> Show certifications</label
-				>
-				<label class="checkbox"
-					><input type="checkbox" bind:checked={showLanguages} /> Show languages</label
-				>
 			</div>
 		</div>
 	</Card>
 
 	<Card>
-		<h2 class="section-title">Include from your library</h2>
-		<p class="hint">Edit items under My content; select which ones appear in this portfolio.</p>
-
-		{#if skills.length > 0}
-			<h3>Skills</h3>
-			<ul class="check-list">
-				{#each skills as s (s.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedSkills.has(s.id)}
-								on:change={(e) =>
-									(selectedSkills = toggle(selectedSkills, s.id, e.currentTarget.checked))}
-							/>
-							{s.name} <span class="meta">({s.level})</span>
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No skills yet — add some under Skills.</p>
-		{/if}
-
-		{#if projects.length > 0}
-			<h3>Projects</h3>
-			<ul class="check-list">
-				{#each projects as p (p.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedProjects.has(p.id)}
-								on:change={(e) =>
-									(selectedProjects = toggle(selectedProjects, p.id, e.currentTarget.checked))}
-							/>
-							{p.title}
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No projects yet — add some under Projects.</p>
-		{/if}
-
-		{#if experiences.length > 0}
-			<h3>Experience</h3>
-			<ul class="check-list">
-				{#each experiences as e (e.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedExperience.has(e.id)}
-								on:change={(ev) =>
-									(selectedExperience = toggle(
-										selectedExperience,
-										e.id,
-										ev.currentTarget.checked
-									))}
-							/>
-							{e.role} at {e.company}
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No experience yet — add some under Experience.</p>
-		{/if}
-
-		{#if educations.length > 0}
-			<h3>Education</h3>
-			<ul class="check-list">
-				{#each educations as e (e.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedEducation.has(e.id)}
-								on:change={(ev) =>
-									(selectedEducation = toggle(selectedEducation, e.id, ev.currentTarget.checked))}
-							/>
-							{e.institution}
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No education yet — add some under Education.</p>
-		{/if}
-
-		{#if certifications.length > 0}
-			<h3>Certifications</h3>
-			<ul class="check-list">
-				{#each certifications as c (c.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedCertifications.has(c.id)}
-								on:change={(ev) =>
-									(selectedCertifications = toggle(
-										selectedCertifications,
-										c.id,
-										ev.currentTarget.checked
-									))}
-							/>
-							{c.name}{#if c.issuer}<span class="meta"> · {c.issuer}</span>{/if}
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No certifications yet — add some under Certifications.</p>
-		{/if}
-
-		{#if languages.length > 0}
-			<h3>Languages</h3>
-			<ul class="check-list">
-				{#each languages as l (l.id)}
-					<li>
-						<label class="checkbox">
-							<input
-								type="checkbox"
-								checked={selectedLanguages.has(l.id)}
-								on:change={(ev) =>
-									(selectedLanguages = toggle(selectedLanguages, l.id, ev.currentTarget.checked))}
-							/>
-							{l.name} <span class="meta">({l.proficiency})</span>
-						</label>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<p class="muted">No languages yet — add some under Languages.</p>
-		{/if}
+		<PortfolioLibraryPicker
+			{skills}
+			{projects}
+			{experiences}
+			{educations}
+			{certifications}
+			{languages}
+			bind:selectedSkills
+			bind:selectedProjects
+			bind:selectedExperience
+			bind:selectedEducation
+			bind:selectedCertifications
+			bind:selectedLanguages
+			bind:showSkills
+			bind:showProjects
+			bind:showExperience
+			bind:showEducation
+			bind:showCertifications
+			bind:showLanguages
+		/>
 	</Card>
 
 	<div class="actions">
@@ -446,28 +310,6 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.875rem;
-	}
-	.hint {
-		margin: 0 0 1rem;
-		font-size: 0.875rem;
-		color: var(--color-muted);
-	}
-	h3 {
-		margin: 1.25rem 0 0.5rem;
-		font-size: 0.9375rem;
-		color: var(--color-primary);
-	}
-	.check-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-	.meta {
-		color: var(--color-muted);
-		font-size: 0.8125rem;
 	}
 	.actions {
 		display: flex;
