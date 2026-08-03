@@ -19,7 +19,7 @@ export function authRoutes(db: FoliyoDb) {
     }
     const user = db
       .prepare(
-        "SELECT id, email, password, plan, handle, onboarding_complete, email_verified FROM users WHERE email = ?",
+        "SELECT id, email, password, plan, handle, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
       )
       .get(body.data.email) as {
       id: string;
@@ -29,9 +29,20 @@ export function authRoutes(db: FoliyoDb) {
       handle: string | null;
       onboarding_complete: number;
       email_verified: number;
+      mode: string;
     } | undefined;
     if (!user || !checkPassword(user.password, body.data.password)) {
       return c.json({ error: "invalid credentials" }, 401);
+    }
+    if (user.mode === "pending_delete") {
+      return c.json(
+        {
+          error: "pending_deletion",
+          message:
+            "This account is scheduled for deletion. Cancel deletion first, then sign in again.",
+        },
+        403,
+      );
     }
     const token = createToken(db, user.id);
     return c.json({

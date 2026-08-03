@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -15,14 +16,21 @@
 	} from '$lib/api/settings';
 	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import { isSaas } from '$lib/config';
-	import { requestDelete, requestExport } from '$lib/api/cloud';
-	import { user } from '$lib/stores/auth';
+	import {
+		downloadExport,
+		getConsents,
+		requestDelete,
+		type ConsentRow
+	} from '$lib/api/cloud';
+	import { logout, user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
 	let loading = true;
 	let saving = false;
 	let planInfo: PlanInfo | null = null;
 	let accountBusy = false;
+	let privacyConsent: ConsentRow | null = null;
+	let deleteConfirm = '';
 	let settings: Settings = {
 		site_title: 'My Portfolio',
 		site_description: '',
@@ -42,6 +50,14 @@
 			} catch {
 				planInfo = null;
 			}
+			if (isSaas) {
+				try {
+					const c = await getConsents();
+					privacyConsent = c.privacy_policy;
+				} catch {
+					privacyConsent = null;
+				}
+			}
 		} catch {
 			showToast('Failed to load settings', 'error');
 		} finally {
@@ -52,21 +68,26 @@
 	async function exportData() {
 		accountBusy = true;
 		try {
-			const res = await requestExport();
-			showToast(res.message, 'success');
+			await downloadExport();
+			showToast('Export downloaded', 'success');
 		} catch {
-			showToast('Failed to request export', 'error');
+			showToast('Failed to export data', 'error');
 		} finally {
 			accountBusy = false;
 		}
 	}
 
 	async function deleteAccount() {
-		if (!confirm('Request account deletion? This cannot be undone after processing.')) return;
+		if (deleteConfirm !== 'DELETE') {
+			showToast('Type DELETE to confirm', 'error');
+			return;
+		}
 		accountBusy = true;
 		try {
 			const res = await requestDelete();
 			showToast(res.message, 'success');
+			await logout();
+			goto('/signup');
 		} catch {
 			showToast('Failed to request deletion', 'error');
 		} finally {
@@ -90,6 +111,15 @@
 			showToast('Failed to save settings', 'error');
 		} finally {
 			saving = false;
+		}
+	}
+
+	function formatConsentDate(iso: string | undefined): string {
+		if (!iso) return '—';
+		try {
+			return new Date(iso).toLocaleString();
+		} catch {
+			return iso;
 		}
 	}
 </script>
@@ -154,19 +184,36 @@
 
 	{#if isSaas}
 		<Card>
-			<h2 class="section-title">Account</h2>
-			{#if planInfo?.billing_available}
-				<p class="muted">Billing configured — Razorpay checkout coming soon.</p>
+			<h2 class="section-title">Privacy &amp; data (DPDP)</h2>
+			{#if privacyConsent}
+				<p class="muted">
+					Privacy Policy consent:
+					<strong>{privacyConsent.granted ? 'Granted' : 'Revoked'}</strong>
+					on {formatConsentDate(privacyConsent.created_at)}.
+					<a href="https://foliyo.dev/privacy" target="_blank" rel="noreferrer">Read policy</a>
+				</p>
 			{:else}
-				<p class="muted">Hosted billing not configured yet.</p>
+				<p class="muted">
+					No consent record on file.
+					<a href="https://foliyo.dev/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+				</p>
 			{/if}
 			<div class="actions account-actions">
 				<Button variant="ghost" disabled={accountBusy} on:click={exportData}>
-					Export my data (DPDP)
+					Download my data
 				</Button>
-				<Button variant="ghost" disabled={accountBusy} on:click={deleteAccount}>
-					Delete account
-				</Button>
+			</div>
+			<div class="danger">
+				<p class="muted">
+					Delete your account after a 30-day grace period. Type <strong>DELETE</strong> to confirm.
+					You will be signed out immediately.
+				</p>
+				<Input label="Confirm deletion" bind:value={deleteConfirm} placeholder="DELETE" />
+				<div class="actions account-actions">
+					<Button variant="ghost" disabled={accountBusy || deleteConfirm !== 'DELETE'} on:click={deleteAccount}>
+						Delete account
+					</Button>
+				</div>
 			</div>
 		</Card>
 	{/if}
@@ -218,5 +265,10 @@
 		border-top: none;
 		padding-top: 0;
 		margin-top: 1rem;
+	}
+	.danger {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-border);
 	}
 </style>

@@ -22,8 +22,8 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | 6 | **Razorpay + webhooks** | Unlock Pro after payment | Done (Orders; monthly = 30-day grant) |
 | 7 | **Email verification + onboarding emails** | Required for hosted trust / DPDP consent path | Done (SMTP optional; logs links in dev) |
 | 8 | **Landing marketing page** | Convert traffic; portfolio+resume message only | Done (full marketing scroll) |
-| 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Next |
-| 10 | **Self-host binary + install.sh smoke** | OSS differentiator | Before GA |
+| 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Done (privacy page, sync export, 30-day delete) |
+| 10 | **Self-host binary + install.sh smoke** | OSS differentiator | Next |
 
 **Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest trial, MeshQL client migration, password-protect, Hindi UI.
 
@@ -60,7 +60,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | Email verification | Done (cloud signup → check-email → `/verify` → welcome mail) |
 | Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
 | File uploads | 501 stub |
-| DPDP export/delete/consent UX | Schema only |
+| DPDP export/delete/consent UX | Done (Settings + privacy page; 30-day delete grace) |
 | Deno single-binary release | Untested |
 
 **Local demo:** `make seed-demo ARGS=--force` → login `admin@localhost` / `changeme` → `/u/admin`, `/u/priya`, `/u/priya/opensource`, `/u/arjun`.
@@ -119,7 +119,7 @@ Proof of work on resumes/portfolios without hosting posts yet.
 - [ ] Onboarding: handle claim + first portfolio nudge
 - [x] Transactional emails (verify, welcome)
 - [x] Consent capture on signup (privacy policy)
-- [ ] Account export + delete request (`data_requests`)
+- [x] Account export + delete request (`data_requests`)
 
 **Exit:** New user can verify email and reach a published portfolio without staff help.
 

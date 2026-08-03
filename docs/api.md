@@ -36,14 +36,16 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | GET | `/r/:token` — shared resume HTML |
 | GET | `/welcome` |
 
-## Account (DPDP)
+## Account (DPDP — hosted / cloud-api)
 
-| Method | Path |
-|--------|------|
-| POST | `/api/auth/signup` |
-| DELETE | `/api/account` |
-| GET | `/api/account/export` |
-| PUT | `/api/account/consent` |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/signup` | Register + privacy consent |
+| GET | `/api/account/consents` | Consent history (privacy policy) |
+| GET | `/api/account/export` | Sync JSON download of user data |
+| DELETE | `/api/account` | Body `{ "confirm": "DELETE" }` — 30-day grace, sessions revoked |
+| POST | `/api/auth/cancel-delete` | Public — `{ email, password }` cancel pending deletion |
+| GET | `/api/account/data-requests` | Export/delete request history |
 
 Full request/response shapes: see `FOLIYO_SCAFFOLD.md` §17.
 
