@@ -3,12 +3,14 @@ apps/core/bin/
 apps/blog/bin/
 dist/
 
+# Dependencies
+node_modules/
+
 # Data
 data/
 *.db
 
 # Dashboard
-apps/dashboard/node_modules/
 apps/dashboard/build/
 apps/dashboard/.svelte-kit/
 
