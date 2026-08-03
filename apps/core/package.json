@@ -46,6 +46,8 @@
     "./plan": "./src/plan.ts",
     "./auth/password": "./src/auth/password.ts",
     "./auth/tokens": "./src/auth/tokens.ts",
+    "./email/send": "./src/email/send.ts",
+    "./email/verify": "./src/email/verify.ts",
     "./public/pages": "./src/public/pages.ts",
     "./public/themes": "./src/public/themes.ts"
   }

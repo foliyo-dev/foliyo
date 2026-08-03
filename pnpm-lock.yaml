@@ -109,6 +109,8 @@ importers:
 
   packages/brand: {}
 
+  packages/themes: {}
+
   packages/ui:
     devDependencies:
       '@foliyo/brand':

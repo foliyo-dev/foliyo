@@ -19,6 +19,11 @@ export interface Config {
   dashboardUrl: string;
   corsOrigins: string[];
   logLevel: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  fromEmail: string;
 }
 
 function env(key: string, fallback = ""): string {
@@ -84,5 +89,10 @@ export function loadConfig(): Config {
     dashboardUrl: env("FOLIYO_DASHBOARD_URL", y("dashboard_url", "http://localhost:5173")),
     corsOrigins: corsOrigins(),
     logLevel: env("FOLIYO_LOG_LEVEL", y("log_level", "info")),
+    smtpHost: env("FOLIYO_SMTP_HOST", y("smtp_host", "")),
+    smtpPort: envInt("FOLIYO_SMTP_PORT", Number.parseInt(y("smtp_port", "587"), 10)),
+    smtpUser: env("FOLIYO_SMTP_USER", y("smtp_user", "")),
+    smtpPass: env("FOLIYO_SMTP_PASS", y("smtp_pass", "")),
+    fromEmail: env("FOLIYO_FROM_EMAIL", y("from_email", "")),
   };
 }

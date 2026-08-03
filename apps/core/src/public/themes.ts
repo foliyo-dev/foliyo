@@ -218,6 +218,8 @@ function documentShell(opts: {
   css: string;
   body: string;
   topbar?: string;
+  /** UI chrome outside the resume/portfolio document (e.g. floating print). */
+  chrome?: string;
   footer?: string;
 }): string {
   return `<!DOCTYPE html>
@@ -234,6 +236,7 @@ function documentShell(opts: {
   <main class="page">
     ${opts.body}
   </main>
+  ${opts.chrome ?? ""}
   ${opts.footer ?? ""}
 </body>
 </html>`;
@@ -274,10 +277,9 @@ export function renderResumeHtml(
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";
-  const toolbar = `<div class="resume-toolbar no-print">
+  const chrome = `<aside class="print-fab no-print" aria-label="Export actions">
     <button type="button" class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-    <span class="print-hint">Use your browser print dialog → Save as PDF</span>
-  </div>
+  </aside>
   <script>
     if (new URLSearchParams(location.search).get("print") === "1") {
       window.addEventListener("load", function () { window.print(); });
@@ -288,7 +290,8 @@ export function renderResumeHtml(
     title: resumeTitle,
     themeClass: `theme-resume theme-${slug}`,
     css,
-    body: `${toolbar}${heroHtml(data, "resume")}${sectionsHtml(data, "resume")}`,
+    body: `${heroHtml(data, "resume")}${sectionsHtml(data, "resume")}`,
+    chrome,
     footer,
   });
 }

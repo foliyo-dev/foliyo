@@ -111,12 +111,16 @@
 		</p>
 		{#if !pro}
 			<UpgradePrompt
-				title="Remove Foliyo branding"
-				message="Public portfolio and resume pages show “Made with Foliyo” on Free. Pro removes the badge."
+				title="Upgrade to Pro"
+				message="Unlimited portfolios and remove “Made with Foliyo” branding from public pages."
 				pricing={planInfo?.pricing ?? null}
+				billingAvailable={planInfo?.billing_available ?? false}
+				on:upgraded={(e) => {
+					planInfo = e.detail;
+				}}
 			/>
 		{:else}
-			<p class="ok">Pro active — branding removed on public pages; PDF export unlocked.</p>
+			<p class="ok">Pro active — branding removed on public pages; unlimited portfolios.</p>
 		{/if}
 	</Card>
 

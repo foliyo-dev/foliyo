@@ -15,34 +15,20 @@
 		type Resume
 	} from '$lib/api/resumes';
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
-	import { exportResume, getPlan, isProPlan, parseUpgradeError } from '$lib/api/plan';
-	import { user } from '$lib/stores/auth';
-	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { showToast } from '$lib/stores/toast';
 
 	let items: Resume[] = [];
 	let portfolios: Portfolio[] = [];
 	let loading = true;
 	let saving = false;
-	let exportingId: string | null = null;
 	let editingId: string | null = null;
-	let showPdfUpgrade = false;
-	let pro = false;
 
 	let name = '';
 	let portfolioId = '';
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
 
-	onMount(async () => {
-		try {
-			const plan = await getPlan();
-			pro = isProPlan(plan.plan);
-		} catch {
-			pro = isProPlan($user?.plan);
-		}
-		await load();
-	});
+	onMount(load);
 
 	async function load() {
 		loading = true;
@@ -150,46 +136,13 @@
 			showToast(url, 'info');
 		}
 	}
-
-	async function exportPdf(r: Resume) {
-		if (!pro) {
-			showPdfUpgrade = true;
-			return;
-		}
-		if (r.is_public && r.share_token) {
-			window.open(`${resumeShareUrl(r.share_token)}?print=1`, '_blank', 'noopener,noreferrer');
-			showToast('Opened resume — use Print / Save as PDF', 'success');
-			return;
-		}
-		exportingId = r.id;
-		try {
-			await exportResume(r.id);
-			showToast('Opened print-ready resume — use Print → Save as PDF', 'success');
-		} catch (err) {
-			const upgrade = parseUpgradeError(err);
-			if (upgrade) {
-				showPdfUpgrade = true;
-				showToast(upgrade.message, 'error');
-			} else {
-				showToast(err instanceof Error ? err.message : 'Export failed', 'error');
-			}
-		} finally {
-			exportingId = null;
-		}
-	}
 </script>
 
 <PageHeader
 	title="Resume"
-	description="Shareable resume from a portfolio's curated content."
+	description="Shareable resume from a portfolio's curated content. Open the public link to Print / Save as PDF."
 />
 
-{#if showPdfUpgrade || !pro}
-	<UpgradePrompt
-		title="PDF export is Pro"
-		message="Free plans can share HTML resume links. Pro unlocks print-ready PDF export (₹99/mo)."
-	/>
-{/if}
 {#if portfolios.length === 0}
 	<Card>
 		<p class="muted">
@@ -259,13 +212,6 @@
 						</div>
 						<div class="actions">
 							<Button variant="ghost" on:click={() => startEdit(r)}>Edit</Button>
-							<Button
-								variant="ghost"
-								disabled={exportingId === r.id}
-								on:click={() => exportPdf(r)}
-							>
-								{exportingId === r.id ? 'Exporting…' : pro ? 'Export PDF' : 'Export PDF (Pro)'}
-							</Button>
 							{#if r.is_public}
 								<Button variant="ghost" on:click={() => copyLink(r.share_token)}>Copy link</Button>
 								<Button variant="ghost" on:click={() => regenerate(r.id)}>Regenerate link</Button>

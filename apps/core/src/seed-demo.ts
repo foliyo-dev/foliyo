@@ -62,15 +62,15 @@ function ensureUser(
   if (!user) {
     run(
       db,
-      `INSERT INTO users (email, password, handle, plan, onboarding_complete)
-       VALUES (?,?,?,?,1)`,
+      `INSERT INTO users (email, password, handle, plan, onboarding_complete, email_verified)
+       VALUES (?,?,?,?,1,1)`,
       [opts.email, hashPassword(opts.password ?? DEMO_PASSWORD), opts.handle, opts.plan],
     );
     user = queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
   } else {
     run(
       db,
-      `UPDATE users SET handle=?, plan=?, onboarding_complete=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+      `UPDATE users SET handle=?, plan=?, onboarding_complete=1, email_verified=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
       [opts.handle, opts.plan, user.id],
     );
   }

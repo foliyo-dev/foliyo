@@ -18,8 +18,18 @@ export function authRoutes(db: FoliyoDb) {
       return c.json({ error: "invalid body" }, 400);
     }
     const user = db
-      .prepare("SELECT id, email, password, plan, handle, onboarding_complete FROM users WHERE email = ?")
-      .get(body.data.email) as { id: string; email: string; password: string; plan: string; handle: string | null; onboarding_complete: number } | undefined;
+      .prepare(
+        "SELECT id, email, password, plan, handle, onboarding_complete, email_verified FROM users WHERE email = ?",
+      )
+      .get(body.data.email) as {
+      id: string;
+      email: string;
+      password: string;
+      plan: string;
+      handle: string | null;
+      onboarding_complete: number;
+      email_verified: number;
+    } | undefined;
     if (!user || !checkPassword(user.password, body.data.password)) {
       return c.json({ error: "invalid credentials" }, 401);
     }
@@ -32,6 +42,7 @@ export function authRoutes(db: FoliyoDb) {
         plan: user.plan,
         handle: user.handle,
         onboarding_complete: user.onboarding_complete,
+        email_verified: user.email_verified ?? 1,
       },
     });
   });
@@ -48,10 +59,24 @@ export function authRoutes(db: FoliyoDb) {
     const userId = getTokenUserId(db, token);
     if (!userId) return c.json({ error: "unauthorized" }, 401);
     const user = db
-      .prepare("SELECT id, email, plan, handle, onboarding_complete FROM users WHERE id = ?")
-      .get(userId) as { id: string; email: string; plan: string; handle: string | null; onboarding_complete: number } | undefined;
+      .prepare(
+        "SELECT id, email, plan, handle, onboarding_complete, email_verified FROM users WHERE id = ?",
+      )
+      .get(userId) as {
+      id: string;
+      email: string;
+      plan: string;
+      handle: string | null;
+      onboarding_complete: number;
+      email_verified: number;
+    } | undefined;
     if (!user) return c.json({ error: "not found" }, 404);
-    return c.json({ user });
+    return c.json({
+      user: {
+        ...user,
+        email_verified: user.email_verified ?? 1,
+      },
+    });
   });
 
   return r;

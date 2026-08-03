@@ -27,6 +27,8 @@
 	let loading = true;
 	let creating = false;
 	let pro = false;
+	let billingAvailable = false;
+	let planPricing: { monthlyInr: number; lifetimeInr: number } | null = null;
 
 	let name = '';
 	let slug = '';
@@ -41,6 +43,8 @@
 		try {
 			const plan = await getPlan();
 			pro = isProPlan(plan.plan);
+			billingAvailable = plan.billing_available;
+			planPricing = plan.pricing ?? null;
 		} catch {
 			pro = isProPlan($user?.plan);
 		}
@@ -128,6 +132,11 @@
 	<UpgradePrompt
 		title="Portfolio limit reached"
 		message={`Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
+		pricing={planPricing}
+		billingAvailable={billingAvailable}
+		on:upgraded={() => {
+			pro = true;
+		}}
 	/>
 {/if}
 

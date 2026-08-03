@@ -17,12 +17,12 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | 1 | **Polished public themes** | Demo pages are HTML stubs; themes package must render real data | Done |
 | 2 | **Public resume page** (`/r/:token`) | Completes share loop without PDF | Done |
 | 3 | **Content write-up links** | “View more” on projects/experience → Foliyo *or* external blogs | Done |
-| 4 | **Plan gates + upgrade UX** | Portfolio limit exists; need PDF/custom gates + upgrade CTA that works | Done (Razorpay next) |
+| 4 | **Plan gates + upgrade UX** | Portfolio limit exists; need PDF/custom gates + upgrade CTA that works | Done |
 | 5 | **PDF export (Pro)** | Primary paid trigger per execution plan | Done (browser Print / Save as PDF on `/r/:token`) |
-| 6 | **Razorpay + webhooks** | Unlock Pro after payment | Critical path |
-| 7 | **Email verification + onboarding emails** | Required for hosted trust / DPDP consent path | Parallel |
-| 8 | **Landing pricing page** | Convert traffic; portfolio+resume message only | Parallel |
-| 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Before GA |
+| 6 | **Razorpay + webhooks** | Unlock Pro after payment | Done (Orders; monthly = 30-day grant) |
+| 7 | **Email verification + onboarding emails** | Required for hosted trust / DPDP consent path | Done (SMTP optional; logs links in dev) |
+| 8 | **Landing marketing page** | Convert traffic; portfolio+resume message only | Done (full marketing scroll) |
+| 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Next |
 | 10 | **Self-host binary + install.sh smoke** | OSS differentiator | Before GA |
 
 **Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest trial, MeshQL client migration, password-protect, Hindi UI.
@@ -55,9 +55,9 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | Theme package rendering (minimal/modern/creative) | Done |
 | Content write-up / article links on projects & experience | Done |
 | Public resume HTML (`/r/:token`, classic/compact/academic) | Done |
-| PDF export | Missing |
-| Razorpay | Missing |
-| Email verification | Missing |
+| PDF export | Done (browser Print on `/r/:token`) |
+| Razorpay | Done (cloud Orders + webhook; needs keys) |
+| Email verification | Done (cloud signup → check-email → `/verify` → welcome mail) |
 | Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
 | File uploads | 501 stub |
 | DPDP export/delete/consent UX | Schema only |
@@ -101,10 +101,11 @@ Proof of work on resumes/portfolios without hosting posts yet.
 - [x] `GET /api/resumes/:id/export` → 402 for free with upgrade payload (Pro → printable HTML / share link)
 - [x] Dashboard upgrade prompts (portfolio #2, PDF export, remove branding)
 - [x] Browser **Print / Save as PDF** on public `/r/:token` (MVP PDF — no Chromium required)
-- [ ] Razorpay checkout + webhook → set `users.plan`
-- [ ] Lifetime ₹2999 offer flag for launch window
-- [ ] Pricing section on `foliyo-cloud/apps/landing`
-- [ ] Optional later: Chromium server-side PDF if one-click download is needed
+- [x] Razorpay checkout + webhook → set `users.plan` (monthly 30-day / lifetime; Subscriptions later)
+- [x] Lifetime ₹2999 offer on landing + Checkout
+- [x] Pricing section on `foliyo-cloud/apps/landing`
+- [x] Marketing landing polish (brand hero, product preview, how-it-works, themes, pricing, self-host)
+- [ ] Optional later: Chromium server-side PDF; Razorpay Subscriptions for true monthly renew
 
 **Exit:** Test payment upgrades a free user; PDF works immediately after.
 
@@ -114,10 +115,10 @@ Proof of work on resumes/portfolios without hosting posts yet.
 
 **Goal:** Trustworthy signup for India-hosted users.
 
-- [ ] Email verification flow (signup already partially in cloud-api)
+- [x] Email verification flow (signup already partially in cloud-api)
 - [ ] Onboarding: handle claim + first portfolio nudge
-- [ ] Transactional emails (verify, welcome)
-- [ ] Consent capture on signup (privacy policy)
+- [x] Transactional emails (verify, welcome)
+- [x] Consent capture on signup (privacy policy)
 - [ ] Account export + delete request (`data_requests`)
 
 **Exit:** New user can verify email and reach a published portfolio without staff help.
@@ -162,7 +163,7 @@ Only after activation metrics exist:
 
 ```
 Sprint N+1   Phase B — Plan gates + browser Print/PDF on share links (done)
-Sprint N+2   Phase B — Razorpay + pricing page
+Sprint N+2   Phase B — Razorpay + pricing page (done)
 Sprint N+3   Phase C — Email verify + onboarding polish
 Sprint N+4   Phase D — Binary + install smoke + DPDP minimum
 Launch       Hosted MVP + self-host v1 tag

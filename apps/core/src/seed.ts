@@ -9,7 +9,7 @@ export function seedAdmin(db: FoliyoDb, config: Config): void {
   if ((row?.count ?? 0) > 0) return;
 
   const hash = hashPassword(config.adminPassword);
-  run(db, "INSERT INTO users (email, password) VALUES (?, ?)", [
+  run(db, "INSERT INTO users (email, password, email_verified, onboarding_complete) VALUES (?, ?, 1, 1)", [
     config.adminEmail,
     hash,
   ]);
