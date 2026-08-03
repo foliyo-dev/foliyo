@@ -8,6 +8,7 @@ export type Experience = {
 	start_date: string;
 	end_date: string | null;
 	description: string;
+	article_url: string;
 	sort_order: number;
 };
 

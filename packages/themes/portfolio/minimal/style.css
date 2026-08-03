@@ -1,1 +1,154 @@
-body { font-family: Inter, system-ui, sans-serif; margin: 2rem; }
+/* Foliyo portfolio theme: minimal — ink on paper, type-led */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap");
+
+:root {
+  --ink: #1c1917;
+  --muted: #78716c;
+  --line: #e7e5e4;
+  --accent: #0f766e;
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --max: 40rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-minimal {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.theme-minimal .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.theme-minimal .topbar a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.theme-minimal .topbar .brand { letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.75rem; }
+.theme-minimal .topbar .handle { color: var(--muted); }
+
+.theme-minimal .page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 3rem 1.25rem 4rem;
+}
+
+.theme-minimal .hero {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+}
+
+.theme-minimal .avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.theme-minimal h1 {
+  margin: 0 0 0.35rem;
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.theme-minimal .headline {
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.theme-minimal .bio,
+.theme-minimal .desc {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.theme-minimal .section { margin-top: 2.25rem; }
+
+.theme-minimal .section h2 {
+  margin: 0 0 1rem;
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.4rem;
+}
+
+.theme-minimal .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.theme-minimal .tags li { font-size: 0.9375rem; }
+
+.theme-minimal .cards,
+.theme-minimal .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-minimal .cards li,
+.theme-minimal .timeline li {
+  padding: 0 0 1.25rem;
+  margin: 0 0 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-minimal .cards li:last-child,
+.theme-minimal .timeline li:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.theme-minimal .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.theme-minimal .item-sub { color: var(--muted); font-size: 0.9375rem; margin-top: 0.15rem; }
+
+.theme-minimal .links { margin: 0.4rem 0 0; font-size: 0.875rem; }
+.theme-minimal .links a { color: var(--accent); }
+.theme-minimal .muted { color: var(--muted); font-size: 0.875rem; }
+
+.theme-minimal .site-footer {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.theme-minimal .site-footer a { color: var(--accent); }
+
+@media (max-width: 480px) {
+  .theme-minimal .hero { flex-direction: column; align-items: center; text-align: center; }
+  .theme-minimal .item-head { flex-direction: column; }
+}

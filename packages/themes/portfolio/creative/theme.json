@@ -1,14 +1,14 @@
 {
-  "name": "ucreative",
+  "name": "Creative",
   "slug": "creative",
-  "description": "Foliyo creative portfolio theme",
+  "description": "Bold display type and a warm denser hero",
   "colors": {
-    "primary": "#111111",
-    "background": "#ffffff",
-    "text": "#333333"
+    "primary": "#c2410c",
+    "background": "#f3ebe1",
+    "text": "#1a120b"
   },
   "fonts": {
-    "heading": "Inter",
-    "body": "Inter"
+    "heading": "Fraunces",
+    "body": "Figtree"
   }
 }

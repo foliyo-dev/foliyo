@@ -23,6 +23,7 @@
 	let description = '';
 	let url = '';
 	let repoUrl = '';
+	let articleUrl = '';
 	let imageUrl = '';
 	let tagsInput = '';
 	let featured = false;
@@ -64,6 +65,7 @@
 		description = '';
 		url = '';
 		repoUrl = '';
+		articleUrl = '';
 		imageUrl = '';
 		tagsInput = '';
 		featured = false;
@@ -77,6 +79,7 @@
 			description,
 			url,
 			repo_url: repoUrl,
+			article_url: articleUrl,
 			image_url: imageUrl,
 			tags: tagsToJson(tagsInput),
 			featured: featured ? 1 : 0,
@@ -107,6 +110,7 @@
 		description = project.description;
 		url = project.url;
 		repoUrl = project.repo_url;
+		articleUrl = project.article_url ?? '';
 		imageUrl = project.image_url;
 		tagsInput = tagsFromJson(project.tags);
 		featured = project.featured === 1;
@@ -140,7 +144,10 @@
 	}
 </script>
 
-<PageHeader title="Projects" description="Showcase your work — link live demos and repos." />
+<PageHeader
+	title="Projects"
+	description="Showcase your work — demos, repos, and write-ups (Foliyo or any external blog)."
+/>
 
 <Card>
 	<h2 class="section-title">{editingId ? 'Edit project' : 'Add project'}</h2>
@@ -151,6 +158,11 @@
 			<Input label="Live URL" bind:value={url} placeholder="https://…" />
 			<Input label="Repo URL" bind:value={repoUrl} placeholder="https://github.com/…" />
 		</div>
+		<Input
+			label="Write-up / article URL"
+			bind:value={articleUrl}
+			placeholder="https://dev.to/… or Medium, docs, future Foliyo post…"
+		/>
 		<Input label="Image URL" bind:value={imageUrl} placeholder="https://…" />
 		<Input label="Tags (comma-separated)" bind:value={tagsInput} placeholder="react, node" />
 		<div class="row">
@@ -194,6 +206,10 @@
 								{#if project.repo_url}
 									{#if project.url} · {/if}
 									<a href={project.repo_url} target="_blank" rel="noreferrer">Repo</a>
+								{/if}
+								{#if project.article_url}
+									{#if project.url || project.repo_url} · {/if}
+									<a href={project.article_url} target="_blank" rel="noreferrer">Write-up</a>
 								{/if}
 								{#if tagsFromJson(project.tags)}
 									 · {tagsFromJson(project.tags)}

@@ -20,7 +20,7 @@ export const foliyoSchema: MeshSchema = {
       type: {},
       fields: [
         "id", "user_id", "title", "description", "url",
-        "repo_url", "image_url", "tags", "featured", "sort_order",
+        "repo_url", "article_url", "image_url", "tags", "featured", "sort_order",
       ],
       table: "projects",
     },
@@ -28,7 +28,7 @@ export const foliyoSchema: MeshSchema = {
       type: {},
       fields: [
         "id", "user_id", "company", "role", "location",
-        "start_date", "end_date", "description", "sort_order",
+        "start_date", "end_date", "description", "article_url", "sort_order",
       ],
       table: "experience",
     },

@@ -1,1 +1,121 @@
-@media print { body { margin: 0; } }
+/* Foliyo resume theme: compact — denser, tighter spacing */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+:root {
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --accent: #0f766e;
+  --bg: #f1f5f9;
+  --max: 44rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-compact {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.theme-compact .page {
+  max-width: var(--max);
+  margin: 1rem auto;
+  padding: 1.25rem 1.35rem 1.75rem;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.theme-compact .hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.5rem;
+}
+
+.theme-compact h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.theme-compact .headline { margin: 0.15rem 0 0; color: var(--accent); font-weight: 500; font-size: 0.9rem; }
+
+.theme-compact .contact {
+  margin: 0 0 0.85rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.theme-compact .contact a { color: var(--accent); text-decoration: none; }
+
+.theme-compact .section { margin-top: 0.85rem; }
+
+.theme-compact .section h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.theme-compact .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.65rem;
+}
+
+.theme-compact .cards,
+.theme-compact .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-compact .cards li,
+.theme-compact .timeline li {
+  margin-bottom: 0.55rem;
+}
+
+.theme-compact .cards li p,
+.theme-compact .timeline li p {
+  margin: 0.2rem 0 0;
+}
+
+.theme-compact .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.15rem 0.75rem;
+}
+
+.theme-compact .item-sub { color: var(--muted); font-size: 0.8rem; }
+.theme-compact .links { margin: 0.15rem 0 0; font-size: 0.8rem; }
+.theme-compact .links a { color: var(--accent); }
+.theme-compact .muted { color: var(--muted); font-size: 0.8rem; }
+
+.theme-compact .site-footer {
+  text-align: center;
+  padding: 0.85rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.theme-compact .site-footer a { color: var(--accent); }
+
+@media print {
+  body.theme-compact { background: #fff; }
+  .theme-compact .page { margin: 0; border: 0; max-width: none; }
+  .theme-compact .site-footer { display: none; }
+}

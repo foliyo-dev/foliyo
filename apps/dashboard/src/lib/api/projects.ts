@@ -6,6 +6,7 @@ export type Project = {
   description: string;
   url: string;
   repo_url: string;
+  article_url: string;
   image_url: string;
   tags: string;
   featured: number;

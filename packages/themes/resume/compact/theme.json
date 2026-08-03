@@ -1,10 +1,14 @@
 {
-  "name": "ucompact",
+  "name": "Compact",
   "slug": "compact",
-  "description": "Foliyo compact resume theme",
+  "description": "Dense resume for more content per page",
   "colors": {
-    "primary": "#000000",
+    "primary": "#0f766e",
     "background": "#ffffff",
-    "text": "#333333"
+    "text": "#0f172a"
+  },
+  "fonts": {
+    "heading": "IBM Plex Sans",
+    "body": "IBM Plex Sans"
   }
 }

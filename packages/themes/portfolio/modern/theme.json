@@ -1,14 +1,14 @@
 {
-  "name": "umodern",
+  "name": "Modern",
   "slug": "modern",
-  "description": "Foliyo modern portfolio theme",
+  "description": "Card grid layout with a cool accent",
   "colors": {
-    "primary": "#111111",
-    "background": "#ffffff",
-    "text": "#333333"
+    "primary": "#1d4ed8",
+    "background": "#eef2f7",
+    "text": "#0c1222"
   },
   "fonts": {
-    "heading": "Inter",
-    "body": "Inter"
+    "heading": "Source Serif 4",
+    "body": "Source Sans 3"
   }
 }

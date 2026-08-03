@@ -1,14 +1,14 @@
 {
-  "name": "uminimal",
+  "name": "Minimal",
   "slug": "minimal",
-  "description": "Foliyo minimal portfolio theme",
+  "description": "Clean, content-first layout with generous whitespace",
   "colors": {
-    "primary": "#111111",
-    "background": "#ffffff",
-    "text": "#333333"
+    "primary": "#0f766e",
+    "background": "#fafaf9",
+    "text": "#1c1917"
   },
   "fonts": {
-    "heading": "Inter",
-    "body": "Inter"
+    "heading": "IBM Plex Serif",
+    "body": "IBM Plex Sans"
   }
 }

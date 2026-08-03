@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --noEmit",
-    "compile:amd64": "deno compile --target x86_64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --output ../../dist/foliyo-linux-amd64 src/index.ts",
-    "compile:arm64": "deno compile --target aarch64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --output ../../dist/foliyo-linux-arm64 src/index.ts",
+    "compile:amd64": "deno compile --target x86_64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --include ../../packages/themes/ --output ../../dist/foliyo-linux-amd64 src/index.ts",
+    "compile:arm64": "deno compile --target aarch64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --include ../../packages/themes/ --output ../../dist/foliyo-linux-arm64 src/index.ts",
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
@@ -45,6 +45,7 @@
     "./migrate": "./src/migrate.ts",
     "./auth/password": "./src/auth/password.ts",
     "./auth/tokens": "./src/auth/tokens.ts",
-    "./public/pages": "./src/public/pages.ts"
+    "./public/pages": "./src/public/pages.ts",
+    "./public/themes": "./src/public/themes.ts"
   }
 }

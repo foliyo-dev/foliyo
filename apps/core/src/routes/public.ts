@@ -6,10 +6,12 @@ import {
   getDefaultPublicPortfolio,
   getPublicPortfolioBySlug,
   getUserByHandle,
+  loadPortfolioContent,
   renderNotFound,
   renderPortfolioPage,
   renderWelcome,
 } from "../public/pages.js";
+import { renderResumeHtml } from "../public/themes.js";
 
 export function publicRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
@@ -21,14 +23,34 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
   r.get("/r/:token", (c) => {
     const resume = db.prepare(
       "SELECT * FROM resumes WHERE share_token = ? AND is_public = 1",
-    ).get(c.req.param("token"));
+    ).get(c.req.param("token")) as
+      | {
+        id: string;
+        name: string;
+        theme_slug: string;
+        portfolio_id: string;
+        view_count: number;
+      }
+      | undefined;
+
     if (!resume) {
       return c.html(renderNotFound("Resume not found or private.", config.dashboardUrl), 404);
     }
-    return c.html(`<!DOCTYPE html><html><body style="font-family:system-ui;padding:2rem">
-      <h1>${String((resume as { name: string }).name)}</h1>
-      <p>Resume share link is valid. Full theme rendering coming soon.</p>
-    </body></html>`);
+
+    const data = loadPortfolioContent(db, resume.portfolio_id);
+    if (!data) {
+      return c.html(renderNotFound("Resume portfolio not found.", config.dashboardUrl), 404);
+    }
+
+    db.prepare("UPDATE resumes SET view_count = view_count + 1 WHERE id = ?").run(resume.id);
+
+    return c.html(
+      renderResumeHtml(
+        data,
+        { name: resume.name, theme_slug: resume.theme_slug },
+        config,
+      ),
+    );
   });
 
   r.get("/u/:handle/:slug", (c) => {

@@ -1,1 +1,178 @@
-body { font-family: Inter, system-ui, sans-serif; margin: 2rem; }
+/* Foliyo portfolio theme: creative — bold type, warm denser hero */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Figtree:wght@400;500;600&display=swap");
+
+:root {
+  --ink: #1a120b;
+  --muted: #7a6555;
+  --line: #e8d9c8;
+  --accent: #c2410c;
+  --accent-deep: #9a3412;
+  --bg: #f3ebe1;
+  --surface: #fffaf4;
+  --hero: #2a1f17;
+  --max: 48rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-creative {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, #efe4d6 0%, var(--bg) 28%, var(--bg) 100%);
+  font-family: "Figtree", system-ui, sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.theme-creative .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1.5rem;
+  background: var(--hero);
+  color: #f5ebe0;
+}
+
+.theme-creative .topbar a {
+  color: #f5ebe0;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.theme-creative .topbar .brand { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.72rem; }
+.theme-creative .topbar .handle { opacity: 0.85; }
+
+.theme-creative .page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+.theme-creative .hero {
+  display: flex;
+  gap: 1.35rem;
+  align-items: flex-start;
+  background: var(--hero);
+  color: #f8f1e8;
+  margin: 0 -1.25rem 2.25rem;
+  padding: 2.25rem 1.25rem 2.5rem;
+}
+
+.theme-creative .avatar {
+  border-radius: 4px;
+  object-fit: cover;
+  border: 2px solid #e8c4a0;
+  flex-shrink: 0;
+}
+
+.theme-creative h1 {
+  margin: 0 0 0.4rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.theme-creative .headline {
+  margin: 0 0 0.85rem;
+  color: #f0a06a;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.theme-creative .bio,
+.theme-creative .desc {
+  margin: 0.45rem 0 0;
+  color: #d6c4b2;
+  max-width: 36rem;
+}
+
+.theme-creative .section { margin-top: 2.35rem; }
+
+.theme-creative .section h2 {
+  margin: 0 0 1rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+
+.theme-creative .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.theme-creative .tags li {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.theme-creative .cards,
+.theme-creative .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-creative .cards li {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.15rem;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 8px 24px rgba(42, 31, 23, 0.06);
+}
+
+.theme-creative .timeline li {
+  padding: 0 0 1.35rem 1rem;
+  border-left: 2px solid var(--line);
+  margin-left: 0.35rem;
+  position: relative;
+}
+
+.theme-creative .timeline li::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent);
+  position: absolute;
+  left: -0.4rem;
+  top: 0.4rem;
+}
+
+.theme-creative .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.theme-creative .item-sub { color: var(--muted); margin-top: 0.15rem; }
+
+.theme-creative .links { margin: 0.45rem 0 0; font-size: 0.9rem; }
+.theme-creative .links a { color: var(--accent-deep); font-weight: 600; }
+.theme-creative .muted { color: var(--muted); font-size: 0.875rem; }
+
+.theme-creative .site-footer {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.theme-creative .site-footer a { color: var(--accent-deep); }
+
+@media (max-width: 560px) {
+  .theme-creative .hero { flex-direction: column; }
+}

@@ -1,10 +1,14 @@
 {
-  "name": "uacademic",
+  "name": "Academic",
   "slug": "academic",
-  "description": "Foliyo academic resume theme",
+  "description": "CV-style layout with emphatic section headings",
   "colors": {
-    "primary": "#000000",
+    "primary": "#1e3a5f",
     "background": "#ffffff",
-    "text": "#333333"
+    "text": "#1c1917"
+  },
+  "fonts": {
+    "heading": "Crimson Pro",
+    "body": "Source Sans 3"
   }
 }

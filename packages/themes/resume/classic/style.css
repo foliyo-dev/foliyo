@@ -1,1 +1,103 @@
-@media print { body { margin: 0; } }
+/* Foliyo resume theme: classic — traditional single column */
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap");
+
+:root {
+  --ink: #111827;
+  --muted: #6b7280;
+  --line: #d1d5db;
+  --accent: #111827;
+  --bg: #f9fafb;
+  --max: 48rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-classic {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.theme-classic .page {
+  max-width: var(--max);
+  margin: 1.5rem auto;
+  padding: 2rem 1.75rem 2.5rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.theme-classic .hero { text-align: center; margin-bottom: 1.25rem; border-bottom: 2px solid var(--ink); padding-bottom: 1rem; }
+
+.theme-classic h1 {
+  margin: 0;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.theme-classic .headline { margin: 0.35rem 0 0; color: var(--muted); font-weight: 400; }
+.theme-classic .contact { text-align: center; margin: 0 0 1.5rem; font-size: 0.875rem; color: var(--muted); }
+.theme-classic .contact a { color: var(--ink); }
+
+.theme-classic .section { margin-top: 1.35rem; }
+
+.theme-classic .section h2 {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.25rem;
+}
+
+.theme-classic .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+}
+
+.theme-classic .cards,
+.theme-classic .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-classic .cards li,
+.theme-classic .timeline li {
+  margin-bottom: 0.85rem;
+}
+
+.theme-classic .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.theme-classic .item-sub { color: var(--muted); font-size: 0.9rem; }
+.theme-classic .links { margin: 0.25rem 0 0; font-size: 0.85rem; }
+.theme-classic .links a { color: var(--ink); }
+.theme-classic .muted { color: var(--muted); font-size: 0.85rem; }
+
+.theme-classic .site-footer {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.theme-classic .site-footer a { color: var(--ink); }
+
+@media print {
+  body.theme-classic { background: #fff; }
+  .theme-classic .page { margin: 0; border: 0; box-shadow: none; max-width: none; }
+  .theme-classic .site-footer { display: none; }
+}

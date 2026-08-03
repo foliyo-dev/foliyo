@@ -18,6 +18,7 @@ export function projectsRoutes(db: FoliyoDb) {
     description: z.string().default(""),
     url: z.string().default(""),
     repo_url: z.string().default(""),
+    article_url: z.string().default(""),
     image_url: z.string().default(""),
     tags: z.string().default("[]"),
     featured: z.number().int().default(0),
@@ -33,6 +34,7 @@ export function experienceRoutes(db: FoliyoDb) {
     start_date: z.string().min(1),
     end_date: z.string().nullable().optional(),
     description: z.string().default(""),
+    article_url: z.string().default(""),
     sort_order: z.number().int().default(0),
   }));
 }

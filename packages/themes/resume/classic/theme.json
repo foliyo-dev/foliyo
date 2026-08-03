@@ -1,10 +1,14 @@
 {
-  "name": "uclassic",
+  "name": "Classic",
   "slug": "classic",
-  "description": "Foliyo classic resume theme",
+  "description": "Traditional single-column resume",
   "colors": {
-    "primary": "#000000",
+    "primary": "#111827",
     "background": "#ffffff",
-    "text": "#333333"
+    "text": "#111827"
+  },
+  "fonts": {
+    "heading": "Libre Baskerville",
+    "body": "Source Sans 3"
   }
 }

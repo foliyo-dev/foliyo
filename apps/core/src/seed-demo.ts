@@ -105,6 +105,7 @@ type SeedBundle = {
     description: string;
     url: string;
     repo_url: string;
+    article_url?: string;
     tags: string;
     featured: number;
   }[];
@@ -115,6 +116,7 @@ type SeedBundle = {
     start_date: string;
     end_date: string | null;
     description: string;
+    article_url?: string;
   }[];
   education: {
     institution: string;
@@ -193,9 +195,20 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
     const pid = id();
     run(
       db,
-      `INSERT INTO projects (id, user_id, title, description, url, repo_url, tags, featured, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [pid, userId, pr.title, pr.description, pr.url, pr.repo_url, pr.tags, pr.featured, i],
+      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, tags, featured, sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [
+        pid,
+        userId,
+        pr.title,
+        pr.description,
+        pr.url,
+        pr.repo_url,
+        pr.article_url ?? "",
+        pr.tags,
+        pr.featured,
+        i,
+      ],
     );
     projectIds.push(pid);
   });
@@ -205,9 +218,20 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
     const eid = id();
     run(
       db,
-      `INSERT INTO experience (id, user_id, company, role, location, start_date, end_date, description, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [eid, userId, e.company, e.role, e.location, e.start_date, e.end_date, e.description, i],
+      `INSERT INTO experience (id, user_id, company, role, location, start_date, end_date, description, article_url, sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [
+        eid,
+        userId,
+        e.company,
+        e.role,
+        e.location,
+        e.start_date,
+        e.end_date,
+        e.description,
+        e.article_url ?? "",
+        i,
+      ],
     );
     experienceIds.push(eid);
   });
@@ -362,6 +386,7 @@ const adminBundle: SeedBundle = {
       description: "Open-source portfolio + resume platform with a shared content library.",
       url: "https://foliyo.dev",
       repo_url: "https://github.com/foliyo-dev/foliyo",
+      article_url: "https://dev.to/foliyo/why-we-built-a-content-library-for-portfolios",
       tags: '["typescript","svelte","hono"]',
       featured: 1,
     },
@@ -382,6 +407,7 @@ const adminBundle: SeedBundle = {
       start_date: "2025-01",
       end_date: null,
       description: "Product, API, and dashboard for hosted + self-host Foliyo.",
+      article_url: "https://foliyo.dev/docs",
     },
     {
       company: "Acme Soft",
@@ -460,6 +486,7 @@ const priyaBundle: SeedBundle = {
       description: "Double-entry bookkeeping API used by two fintech pilots.",
       url: "https://example.com/ledger",
       repo_url: "https://github.com/example/ledger-lite",
+      article_url: "https://dev.to/priya/building-ledger-lite-in-go",
       tags: '["go","postgres"]',
       featured: 1,
     },
@@ -468,6 +495,7 @@ const priyaBundle: SeedBundle = {
       description: "Small job queue library for Node 22 + SQLite.",
       url: "",
       repo_url: "https://github.com/example/mesh-queue",
+      article_url: "https://medium.com/@priya/sqlite-job-queues-that-dont-hurt",
       tags: '["typescript","sqlite"]',
       featured: 1,
     },
@@ -488,6 +516,7 @@ const priyaBundle: SeedBundle = {
       start_date: "2022-08",
       end_date: null,
       description: "Payments ledger, reconciliation jobs, on-call.",
+      article_url: "https://dev.to/priya/reconciliation-at-scale",
     },
     {
       company: "StartupXYZ",
@@ -589,6 +618,7 @@ const arjunBundle: SeedBundle = {
       description: "Reduced drop-off 18% for a D2C checkout flow.",
       url: "",
       repo_url: "",
+      article_url: "https://medium.com/@arjun/checkout-redesign-case-study",
       tags: '["ux","conversion"]',
       featured: 1,
     },
@@ -601,6 +631,7 @@ const arjunBundle: SeedBundle = {
       start_date: "2021-01",
       end_date: null,
       description: "Design systems and marketing sites for SaaS clients.",
+      article_url: "https://www.behance.net/gallery/studio-north-saas",
     },
   ],
   education: [

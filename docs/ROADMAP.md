@@ -14,9 +14,9 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 
 | # | Workstream | Why now | Status |
 |---|------------|---------|--------|
-| 1 | **Polished public themes** | Demo pages are HTML stubs; themes package must render real data | Next |
-| 2 | **Public resume page** (`/r/:token`) | Completes share loop without PDF | Next |
-| 3 | **Content write-up links** | “View more” on projects/experience → Foliyo *or* external blogs | Soon (MVP-friendly) |
+| 1 | **Polished public themes** | Demo pages are HTML stubs; themes package must render real data | Done |
+| 2 | **Public resume page** (`/r/:token`) | Completes share loop without PDF | Done |
+| 3 | **Content write-up links** | “View more” on projects/experience → Foliyo *or* external blogs | Done |
 | 4 | **Plan gates + upgrade UX** | Portfolio limit exists; need PDF/custom gates + upgrade CTA that works | Next |
 | 5 | **PDF export (Pro)** | Primary paid trigger per execution plan | Critical path |
 | 6 | **Razorpay + webhooks** | Unlock Pro after payment | Critical path |
@@ -31,7 +31,7 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 
 | Need | Ship when | Notes |
 |------|-----------|--------|
-| Link a project/job to a write-up (“View more”) | **Phase A / soon** | URL can be Medium, Dev.to, company blog, *or* a future Foliyo post |
+| Link a project/job to a write-up (“View more”) | **Done (Phase A)** | URL can be Medium, Dev.to, company blog, *or* a future Foliyo post |
 | Foliyo-hosted blog CMS | **Phase E** | Editor, drafts, listing at `/u/{handle}/blog` — not required for MVP |
 
 Do not block MVP on a blog CMS. Proof-of-work links on library items cover the resume use case.
@@ -47,14 +47,14 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | Auth (login / logout / Bearer tokens) | Done |
 | Content library CRUD (basics, skills, projects, experience, education, certifications, languages) | Done |
 | Multi-portfolio (Free 1 / Pro unlimited) + headline/bio overrides | Done |
-| Portfolio content junctions + public `/u/:handle` (+ slug) | Done (basic HTML renderer) |
+| Portfolio content junctions + public `/u/:handle` (+ slug) | Done (themed HTML) |
 | Resume CRUD + share token APIs | Done |
 | Dashboard IA (My content / Portfolios / Resume) | Done |
 | Demo seed (`make seed-demo`) | Done |
 | Signup / handle claim (cloud + core paths) | Partial |
-| Theme package rendering (minimal/modern/creative) | Stub / not wired |
-| Content write-up / article links on projects & experience | Missing |
-| Public resume HTML | Missing / incomplete |
+| Theme package rendering (minimal/modern/creative) | Done |
+| Content write-up / article links on projects & experience | Done |
+| Public resume HTML (`/r/:token`, classic/compact/academic) | Done |
 | PDF export | Missing |
 | Razorpay | Missing |
 | Email verification | Missing |
@@ -71,23 +71,23 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 
 **Goal:** Public portfolio + resume look credible with 3 themes each; work items can deep-link to write-ups.
 
-- [ ] Wire `packages/themes` into public render (replace inline HTML in `public/pages.ts` or keep thin wrapper)
-- [ ] Portfolio themes: minimal, modern, creative — skills, projects, experience, education, certifications, languages, Gravatar/avatar
-- [ ] Resume public page `GET /r/:token` with classic / compact / academic
-- [ ] Self-host root `/` shows default public portfolio
-- [ ] Empty states + “Made with Foliyo” badge on free public pages
-- [ ] Verify demo seed pages look good on mobile
+- [x] Wire `packages/themes` into public render (TS builders + inlined CSS)
+- [x] Portfolio themes: minimal, modern, creative — skills, projects, experience, education, certifications, languages, Gravatar/avatar
+- [x] Resume public page `GET /r/:token` with classic / compact / academic
+- [x] Self-host root `/` shows default public portfolio
+- [x] “Made with Foliyo” badge on public pages (plan-gated removal later)
+- [ ] Empty section UX polish + mobile visual QA pass on demo seed
 
 ### Content write-up links (MVP — not a blog CMS)
 
 Proof of work on resumes/portfolios without hosting posts yet.
 
-- [ ] Projects: optional **write-up / article URL** (alongside existing demo `url` + `repo_url`) — label e.g. “View write-up”
-- [ ] Experience: optional **case study / article URL** (same pattern)
+- [x] Projects: optional **write-up / article URL** (alongside existing demo `url` + `repo_url`) — label e.g. “View write-up”
+- [x] Experience: optional **case study / article URL** (same pattern)
 - [ ] Optional stretch: small `links[{label,url}]` JSON for multiple links (Demo, Repo, Article)
-- [ ] Public portfolio + resume themes render those links when set
-- [ ] Seed demo data with at least one external write-up URL (e.g. Dev.to / docs)
-- [ ] Docs: clarify Foliyo *or* any external blog is valid; full Foliyo blog is Phase E
+- [x] Public portfolio + resume HTML render those links when set
+- [x] Seed demo data with at least one external write-up URL (e.g. Dev.to / docs)
+- [x] Docs: clarify Foliyo *or* any external blog is valid; full Foliyo blog is Phase E
 
 **Exit:** `/u/priya` and `/u/priya/opensource` look like real product; a project can show “View write-up →” to Foliyo or an external URL.
 
@@ -159,8 +159,7 @@ Only after activation metrics exist:
 ## Suggested near-term sprints
 
 ```
-Sprint N     Phase A — Theme wiring + public resume page
-Sprint N+0.5 Phase A — Project/experience write-up links (external or future Foliyo URLs)
+Sprint N     Phase A — Theme wiring + public resume page + write-up links (done)
 Sprint N+1   Phase B — PDF stub + plan gates + upgrade CTAs
 Sprint N+2   Phase B — Razorpay + pricing page
 Sprint N+3   Phase C — Email verify + onboarding polish

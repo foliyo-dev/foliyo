@@ -26,6 +26,7 @@
 	let startDate = '';
 	let endDate = '';
 	let description = '';
+	let articleUrl = '';
 	let sortOrder = '0';
 
 	onMount(load);
@@ -49,6 +50,7 @@
 		startDate = '';
 		endDate = '';
 		description = '';
+		articleUrl = '';
 		present = false;
 		sortOrder = String(items.length);
 		editingId = null;
@@ -62,6 +64,7 @@
 			start_date: startDate,
 			end_date: present ? null : endDate || null,
 			description,
+			article_url: articleUrl,
 			sort_order: Number(sortOrder) || 0
 		};
 	}
@@ -92,6 +95,7 @@
 		endDate = item.end_date ?? '';
 		present = !item.end_date;
 		description = item.description;
+		articleUrl = item.article_url ?? '';
 		sortOrder = String(item.sort_order);
 	}
 
@@ -122,7 +126,10 @@
 	}
 </script>
 
-<PageHeader title="Experience" description="Work history — attach roles to portfolios later." />
+<PageHeader
+	title="Experience"
+	description="Work history — optional case-study / write-up links for resume deep dives."
+/>
 
 <Card>
 	<h2 class="section-title">{editingId ? 'Edit role' : 'Add role'}</h2>
@@ -141,6 +148,11 @@
 			Currently working here
 		</label>
 		<Textarea label="Description" bind:value={description} rows={4} />
+		<Input
+			label="Case study / write-up URL"
+			bind:value={articleUrl}
+			placeholder="https://… (external blog or future Foliyo post)"
+		/>
 		<Input label="Sort order" bind:value={sortOrder} />
 	</div>
 	<div class="form-actions">
@@ -171,6 +183,11 @@
 							</span>
 							{#if item.description}
 								<p class="desc">{item.description}</p>
+							{/if}
+							{#if item.article_url}
+								<p class="meta">
+									<a href={item.article_url} target="_blank" rel="noreferrer">View write-up →</a>
+								</p>
 							{/if}
 						</div>
 						<div class="row-actions">
