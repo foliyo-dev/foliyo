@@ -1,0 +1,40 @@
+meta {
+  name: Create Experience
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/experience
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "company": "Acme Corp",
+    "role": "Senior Engineer",
+    "location": "Remote",
+    "start_date": "2022-01",
+    "end_date": null,
+    "description": "Built portfolio products.",
+    "sort_order": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 || res.getStatus() === 200) {
+    const items = res.getBody();
+    if (Array.isArray(items) && items.length > 0) {
+      bru.setEnvVar("experienceId", items[items.length - 1].id);
+    }
+  }
+}

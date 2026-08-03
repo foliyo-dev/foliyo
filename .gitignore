@@ -1,0 +1,27 @@
+# Binaries
+apps/core/bin/
+apps/blog/bin/
+dist/
+
+# Data
+data/
+*.db
+
+# Dashboard
+apps/dashboard/node_modules/
+apps/dashboard/build/
+apps/dashboard/.svelte-kit/
+
+# Go
+*.exe
+*.test
+vendor/
+
+# Env
+.env
+.env.local
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

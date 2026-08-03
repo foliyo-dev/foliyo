@@ -1,0 +1,19 @@
+meta {
+  name: Export Resume PDF
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/resume/export
+  body: none
+  auth: bearer
+}
+
+params:query {
+  theme: classic
+}
+
+auth:bearer {
+  token: {{token}}
+}

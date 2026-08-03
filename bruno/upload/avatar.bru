@@ -1,0 +1,23 @@
+meta {
+  name: Upload Avatar
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/upload/avatar
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  file: @file(./sample-avatar.png)
+}
+
+docs {
+  Add a sample-avatar.png next to this file, or pick a file in Bruno's UI.
+}

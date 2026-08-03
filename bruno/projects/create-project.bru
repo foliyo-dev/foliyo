@@ -1,0 +1,41 @@
+meta {
+  name: Create Project
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/projects
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Foliyo",
+    "description": "Open-source portfolio platform",
+    "url": "https://github.com/foliyo-dev/foliyo",
+    "repo_url": "https://github.com/foliyo-dev/foliyo",
+    "image_url": "",
+    "tags": "[\"go\",\"svelte\"]",
+    "featured": 1,
+    "sort_order": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 || res.getStatus() === 200) {
+    const items = res.getBody();
+    if (Array.isArray(items) && items.length > 0) {
+      bru.setEnvVar("projectId", items[items.length - 1].id);
+    }
+  }
+}

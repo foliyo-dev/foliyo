@@ -1,0 +1,32 @@
+meta {
+  name: Update Project
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/projects/{{projectId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Foliyo",
+    "description": "Updated description",
+    "url": "https://github.com/foliyo-dev/foliyo",
+    "repo_url": "https://github.com/foliyo-dev/foliyo",
+    "image_url": "",
+    "tags": "[\"go\",\"svelte\"]",
+    "featured": 1,
+    "sort_order": 0
+  }
+}

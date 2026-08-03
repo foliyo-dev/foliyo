@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <title>Foliyo icon</title>
+  <desc>Foliyo icon mark — document lines in purple square</desc>
+  <rect x="0" y="0" width="40" height="40" rx="10" fill="#534AB7"/>
+  <rect x="8" y="11" width="24" height="3.5" rx="1.75" fill="white"/>
+  <rect x="8" y="19" width="16" height="3.5" rx="1.75" fill="white"/>
+  <rect x="8" y="27" width="20" height="3.5" rx="1.75" fill="white"/>
+</svg>

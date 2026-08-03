@@ -1,0 +1,10 @@
+{
+  "name": "ucompact",
+  "slug": "compact",
+  "description": "Foliyo compact resume theme",
+  "colors": {
+    "primary": "#000000",
+    "background": "#ffffff",
+    "text": "#333333"
+  }
+}

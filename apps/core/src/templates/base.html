@@ -1,0 +1,16 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} · Foliyo</title>
+</head>
+<body>
+  <header><nav><a href="/">Home</a> · <a href="/projects">Projects</a> · <a href="/resume">Resume</a></nav></header>
+  <main>
+    {{template "content" .}}
+  </main>
+</body>
+</html>
+{{end}}

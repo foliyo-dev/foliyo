@@ -1,0 +1,19 @@
+meta {
+  name: Resume Preview
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/resume/preview
+  body: none
+  auth: bearer
+}
+
+params:query {
+  theme: classic
+}
+
+auth:bearer {
+  token: {{token}}
+}

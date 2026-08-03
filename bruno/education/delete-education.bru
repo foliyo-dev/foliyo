@@ -1,0 +1,15 @@
+meta {
+  name: Delete Education
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/education/{{educationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

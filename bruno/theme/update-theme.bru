@@ -1,0 +1,25 @@
+meta {
+  name: Update Portfolio Theme
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/api/theme
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "theme_slug": "modern"
+  }
+}

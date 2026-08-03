@@ -1,0 +1,19 @@
+server:
+  port: 8080
+  host: 0.0.0.0
+
+database:
+  driver: sqlite
+  path: ./data/foliyo.db
+
+data_dir: ./data
+
+admin:
+  email: admin@localhost
+  # password: set via FOLIYO_ADMIN_PASSWORD env var
+
+session:
+  secret: change-me-in-production
+
+site:
+  url: http://localhost:8080

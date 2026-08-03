@@ -1,0 +1,31 @@
+meta {
+  name: Update Experience
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/experience/{{experienceId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "company": "Acme Corp",
+    "role": "Staff Engineer",
+    "location": "Remote",
+    "start_date": "2022-01",
+    "end_date": null,
+    "description": "Updated role.",
+    "sort_order": 0
+  }
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
+  <title>Foliyo — with tagline</title>
+  <desc>Foliyo logo with tagline — your folio. your way.</desc>
+  <rect x="0" y="4" width="32" height="32" rx="8" fill="#534AB7"/>
+  <rect x="6" y="11" width="20" height="3" rx="1.5" fill="white"/>
+  <rect x="6" y="18" width="13" height="3" rx="1.5" fill="white"/>
+  <rect x="6" y="25" width="16" height="3" rx="1.5" fill="white"/>
+  <text x="42" y="24" font-family="Inter,Geist,system-ui,sans-serif" font-size="20" font-weight="400" letter-spacing="-0.4" fill="#1a1a2e">foliyo</text>
+  <text x="42" y="38" font-family="Inter,Geist,system-ui,sans-serif" font-size="9" font-weight="400" letter-spacing="0.02em" fill="#888780">your folio. your way.</text>
+</svg>

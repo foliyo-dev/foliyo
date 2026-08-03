@@ -1,0 +1,31 @@
+meta {
+  name: Update Education
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/education/{{educationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "institution": "Example University",
+    "degree": "B.Tech",
+    "field": "Computer Science",
+    "start_date": "2016-07",
+    "end_date": "2020-05",
+    "description": "Honors",
+    "sort_order": 0
+  }
+}

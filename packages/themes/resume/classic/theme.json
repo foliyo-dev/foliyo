@@ -1,0 +1,10 @@
+{
+  "name": "uclassic",
+  "slug": "classic",
+  "description": "Foliyo classic resume theme",
+  "colors": {
+    "primary": "#000000",
+    "background": "#ffffff",
+    "text": "#333333"
+  }
+}

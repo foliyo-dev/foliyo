@@ -1,0 +1,30 @@
+meta {
+  name: Update Portfolio
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/portfolios/{{portfolioId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Node.js Portfolio",
+    "slug": "nodejs",
+    "description": "Updated description",
+    "theme_slug": "modern",
+    "is_public": 1,
+    "sort_order": 0
+  }
+}

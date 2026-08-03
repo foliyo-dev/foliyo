@@ -1,0 +1,29 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.5"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+      - run: pnpm install
+      - run: pnpm --filter @foliyo/core build
+
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+      - run: pnpm install
+      - run: pnpm --filter @foliyo/dashboard check
+      - run: pnpm --filter @foliyo/dashboard build

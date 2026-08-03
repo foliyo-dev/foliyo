@@ -1,0 +1,27 @@
+{{define "content"}}
+<article class="portfolio-live">
+  <header class="portfolio-header">
+    <h1>{{.Portfolio.Name}}</h1>
+    {{if .Portfolio.Description}}<p class="desc">{{.Portfolio.Description}}</p>{{end}}
+    {{if .Portfolio.IsDefault}}<span class="badge">Default portfolio</span>{{end}}
+  </header>
+  <p class="coming-soon">
+    Theme <strong>{{.Portfolio.ThemeSlug}}</strong> rendering with curated sections is next.
+    Manage content in the <a href="{{.DashboardURL}}">dashboard</a>.
+  </p>
+  <section class="sections-preview">
+    {{if .Portfolio.ShowSkills}}<span class="chip">Skills</span>{{end}}
+    {{if .Portfolio.ShowProjects}}<span class="chip">Projects</span>{{end}}
+    {{if .Portfolio.ShowExperience}}<span class="chip">Experience</span>{{end}}
+    {{if .Portfolio.ShowEducation}}<span class="chip">Education</span>{{end}}
+  </section>
+</article>
+<style>
+  .portfolio-live { max-width: 48rem; margin: 0 auto; padding: 2rem 1rem; font-family: Inter, system-ui, sans-serif; }
+  .portfolio-header h1 { margin: 0; color: #1a1a2e; }
+  .desc { color: #888780; }
+  .badge { display: inline-block; margin-top: 0.5rem; padding: 0.2rem 0.6rem; background: #eeedfe; color: #534ab7; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+  .coming-soon { color: #666; }
+  .chip { display: inline-block; margin: 0.25rem; padding: 0.35rem 0.75rem; background: #f8f7fc; border: 1px solid #e4e2ef; border-radius: 999px; font-size: 0.8125rem; }
+</style>
+{{end}}

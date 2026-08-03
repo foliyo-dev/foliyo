@@ -1,0 +1,18 @@
+# Foliyo process config for pqpm
+# Copy this file, fill in real paths, run: pqpm start foliyo
+
+[service.foliyo]
+command = "/home/foliyo/bin/foliyo"
+restart = "always"
+max_memory = "1GB"
+cpu_limit = "40%"
+working_dir = "/home/foliyo"
+log_file = "/home/foliyo/logs/foliyo.log"
+env = {
+  FOLIYO_PORT = "8080",
+  FOLIYO_DB_DRIVER = "sqlite",
+  FOLIYO_DB_PATH = "/home/foliyo/data/foliyo.db",
+  FOLIYO_DATA_DIR = "/home/foliyo/data",
+  FOLIYO_MODE = "single",
+  NODE_ENV = "production"
+}

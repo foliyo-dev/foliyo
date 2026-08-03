@@ -1,0 +1,50 @@
+{
+  "name": "@foliyo/core",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit",
+    "compile:amd64": "deno compile --target x86_64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --output ../../dist/foliyo-linux-amd64 src/index.ts",
+    "compile:arm64": "deno compile --target aarch64-unknown-linux-gnu --allow-net --allow-read --allow-write --allow-env --include src/migrations/ --include src/templates/ --output ../../dist/foliyo-linux-arm64 src/index.ts",
+    "migrate": "tsx src/migrate-cli.ts",
+    "seed:demo": "tsx src/seed-demo.ts",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.12.0",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.4.0",
+    "meshql-access": "^0.2.6",
+    "meshql-core": "^0.7.1",
+    "meshql-http": "^0.6.1",
+    "meshql-integrity": "^0.5.5",
+    "meshql-sqlite": "^0.5.4",
+    "meshql-upload": "^0.5.4",
+    "nanoid": "^5.0.7",
+    "nodemailer": "^6.9.14",
+    "yaml": "^2.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^6.4.15",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "exports": {
+    "./create-app": "./src/create-app.ts",
+    "./config": "./src/config.ts",
+    "./db": "./src/db.ts",
+    "./migrate": "./src/migrate.ts",
+    "./auth/password": "./src/auth/password.ts",
+    "./auth/tokens": "./src/auth/tokens.ts",
+    "./public/pages": "./src/public/pages.ts"
+  }
+}

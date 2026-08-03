@@ -1,0 +1,4 @@
+
+> @foliyo/core@0.4.0 build /Volumes/SSD/coding/foliyo-stack/foliyo/apps/core
+> tsc --noEmit
+

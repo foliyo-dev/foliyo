@@ -1,0 +1,335 @@
+/* Keep in sync with @foliyo/brand/tokens.css (static file — no package import yet). */
+:root {
+  --primary: #534ab7;
+  --primary-hover: #4339a0;
+  --primary-light: #eeedfe;
+  --primary-muted: #7f77dd;
+  --text: #1a1a2e;
+  --muted: #888780;
+  --bg: #f8f7fc;
+  --surface: #ffffff;
+  --border: #e4e2ef;
+  --radius: 12px;
+  --font: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  height: 40px;
+  width: auto;
+}
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+.hero {
+  text-align: center;
+  padding: 4rem 0 3rem;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 1rem;
+  line-height: 1.15;
+}
+
+.hero-lead {
+  font-size: 1.125rem;
+  color: var(--muted);
+  max-width: 36rem;
+  margin: 0 auto 2rem;
+}
+
+.hero-lead strong {
+  color: var(--primary);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--primary-muted);
+  color: var(--primary);
+}
+
+.diagram {
+  padding: 3rem 0;
+}
+
+.diagram h2,
+.steps h2,
+.privacy h2,
+.cta-block h2 {
+  text-align: center;
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.section-lead {
+  text-align: center;
+  color: var(--muted);
+  margin: 0 0 2.5rem;
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .flow {
+    grid-template-columns: 1fr;
+  }
+  .flow-arrow {
+    display: none;
+  }
+}
+
+.flow-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.flow-card.master {
+  border-top: 3px solid var(--muted);
+}
+
+.flow-card.portfolio {
+  border-top: 3px solid var(--primary-muted);
+}
+
+.flow-card.live {
+  border-top: 3px solid var(--primary);
+}
+
+.flow-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+.flow-card h3 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.flow-card ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.9375rem;
+}
+
+.flow-note {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  color: var(--primary-muted);
+  padding: 0 0.25rem;
+}
+
+.url-list {
+  list-style: none;
+  padding: 0;
+}
+
+.url-list li {
+  margin-bottom: 0.35rem;
+}
+
+.url-list code {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.steps {
+  padding: 2rem 0 3rem;
+}
+
+.step-grid {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.step-grid li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.step-num {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.step-grid h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.step-grid p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.privacy {
+  text-align: center;
+  max-width: 32rem;
+  margin: 0 auto 3rem;
+  padding: 2rem;
+  background: var(--primary-light);
+  border-radius: var(--radius);
+}
+
+.privacy p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.cta-block {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(145deg, var(--primary) 0%, #3d3589 100%);
+  border-radius: var(--radius);
+  color: #fff;
+}
+
+.cta-icon {
+  margin-bottom: 1rem;
+}
+
+.cta-block h2 {
+  color: #fff;
+}
+
+.cta-block p {
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 1.5rem;
+}
+
+.cta-block .btn-primary {
+  background: #fff;
+  color: var(--primary);
+}
+
+.cta-block .btn-primary:hover {
+  background: var(--primary-light);
+}
+
+footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+footer a {
+  color: var(--primary);
+}

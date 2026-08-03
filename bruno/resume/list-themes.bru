@@ -1,0 +1,15 @@
+meta {
+  name: List Resume Themes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/resume/themes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create Resume
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/resumes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "portfolio_id": "{{portfolioId}}",
+    "user_id": "",
+    "name": "Senior Engineer Resume",
+    "theme_slug": "classic",
+    "is_public": 1
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 || res.getStatus() === 200) {
+    const items = res.getBody();
+    if (Array.isArray(items) && items.length > 0) {
+      const last = items[items.length - 1];
+      bru.setEnvVar("resumeId", last.id);
+      if (last.share_token) {
+        bru.setEnvVar("shareToken", last.share_token);
+      }
+    }
+  }
+}
+
+docs {
+  Set portfolioId first (create a portfolio). user_id is inferred server-side on full implementation.
+}

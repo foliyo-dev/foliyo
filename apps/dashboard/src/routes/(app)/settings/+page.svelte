@@ -1,0 +1,187 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Textarea from '$lib/components/ui/Textarea.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import {
+		getSettings,
+		updateSettings,
+		portfolioThemes,
+		resumeThemes,
+		type Settings
+	} from '$lib/api/settings';
+	import { isSaas } from '$lib/config';
+	import { getPlan, requestDelete, requestExport } from '$lib/api/cloud';
+	import { showToast } from '$lib/stores/toast';
+
+	let loading = true;
+	let saving = false;
+	let plan = 'free';
+	let billingAvailable = false;
+	let accountBusy = false;
+	let settings: Settings = {
+		site_title: 'My Portfolio',
+		site_description: '',
+		theme_slug: 'minimal',
+		resume_theme: 'classic',
+		custom_domain: '',
+		seo_keywords: ''
+	};
+
+	onMount(async () => {
+		try {
+			settings = await getSettings();
+			if (isSaas) {
+				const p = await getPlan();
+				plan = p.plan;
+				billingAvailable = p.billing_available;
+			}
+		} catch {
+			showToast('Failed to load settings', 'error');
+		} finally {
+			loading = false;
+		}
+	});
+
+	async function exportData() {
+		accountBusy = true;
+		try {
+			const res = await requestExport();
+			showToast(res.message, 'success');
+		} catch {
+			showToast('Failed to request export', 'error');
+		} finally {
+			accountBusy = false;
+		}
+	}
+
+	async function deleteAccount() {
+		if (!confirm('Request account deletion? This cannot be undone after processing.')) return;
+		accountBusy = true;
+		try {
+			const res = await requestDelete();
+			showToast(res.message, 'success');
+		} catch {
+			showToast('Failed to request deletion', 'error');
+		} finally {
+			accountBusy = false;
+		}
+	}
+
+	async function save() {
+		saving = true;
+		try {
+			settings = await updateSettings({
+				site_title: settings.site_title,
+				site_description: settings.site_description,
+				theme_slug: settings.theme_slug,
+				resume_theme: settings.resume_theme,
+				custom_domain: settings.custom_domain,
+				seo_keywords: settings.seo_keywords
+			});
+			showToast('Settings saved', 'success');
+		} catch {
+			showToast('Failed to save settings', 'error');
+		} finally {
+			saving = false;
+		}
+	}
+</script>
+
+<PageHeader title="Settings" description="Site title, themes, SEO, and custom domain." />
+
+{#if loading}
+	<p class="muted">Loading…</p>
+{:else}
+	<Card>
+		<div class="fields">
+			<Input label="Site title" bind:value={settings.site_title} />
+			<Textarea label="Site description" bind:value={settings.site_description} rows={3} />
+			<label class="field">
+				<span class="label">Portfolio theme</span>
+				<select bind:value={settings.theme_slug}>
+					{#each portfolioThemes as theme}
+						<option value={theme}>{theme}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="field">
+				<span class="label">Resume theme</span>
+				<select bind:value={settings.resume_theme}>
+					{#each resumeThemes as theme}
+						<option value={theme}>{theme}</option>
+					{/each}
+				</select>
+			</label>
+			<Input label="Custom domain" bind:value={settings.custom_domain} placeholder="portfolio.example.com" />
+			<Input label="SEO keywords" bind:value={settings.seo_keywords} placeholder="developer, portfolio" />
+		</div>
+		<div class="actions">
+			<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save settings'}</Button>
+		</div>
+	</Card>
+
+	{#if isSaas}
+		<Card>
+			<h2 class="section-title">Account</h2>
+			<p class="muted">Plan: <strong>{plan}</strong></p>
+			{#if billingAvailable}
+				<p class="muted">Pro upgrade coming soon.</p>
+			{/if}
+			<div class="actions account-actions">
+				<Button variant="ghost" disabled={accountBusy} on:click={exportData}>
+					Export my data (DPDP)
+				</Button>
+				<Button variant="ghost" disabled={accountBusy} on:click={deleteAccount}>
+					Delete account
+				</Button>
+			</div>
+		</Card>
+	{/if}
+{/if}
+
+<style>
+	.muted {
+		color: var(--color-muted);
+	}
+	.fields {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	.label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+	select {
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		color: var(--color-text);
+	}
+	.actions {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-border);
+	}
+	.section-title {
+		margin: 0 0 0.75rem;
+		font-size: 1.125rem;
+	}
+	.account-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		border-top: none;
+		padding-top: 0;
+		margin-top: 1rem;
+	}
+</style>

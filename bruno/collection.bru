@@ -1,0 +1,17 @@
+meta {
+  name: Foliyo Core API
+}
+
+auth {
+  mode: none
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}
+
+docs {
+  Foliyo REST API (core).
+  Run Auth → Login first; the token is saved to the active environment.
+  Protected routes use Authorization: Bearer {{token}}.
+}

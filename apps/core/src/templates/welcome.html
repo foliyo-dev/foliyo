@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="icon" href="/static/images/foliyo-icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/welcome.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="/static/images/foliyo-logo-tagline.svg" alt="Foliyo" class="logo" width="200" height="48">
+    <a href="{{.DashboardURL}}" class="btn btn-primary">Open dashboard</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-badge">Self-hosted on your VPS</div>
+      <h1>Your portfolio site is almost live.</h1>
+      <p class="hero-lead">
+        Foliyo is running. Add your master data once, curate portfolios for different audiences,
+        and mark one as <strong>default</strong> — it becomes your homepage automatically.
+      </p>
+      <div class="hero-actions">
+        <a href="{{.DashboardURL}}" class="btn btn-primary btn-lg">Go to dashboard</a>
+        <a href="/welcome#how-it-works" class="btn btn-ghost btn-lg">How it works</a>
+      </div>
+    </section>
+
+    <section class="diagram" id="how-it-works">
+      <h2>One library. Many portfolios.</h2>
+      <p class="section-lead">Master data stays private. You choose what each portfolio shows.</p>
+
+      <div class="flow">
+        <div class="flow-card master">
+          <span class="flow-label">Master data</span>
+          <h3>Your private library</h3>
+          <ul>
+            <li>Skills</li>
+            <li>Projects</li>
+            <li>Experience</li>
+            <li>Education</li>
+          </ul>
+          <p class="flow-note">Never public as a whole — only what you pick per portfolio.</p>
+        </div>
+
+        <div class="flow-arrow" aria-hidden="true">→</div>
+
+        <div class="flow-card portfolio">
+          <span class="flow-label">Portfolio</span>
+          <h3>Curated view</h3>
+          <ul>
+            <li>Toggle sections on/off</li>
+            <li>Pick items per section</li>
+            <li>Public or private</li>
+            <li>One marked <em>default ★</em></li>
+          </ul>
+        </div>
+
+        <div class="flow-arrow" aria-hidden="true">→</div>
+
+        <div class="flow-card live">
+          <span class="flow-label">Live URLs</span>
+          <h3>Zero extra config</h3>
+          <ul class="url-list">
+            <li><code>/</code> default portfolio</li>
+            <li><code>/nodejs</code> by slug</li>
+            <li><code>/r/abc…</code> resume link</li>
+            <li><code>/blog</code> on blog service</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps">
+      <h2>Get started in four steps</h2>
+      <ol class="step-grid">
+        <li>
+          <span class="step-num">1</span>
+          <h3>Fill master data</h3>
+          <p>Add skills, projects, jobs, and education in the dashboard.</p>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <h3>Create a portfolio</h3>
+          <p>Name it, set a slug, pick a theme.</p>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <h3>Curate content</h3>
+          <p>Toggle sections and select which items appear.</p>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <h3>Mark as default &amp; publish</h3>
+          <p>Enable public — visitors see your site at this domain root.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="privacy">
+      <h2>Private portfolios stay invisible</h2>
+      <p>
+        A public portfolio is only reachable if someone has the URL.
+        Private portfolios are not listed anywhere — no leaks, no hints they exist.
+      </p>
+    </section>
+
+    <section class="cta-block">
+      <img src="/static/images/foliyo-icon.svg" alt="" width="48" height="48" class="cta-icon">
+      <h2>Ready to publish?</h2>
+      <p>Open the dashboard, create your first portfolio, and set it as default.</p>
+      <a href="{{.DashboardURL}}" class="btn btn-primary btn-lg">Open dashboard</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Foliyo · your folio. your way. · <a href="https://github.com/foliyo-dev/foliyo">GitHub</a></p>
+  </footer>
+</body>
+</html>

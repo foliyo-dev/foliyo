@@ -1,0 +1,19 @@
+/**
+ * Foliyo brand tokens — single source for dashboard, landing, and product UI.
+ * Do not duplicate these values in app CSS; import this file instead.
+ */
+:root {
+  --color-primary: #534ab7;
+  --color-primary-hover: #4339a0;
+  --color-primary-light: #eeedfe;
+  --color-primary-muted: #7f77dd;
+  --color-text: #1a1a2e;
+  --color-muted: #888780;
+  --color-bg: #f8f7fc;
+  --color-surface: #ffffff;
+  --color-border: #e4e2ef;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius: 8px;
+}

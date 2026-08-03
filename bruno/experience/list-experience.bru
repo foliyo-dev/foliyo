@@ -1,0 +1,15 @@
+meta {
+  name: List Experience
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/experience
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

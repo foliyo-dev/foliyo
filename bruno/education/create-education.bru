@@ -1,0 +1,40 @@
+meta {
+  name: Create Education
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/education
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "institution": "Example University",
+    "degree": "B.Tech",
+    "field": "Computer Science",
+    "start_date": "2016-07",
+    "end_date": "2020-05",
+    "description": "",
+    "sort_order": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 || res.getStatus() === 200) {
+    const items = res.getBody();
+    if (Array.isArray(items) && items.length > 0) {
+      bru.setEnvVar("educationId", items[items.length - 1].id);
+    }
+  }
+}

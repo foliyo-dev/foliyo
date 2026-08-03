@@ -1,0 +1,39 @@
+meta {
+  name: Create Portfolio
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/portfolios
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Node.js Portfolio",
+    "slug": "nodejs",
+    "description": "Backend-focused work",
+    "theme_slug": "minimal",
+    "is_public": 1,
+    "sort_order": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 || res.getStatus() === 200) {
+    const items = res.getBody();
+    if (Array.isArray(items) && items.length > 0) {
+      bru.setEnvVar("portfolioId", items[items.length - 1].id);
+    }
+  }
+}
