@@ -15,16 +15,18 @@
 		portfolioPublicUrl,
 		portfolioThemes,
 		FREE_PORTFOLIO_LIMIT,
-		isProPlan,
 		parseApiError,
 		type Portfolio
 	} from '$lib/api/portfolios';
+	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
+	import { getPlan, isProPlan } from '$lib/api/plan';
 	import { user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
 	let items: Portfolio[] = [];
 	let loading = true;
 	let creating = false;
+	let pro = false;
 
 	let name = '';
 	let slug = '';
@@ -33,10 +35,17 @@
 	let isPublic = false;
 	let slugTouched = false;
 
-	$: pro = isProPlan($user?.plan);
 	$: atLimit = !pro && items.length >= FREE_PORTFOLIO_LIMIT;
 
-	onMount(load);
+	onMount(async () => {
+		try {
+			const plan = await getPlan();
+			pro = isProPlan(plan.plan);
+		} catch {
+			pro = isProPlan($user?.plan);
+		}
+		await load();
+	});
 
 	async function load() {
 		loading = true;
@@ -116,12 +125,10 @@
 />
 
 {#if atLimit}
-	<Card>
-		<p class="upgrade">
-			Free plan includes {FREE_PORTFOLIO_LIMIT} portfolio.
-			<strong>Upgrade to Pro</strong> for unlimited portfolios (different audiences, roles, or themes).
-		</p>
-	</Card>
+	<UpgradePrompt
+		title="Portfolio limit reached"
+		message={`Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
+	/>
 {/if}
 
 {#if !atLimit}
@@ -185,12 +192,6 @@
 	.section-title {
 		margin: 0 0 1rem;
 		font-size: 1rem;
-	}
-	.upgrade {
-		margin: 0;
-		font-size: 0.875rem;
-		color: var(--color-text);
-		line-height: 1.5;
 	}
 	.fields {
 		display: flex;

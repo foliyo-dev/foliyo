@@ -21,19 +21,20 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | GET, POST, PUT, DELETE | `/api/projects`, `/api/projects/:id` |
 | GET, POST, PUT, DELETE | `/api/experience`, `/api/experience/:id` |
 | GET, POST, PUT, DELETE | `/api/education`, `/api/education/:id` |
-| GET | `/api/resume/themes`, `/api/resume/preview`, `/api/resume/export` |
-| GET, PUT | `/api/settings` |
 | CRUD | `/api/portfolios`, `/api/portfolios/:id` |
 | CRUD | `/api/resumes`, `/api/resumes/:id` |
+| GET | `/api/resumes/:id/export` — Pro: printable HTML; Free: **402** + upgrade payload |
+| GET | `/api/plan` — plan, pricing, entitlements |
+| GET, PUT | `/api/settings` |
 
 ## Public (no auth)
 
 | Method | Path |
 |--------|------|
-| GET | `/` — portfolio home |
-| GET | `/projects` |
-| GET | `/resume` |
-| GET | `/r/:token` — shared resume link |
+| GET | `/` — default public portfolio |
+| GET | `/u/:handle`, `/u/:handle/:slug` |
+| GET | `/r/:token` — shared resume HTML |
+| GET | `/welcome` |
 
 ## Account (DPDP)
 

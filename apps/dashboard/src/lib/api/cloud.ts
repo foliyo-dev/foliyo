@@ -39,7 +39,8 @@ export type PlanInfo = {
 	billing_available: boolean;
 };
 
-export const getPlan = () => api<PlanInfo>('/plan');
+/** @deprecated Prefer `$lib/api/plan` — kept for SaaS account helpers. */
+export { getPlan } from './plan';
 
 export const requestExport = () => api<{ ok: boolean; message: string }>('/account/export');
 

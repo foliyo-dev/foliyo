@@ -1,9 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
+import type { Config } from "../config.js";
 import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
-
-const FREE_PORTFOLIO_LIMIT = 1;
+import {
+  FREE_PORTFOLIO_LIMIT,
+  getEffectiveUserPlan,
+  isProPlan,
+  upgradePayload,
+} from "../plan.js";
 
 const portfolioSchema = z.object({
   name: z.string().min(1),
@@ -101,16 +106,7 @@ function setContent(db: FoliyoDb, portfolioId: string, content: z.infer<typeof c
   }
 }
 
-function userPlan(db: FoliyoDb, userId: string): string {
-  const user = queryOne<{ plan: string }>(db, "SELECT plan FROM users WHERE id = ?", [userId]);
-  return (user?.plan ?? "free").toLowerCase();
-}
-
-function isProPlan(plan: string): boolean {
-  return plan === "pro" || plan === "lifetime" || plan === "selfhost";
-}
-
-export function portfoliosRoutes(db: FoliyoDb) {
+export function portfoliosRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
 
   r.get("/", (c) => {
@@ -121,18 +117,16 @@ export function portfoliosRoutes(db: FoliyoDb) {
 
   r.post("/", async (c) => {
     const userId = c.get("userId");
-    const plan = userPlan(db, userId);
+    const plan = getEffectiveUserPlan(db, userId, config);
     if (!isProPlan(plan)) {
       const existing = queryAll(db, "SELECT id FROM portfolios WHERE user_id = ?", [userId]);
       if (existing.length >= FREE_PORTFOLIO_LIMIT) {
         return c.json(
-          {
-            error: "portfolio_limit",
-            message: "Free plan includes 1 portfolio. Upgrade to Pro for unlimited portfolios.",
-            limit: FREE_PORTFOLIO_LIMIT,
-            upgrade: true,
-          },
-          403,
+          upgradePayload(
+            "portfolios",
+            "Free plan includes 1 portfolio. Upgrade to Pro for unlimited portfolios.",
+          ),
+          402,
         );
       }
     }

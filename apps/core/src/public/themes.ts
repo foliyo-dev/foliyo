@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Config } from "../config.js";
 import type { PublicPortfolio } from "./pages.js";
+import { effectivePlan, showFoliyoBranding } from "../plan.js";
 
 const PORTFOLIO_SLUGS = new Set(["minimal", "modern", "creative"]);
 const RESUME_SLUGS = new Set(["classic", "compact", "academic"]);
@@ -238,7 +239,7 @@ function documentShell(opts: {
 </html>`;
 }
 
-export function renderPortfolioHtml(data: PublicPortfolio, _config: Config): string {
+export function renderPortfolioHtml(data: PublicPortfolio, config: Config): string {
   const slug = normalizeSlug("portfolio", data.portfolio.theme_slug);
   const css = loadThemeCss("portfolio", slug);
   const name = esc(displayName(data));
@@ -246,8 +247,10 @@ export function renderPortfolioHtml(data: PublicPortfolio, _config: Config): str
     <a class="brand" href="/">Foliyo</a>
     ${data.handle ? `<a class="handle" href="/u/${esc(data.handle)}">@${esc(data.handle)}</a>` : ""}
   </nav>`;
-  const footer =
-    `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`;
+  const plan = effectivePlan(data.plan, config);
+  const footer = showFoliyoBranding(plan)
+    ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
+    : "";
 
   return documentShell({
     title: `${name} · Foliyo`,
@@ -262,19 +265,30 @@ export function renderPortfolioHtml(data: PublicPortfolio, _config: Config): str
 export function renderResumeHtml(
   data: PublicPortfolio,
   resume: ResumeMeta,
-  _config: Config,
+  config: Config,
 ): string {
   const slug = normalizeSlug("resume", resume.theme_slug);
   const css = loadThemeCss("resume", slug);
   const resumeTitle = esc(resume.name || `${displayName(data)} — Resume`);
-  const footer =
-    `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`;
+  const plan = effectivePlan(data.plan, config);
+  const footer = showFoliyoBranding(plan)
+    ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
+    : "";
+  const toolbar = `<div class="resume-toolbar no-print">
+    <button type="button" class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+    <span class="print-hint">Use your browser print dialog → Save as PDF</span>
+  </div>
+  <script>
+    if (new URLSearchParams(location.search).get("print") === "1") {
+      window.addEventListener("load", function () { window.print(); });
+    }
+  </script>`;
 
   return documentShell({
     title: resumeTitle,
     themeClass: `theme-resume theme-${slug}`,
     css,
-    body: `${heroHtml(data, "resume")}${sectionsHtml(data, "resume")}`,
+    body: `${toolbar}${heroHtml(data, "resume")}${sectionsHtml(data, "resume")}`,
     footer,
   });
 }

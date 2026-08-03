@@ -43,6 +43,7 @@
     "./config": "./src/config.ts",
     "./db": "./src/db.ts",
     "./migrate": "./src/migrate.ts",
+    "./plan": "./src/plan.ts",
     "./auth/password": "./src/auth/password.ts",
     "./auth/tokens": "./src/auth/tokens.ts",
     "./public/pages": "./src/public/pages.ts",

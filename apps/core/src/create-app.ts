@@ -61,8 +61,8 @@ export function createFoliyoApp(
   api.route("/education", educationRoutes(db));
   api.route("/certifications", certificationsRoutes(db));
   api.route("/languages", languagesRoutes(db));
-  api.route("/portfolios", portfoliosRoutes(db));
-  api.route("/resumes", resumesRoutes(db));
+  api.route("/portfolios", portfoliosRoutes(db, config));
+  api.route("/resumes", resumesRoutes(db, config));
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));
   api.route("/settings", settingsRoutes(db));

@@ -15,6 +15,8 @@ export type PublicPortfolio = {
   certifications: Record<string, unknown>[];
   languages: Record<string, unknown>[];
   handle: string;
+  /** Stored user plan (`free` | `pro` | …). Branding uses effective plan + config.mode. */
+  plan: string;
 };
 
 function handleFromEmail(email: string): string {
@@ -50,7 +52,11 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
 
   const userId = portfolio.user_id as string;
   const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
-  const user = queryOne<{ handle: string }>(db, "SELECT handle FROM users WHERE id = ?", [userId]);
+  const user = queryOne<{ handle: string; plan: string }>(
+    db,
+    "SELECT handle, plan FROM users WHERE id = ?",
+    [userId],
+  );
 
   const skillIds = queryAll<{ skill_id: string }>(
     db, "SELECT skill_id FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId],
@@ -91,6 +97,7 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
       portfolio.show_certifications === 1 ? fetchByIds("certifications", certificationIds) : [],
     languages: portfolio.show_languages === 1 ? fetchByIds("languages", languageIds) : [],
     handle: user?.handle ?? "",
+    plan: user?.plan ?? "free",
   };
 }
 

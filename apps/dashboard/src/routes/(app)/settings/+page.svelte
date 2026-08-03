@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import {
 		getSettings,
 		updateSettings,
@@ -12,14 +13,15 @@
 		resumeThemes,
 		type Settings
 	} from '$lib/api/settings';
+	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import { isSaas } from '$lib/config';
-	import { getPlan, requestDelete, requestExport } from '$lib/api/cloud';
+	import { requestDelete, requestExport } from '$lib/api/cloud';
+	import { user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
 	let loading = true;
 	let saving = false;
-	let plan = 'free';
-	let billingAvailable = false;
+	let planInfo: PlanInfo | null = null;
 	let accountBusy = false;
 	let settings: Settings = {
 		site_title: 'My Portfolio',
@@ -30,13 +32,15 @@
 		seo_keywords: ''
 	};
 
+	$: pro = isProPlan(planInfo?.plan ?? $user?.plan);
+
 	onMount(async () => {
 		try {
 			settings = await getSettings();
-			if (isSaas) {
-				const p = await getPlan();
-				plan = p.plan;
-				billingAvailable = p.billing_available;
+			try {
+				planInfo = await getPlan();
+			} catch {
+				planInfo = null;
 			}
 		} catch {
 			showToast('Failed to load settings', 'error');
@@ -90,11 +94,32 @@
 	}
 </script>
 
-<PageHeader title="Settings" description="Site title, themes, SEO, and custom domain." />
+<PageHeader title="Settings" description="Site title, themes, SEO, plan, and custom domain." />
 
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else}
+	<Card>
+		<h2 class="section-title">Plan</h2>
+		<p class="muted">
+			Current plan: <strong>{planInfo?.plan ?? $user?.plan ?? 'free'}</strong>
+			{#if planInfo?.entitlements}
+				· PDF {planInfo.entitlements.pdf_export ? 'on' : 'off'}
+				· Branding {planInfo.entitlements.remove_branding ? 'removed' : 'shown'}
+				· Portfolios {planInfo.entitlements.portfolios_unlimited ? 'unlimited' : `max ${planInfo.entitlements.portfolio_limit}`}
+			{/if}
+		</p>
+		{#if !pro}
+			<UpgradePrompt
+				title="Remove Foliyo branding"
+				message="Public portfolio and resume pages show “Made with Foliyo” on Free. Pro removes the badge."
+				pricing={planInfo?.pricing ?? null}
+			/>
+		{:else}
+			<p class="ok">Pro active — branding removed on public pages; PDF export unlocked.</p>
+		{/if}
+	</Card>
+
 	<Card>
 		<div class="fields">
 			<Input label="Site title" bind:value={settings.site_title} />
@@ -126,9 +151,10 @@
 	{#if isSaas}
 		<Card>
 			<h2 class="section-title">Account</h2>
-			<p class="muted">Plan: <strong>{plan}</strong></p>
-			{#if billingAvailable}
-				<p class="muted">Pro upgrade coming soon.</p>
+			{#if planInfo?.billing_available}
+				<p class="muted">Billing configured — Razorpay checkout coming soon.</p>
+			{:else}
+				<p class="muted">Hosted billing not configured yet.</p>
 			{/if}
 			<div class="actions account-actions">
 				<Button variant="ghost" disabled={accountBusy} on:click={exportData}>
@@ -145,6 +171,11 @@
 <style>
 	.muted {
 		color: var(--color-muted);
+	}
+	.ok {
+		margin: 0.75rem 0 0;
+		font-size: 0.875rem;
+		color: #166534;
 	}
 	.fields {
 		display: flex;

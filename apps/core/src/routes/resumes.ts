@@ -1,8 +1,12 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import type { AppEnv } from "../middleware/auth.js";
-import { queryAll, run, type FoliyoDb } from "../db.js";
 import { nanoid } from "nanoid";
+import type { AppEnv } from "../middleware/auth.js";
+import type { Config } from "../config.js";
+import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
+import { entitlementsFor, getEffectiveUserPlan, upgradePayload } from "../plan.js";
+import { loadPortfolioContent } from "../public/pages.js";
+import { renderResumeHtml } from "../public/themes.js";
 
 const resumeSchema = z.object({
   portfolio_id: z.string().min(1),
@@ -11,7 +15,7 @@ const resumeSchema = z.object({
   is_public: z.number().int().default(0),
 });
 
-export function resumesRoutes(db: FoliyoDb) {
+export function resumesRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
 
   r.get("/", (c) => {
@@ -62,6 +66,52 @@ export function resumesRoutes(db: FoliyoDb) {
       token, id, userId,
     ]);
     return c.json({ share_token: token });
+  });
+
+  /**
+   * PDF export gate. Free → 402 with upgrade payload.
+   * Pro → printable HTML interim until Chromium PDF (Phase B export engine).
+   */
+  r.get("/:id/export", (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+    const plan = getEffectiveUserPlan(db, userId, config);
+    const ents = entitlementsFor(plan);
+
+    if (!ents.pdf_export) {
+      return c.json(
+        upgradePayload(
+          "pdf_export",
+          "PDF export is a Pro feature (₹99/mo). Upgrade to download print-ready resumes.",
+        ),
+        402,
+      );
+    }
+
+    const resume = queryOne<{
+      id: string;
+      name: string;
+      theme_slug: string;
+      portfolio_id: string;
+      user_id: string;
+    }>(db, "SELECT * FROM resumes WHERE id = ? AND user_id = ?", [id, userId]);
+
+    if (!resume) return c.json({ error: "not found" }, 404);
+
+    const data = loadPortfolioContent(db, resume.portfolio_id);
+    if (!data) return c.json({ error: "portfolio not found" }, 404);
+
+    const html = renderResumeHtml(
+      data,
+      { name: resume.name, theme_slug: resume.theme_slug },
+      config,
+    );
+
+    const safeName = resume.name.replace(/[^\w\-]+/g, "_").slice(0, 64) || "resume";
+    c.header("Content-Type", "text/html; charset=utf-8");
+    c.header("Content-Disposition", `inline; filename="${safeName}.html"`);
+    c.header("X-Foliyo-Export", "html-interim");
+    return c.body(html);
   });
 
   return r;

@@ -17,8 +17,8 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | 1 | **Polished public themes** | Demo pages are HTML stubs; themes package must render real data | Done |
 | 2 | **Public resume page** (`/r/:token`) | Completes share loop without PDF | Done |
 | 3 | **Content write-up links** | “View more” on projects/experience → Foliyo *or* external blogs | Done |
-| 4 | **Plan gates + upgrade UX** | Portfolio limit exists; need PDF/custom gates + upgrade CTA that works | Next |
-| 5 | **PDF export (Pro)** | Primary paid trigger per execution plan | Critical path |
+| 4 | **Plan gates + upgrade UX** | Portfolio limit exists; need PDF/custom gates + upgrade CTA that works | Done (Razorpay next) |
+| 5 | **PDF export (Pro)** | Primary paid trigger per execution plan | Done (browser Print / Save as PDF on `/r/:token`) |
 | 6 | **Razorpay + webhooks** | Unlock Pro after payment | Critical path |
 | 7 | **Email verification + onboarding emails** | Required for hosted trust / DPDP consent path | Parallel |
 | 8 | **Landing pricing page** | Convert traffic; portfolio+resume message only | Parallel |
@@ -58,7 +58,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | PDF export | Missing |
 | Razorpay | Missing |
 | Email verification | Missing |
-| Plan middleware beyond portfolio create | Partial |
+| Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
 | File uploads | 501 stub |
 | DPDP export/delete/consent UX | Schema only |
 | Deno single-binary release | Untested |
@@ -97,12 +97,14 @@ Proof of work on resumes/portfolios without hosting posts yet.
 
 **Goal:** PDF click → upgrade → pay → unlock.
 
-- [ ] Plan middleware helper (`free` | `pro` | `lifetime`) shared by portfolio, PDF, branding
-- [ ] `GET /api/resumes/:id/export` → 402 for free with upgrade payload
-- [ ] Dashboard upgrade prompts (portfolio #2, PDF export, remove branding)
+- [x] Plan helper (`free` | `pro` | `lifetime` | `selfhost`) shared by portfolio, PDF, branding
+- [x] `GET /api/resumes/:id/export` → 402 for free with upgrade payload (Pro → printable HTML / share link)
+- [x] Dashboard upgrade prompts (portfolio #2, PDF export, remove branding)
+- [x] Browser **Print / Save as PDF** on public `/r/:token` (MVP PDF — no Chromium required)
 - [ ] Razorpay checkout + webhook → set `users.plan`
 - [ ] Lifetime ₹2999 offer flag for launch window
 - [ ] Pricing section on `foliyo-cloud/apps/landing`
+- [ ] Optional later: Chromium server-side PDF if one-click download is needed
 
 **Exit:** Test payment upgrades a free user; PDF works immediately after.
 
@@ -159,8 +161,7 @@ Only after activation metrics exist:
 ## Suggested near-term sprints
 
 ```
-Sprint N     Phase A — Theme wiring + public resume page + write-up links (done)
-Sprint N+1   Phase B — PDF stub + plan gates + upgrade CTAs
+Sprint N+1   Phase B — Plan gates + browser Print/PDF on share links (done)
 Sprint N+2   Phase B — Razorpay + pricing page
 Sprint N+3   Phase C — Email verify + onboarding polish
 Sprint N+4   Phase D — Binary + install smoke + DPDP minimum
