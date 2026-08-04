@@ -100,6 +100,7 @@
 		description = item.description;
 		articleUrl = item.article_url ?? '';
 		sortOrder = String(item.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -133,7 +134,7 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title="Experience"
+		title={editingId ? 'Edit role' : 'Experience'}
 		description="Work history — optional case-study / write-up links for resume deep dives."
 	/>
 

@@ -12,6 +12,7 @@
 		regenerateResumeToken,
 		resumeThemes,
 		resumeShareUrl,
+		downloadResumeFio,
 		type Resume
 	} from '$lib/api/resumes';
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
@@ -21,6 +22,7 @@
 	let portfolios: Portfolio[] = [];
 	let loading = true;
 	let saving = false;
+	let exportingId: string | null = null;
 	let editingId: string | null = null;
 
 	let name = '';
@@ -136,11 +138,23 @@
 			showToast(url, 'info');
 		}
 	}
+
+	async function downloadFio(r: Resume) {
+		exportingId = r.id;
+		try {
+			await downloadResumeFio(r.id, r.name);
+			showToast('Downloaded .fio package', 'success');
+		} catch {
+			showToast('Failed to export .fio', 'error');
+		} finally {
+			exportingId = null;
+		}
+	}
 </script>
 
 <PageHeader
-	title="Resume"
-	description="Shareable resume from a portfolio's curated content. Open the public link to Print / Save as PDF."
+	title={editingId ? 'Edit resume' : 'Resume'}
+	description="Shareable resume from a portfolio's curated content. Download a .fio package (Foliyo Resume Spec) or open the public link to Print / Save as PDF."
 />
 
 {#if portfolios.length === 0}
@@ -212,6 +226,13 @@
 						</div>
 						<div class="actions">
 							<Button variant="ghost" on:click={() => startEdit(r)}>Edit</Button>
+							<Button
+								variant="ghost"
+								disabled={exportingId === r.id}
+								on:click={() => downloadFio(r)}
+							>
+								{exportingId === r.id ? 'Exporting…' : 'Download .fio'}
+							</Button>
 							{#if r.is_public}
 								<Button variant="ghost" on:click={() => copyLink(r.share_token)}>Copy link</Button>
 								<Button variant="ghost" on:click={() => regenerate(r.id)}>Regenerate link</Button>

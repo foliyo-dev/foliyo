@@ -3,6 +3,10 @@
 	export let description = '';
 </script>
 
+<svelte:head>
+	<title>{title ? `${title} · Foliyo` : 'Foliyo'}</title>
+</svelte:head>
+
 <div class="page-header">
 	<h1>{title}</h1>
 	{#if description}<p>{description}</p>{/if}

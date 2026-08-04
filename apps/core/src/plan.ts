@@ -17,6 +17,8 @@ export type PlanEntitlements = {
   portfolios_unlimited: boolean;
   pdf_export: boolean;
   remove_branding: boolean;
+  /** Hosted Pro: AI resume → Foliyo Resume Spec draft (OpenRouter in cloud). */
+  ai_resume_import: boolean;
   portfolio_limit: number | null;
 };
 
@@ -125,6 +127,7 @@ export function entitlementsFor(plan: string | null | undefined): PlanEntitlemen
     portfolios_unlimited: paid,
     pdf_export: paid,
     remove_branding: paid,
+    ai_resume_import: paid,
     portfolio_limit: paid ? null : FREE_PORTFOLIO_LIMIT,
   };
 }

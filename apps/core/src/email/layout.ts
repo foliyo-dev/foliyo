@@ -1,8 +1,11 @@
 /** Shared HTML shell for Foliyo transactional email (table layout for clients). */
 
+/** Keep in sync with @foliyo/brand/tokens.css */
 const BRAND = {
   primary: "#534ab7",
   primaryHover: "#4339a0",
+  primaryMuted: "#7f77dd",
+  accent: "#e8c547",
   bg: "#f8f7fc",
   surface: "#ffffff",
   text: "#1a1a2e",

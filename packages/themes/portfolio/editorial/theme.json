@@ -1,0 +1,14 @@
+{
+  "name": "Editorial",
+  "slug": "editorial",
+  "description": "Magazine-like type hierarchy for writers, founders, and storytellers",
+  "colors": {
+    "primary": "#8b1e1e",
+    "background": "#faf7f2",
+    "text": "#1a1714"
+  },
+  "fonts": {
+    "heading": "Newsreader",
+    "body": "Schibsted Grotesk"
+  }
+}

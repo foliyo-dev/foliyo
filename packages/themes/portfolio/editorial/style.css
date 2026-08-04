@@ -1,0 +1,182 @@
+/* Foliyo portfolio theme: editorial — magazine type hierarchy, ink on cream */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap");
+
+:root {
+  --ink: #1a1714;
+  --muted: #6f675e;
+  --line: #ddd4c8;
+  --accent: #8b1e1e;
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --max: 42rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-editorial {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Schibsted Grotesk", system-ui, sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.theme-editorial .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 3px double var(--ink);
+  background: var(--surface);
+}
+
+.theme-editorial .topbar a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-editorial .topbar .handle { color: var(--accent); font-weight: 500; }
+
+.theme-editorial .page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 2.75rem 1.25rem 4rem;
+}
+
+.theme-editorial .hero {
+  display: flex;
+  gap: 1.35rem;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-editorial .avatar {
+  border-radius: 0;
+  object-fit: cover;
+  background: var(--line);
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+}
+
+.theme-editorial h1 {
+  margin: 0 0 0.45rem;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: clamp(2.1rem, 5vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.theme-editorial .headline {
+  margin: 0 0 0.9rem;
+  font-family: "Newsreader", Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+.theme-editorial .bio,
+.theme-editorial .desc {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  max-width: 34rem;
+}
+
+.theme-editorial .section { margin-top: 2.4rem; }
+
+.theme-editorial .section h2 {
+  margin: 0 0 1rem;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--ink);
+  border-top: 1px solid var(--ink);
+  padding-top: 0.55rem;
+}
+
+.theme-editorial .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  font-size: 0.95rem;
+}
+
+.theme-editorial .cards,
+.theme-editorial .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-editorial .cards li,
+.theme-editorial .timeline li {
+  padding: 0 0 1.35rem;
+  margin: 0 0 1.35rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-editorial .cards li:last-child,
+.theme-editorial .timeline li:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.theme-editorial .cards li strong,
+.theme-editorial .item-head strong {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.theme-editorial .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.theme-editorial .item-sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 0.2rem;
+  font-style: italic;
+  font-family: "Newsreader", Georgia, serif;
+}
+
+.theme-editorial .links { margin: 0.45rem 0 0; font-size: 0.875rem; }
+.theme-editorial .links a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.theme-editorial .links a:hover { border-bottom-color: var(--accent); }
+.theme-editorial .muted { color: var(--muted); font-size: 0.875rem; }
+
+.theme-editorial .site-footer {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  border-top: 3px double var(--line);
+  margin-top: 1rem;
+}
+
+.theme-editorial .site-footer a { color: var(--accent); }
+
+@media (max-width: 560px) {
+  .theme-editorial .hero { flex-direction: column; }
+}

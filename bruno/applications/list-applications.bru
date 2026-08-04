@@ -1,0 +1,15 @@
+meta {
+  name: List applications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/applications
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

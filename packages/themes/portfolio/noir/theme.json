@@ -1,0 +1,14 @@
+{
+  "name": "Noir",
+  "slug": "noir",
+  "description": "Dark, high-contrast portfolio with a muted gold accent",
+  "colors": {
+    "primary": "#d4a574",
+    "background": "#0f1115",
+    "text": "#e8e6e3"
+  },
+  "fonts": {
+    "heading": "Instrument Serif",
+    "body": "DM Sans"
+  }
+}

@@ -25,6 +25,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Cancel deletion · Foliyo</title>
+</svelte:head>
+
 <div class="auth-page">
 	<Card>
 		<h1>Cancel account deletion</h1>

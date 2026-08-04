@@ -18,9 +18,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 1rem 1.5rem;
+		height: 3.75rem;
+		padding: 0 1.5rem;
 		border-bottom: 1px solid var(--color-border);
 		background: var(--color-surface);
 		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 </style>

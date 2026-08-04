@@ -11,11 +11,13 @@
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "seed:ats": "tsx src/seed-ats-partner.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
     "bcryptjs": "^2.4.3",
+    "fflate": "^0.8.2",
     "hono": "^4.4.0",
     "meshql-access": "^0.2.6",
     "meshql-core": "^0.7.1",
@@ -52,6 +54,8 @@
     "./email/layout": "./src/email/layout.ts",
     "./public/pages": "./src/public/pages.ts",
     "./public/themes": "./src/public/themes.ts",
-    "./social/providers": "./src/social/providers.ts"
+    "./social/providers": "./src/social/providers.ts",
+    "./spec/resume": "./src/spec/resume.ts",
+    "./spec/fio": "./src/spec/fio.ts"
   }
 }

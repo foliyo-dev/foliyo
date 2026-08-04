@@ -100,6 +100,7 @@
 		noExpiry = !item.expires_at;
 		description = item.description;
 		sortOrder = String(item.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -133,7 +134,7 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title="Certifications"
+		title={editingId ? 'Edit certification' : 'Certifications'}
 		description="Credentials and licenses — select which ones appear on your public profile and resume."
 	/>
 

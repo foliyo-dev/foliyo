@@ -1,4 +1,6 @@
 import { api } from './client';
+import { get } from 'svelte/store';
+import { accessToken } from '$lib/stores/token';
 import { corePublicUrl } from './portfolios';
 
 export type Resume = {
@@ -20,8 +22,31 @@ export const deleteResume = (id: string) => api<void>(`/resumes/${id}`, { method
 export const regenerateResumeToken = (id: string) =>
 	api<{ share_token: string }>(`/resumes/${id}/regenerate-token`, { method: 'POST' });
 
-export const resumeThemes = ['classic', 'compact', 'academic'] as const;
+export const resumeThemes = ['classic', 'compact', 'academic', 'sidebar'] as const;
 
 export function resumeShareUrl(shareToken: string): string {
 	return corePublicUrl(`/r/${shareToken}`);
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+
+export async function downloadResumeFio(resumeId: string, filenameHint = 'resume'): Promise<void> {
+	const token = get(accessToken);
+	const res = await fetch(`${API_BASE}/resumes/${resumeId}/export.fio`, {
+		headers: token ? { Authorization: `Bearer ${token}` } : {}
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(text || res.statusText);
+	}
+	const blob = await res.blob();
+	const disposition = res.headers.get('Content-Disposition') ?? '';
+	const match = /filename="([^"]+)"/.exec(disposition);
+	const filename = match?.[1] ?? `${filenameHint.replace(/[^\w\-]+/g, '_')}.fio`;
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	a.click();
+	URL.revokeObjectURL(url);
 }

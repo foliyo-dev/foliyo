@@ -35,6 +35,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Verify email · Foliyo</title>
+</svelte:head>
+
 <div class="auth-page">
 	<Card>
 		{#if status === 'working'}

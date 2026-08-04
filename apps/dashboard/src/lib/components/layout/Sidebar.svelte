@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import Logo from '@foliyo/ui/Logo.svelte';
+  import { page } from '$app/state';
+  import { Logo } from '@foliyo/ui';
   import { logout } from '$lib/stores/auth';
+  import { isSaas } from '$lib/config';
 
   type NavItem = { href: string; label: string };
   type NavGroup = { label: string; items: NavItem[] };
 
-  const groups: NavGroup[] = [
+  /** Visible for all hosted users; free hit /import → upgrade (no upload). */
+  $: groups = [
     {
       label: '',
       items: [{ href: '/', label: 'Overview' }]
@@ -15,6 +17,7 @@
       label: 'My content',
       items: [
         { href: '/basics', label: 'Basics' },
+        ...(isSaas ? [{ href: '/import', label: 'Import resume' }] : []),
         { href: '/social', label: 'Social' },
         { href: '/skills', label: 'Skills' },
         { href: '/projects', label: 'Projects' },
@@ -28,14 +31,15 @@
       label: 'Publish',
       items: [
         { href: '/portfolios', label: 'Portfolios' },
-        { href: '/resume', label: 'Resume' }
+        { href: '/resume', label: 'Resume' },
+        { href: '/applications', label: 'Applications' }
       ]
     },
     {
       label: 'Account',
       items: [{ href: '/settings', label: 'Settings' }]
     }
-  ];
+  ] as NavGroup[];
 
   function isActive(href: string, pathname: string): boolean {
     if (href === '/') return pathname === '/';
@@ -50,7 +54,7 @@
 
 <aside class="sidebar">
   <div class="brand">
-    <Logo height={28} />
+    <Logo height={32} />
   </div>
   <nav>
     {#each groups as group}
@@ -61,7 +65,7 @@
         <ul>
           {#each group.items as item}
             <li>
-              <a href={item.href} class:active={isActive(item.href, $page.url.pathname)}>
+              <a href={item.href} class:active={isActive(item.href, page.url.pathname)}>
                 {item.label}
               </a>
             </li>
@@ -85,8 +89,13 @@
     flex-shrink: 0;
   }
   .brand {
-    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    height: 3.75rem;
+    /* Nudge left so the tile mark lines up with nav text (SVG has inset padding) */
+    padding: 0 1.5rem 0 calc(1.5rem - 0.175rem);
     border-bottom: 1px solid var(--color-border);
+    box-sizing: border-box;
   }
   nav {
     padding: 0.75rem 0;

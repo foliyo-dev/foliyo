@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.foliyo.dev/resume/v1",
+  "title": "Foliyo Resume Spec",
+  "description": "Portable structured resume document (foliyo/resume v0.1).",
+  "type": "object",
+  "required": ["$schema", "$version", "meta", "candidate"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://spec.foliyo.dev/resume/v1"
+    },
+    "$version": {
+      "type": "string",
+      "pattern": "^0\\.1\\.\\d+$",
+      "description": "Spec SemVer for this document instance."
+    },
+    "meta": {
+      "type": "object",
+      "required": ["generated_at", "generated_by"],
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": { "type": "string", "format": "date-time" },
+        "generated_by": { "type": "string", "minLength": 1 },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 of resume body excluding meta.content_hash and meta.integrity_token."
+        },
+        "integrity_token": {
+          "type": "string",
+          "description": "HMAC signature hex (also duplicated in signature.sig inside .fio)."
+        },
+        "share_token": { "type": ["string", "null"] },
+        "public_url": { "type": ["string", "null"], "format": "uri" },
+        "resume_name": { "type": ["string", "null"] },
+        "theme_slug": { "type": ["string", "null"] }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "headline": { "type": ["string", "null"] },
+        "bio": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "location": { "type": ["string", "null"] },
+        "avatar_url": { "type": ["string", "null"] },
+        "links": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Map of provider → URL/handle (github, linkedin, website, …)."
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "level": {
+            "type": ["string", "null"],
+            "enum": ["beginner", "intermediate", "advanced", "expert", null]
+          },
+          "category": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["company", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "company": { "type": "string" },
+          "role": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "start": { "type": ["string", "null"], "description": "YYYY-MM or YYYY-MM-DD" },
+          "end": { "type": ["string", "null"] },
+          "current": { "type": "boolean" },
+          "description": { "type": ["string", "null"] },
+          "url": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["institution"],
+        "additionalProperties": false,
+        "properties": {
+          "institution": { "type": "string" },
+          "degree": { "type": ["string", "null"] },
+          "field": { "type": ["string", "null"] },
+          "start": { "type": ["string", "null"] },
+          "end": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "url": { "type": ["string", "null"] },
+          "repo_url": { "type": ["string", "null"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "featured": { "type": "boolean" }
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "issuer": { "type": ["string", "null"] },
+          "credential_id": { "type": ["string", "null"] },
+          "credential_url": { "type": ["string", "null"] },
+          "issued_at": { "type": ["string", "null"] },
+          "expires_at": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["language"],
+        "additionalProperties": false,
+        "properties": {
+          "language": { "type": "string" },
+          "proficiency": {
+            "type": ["string", "null"],
+            "enum": ["native", "fluent", "conversational", "basic", null]
+          }
+        }
+      }
+    }
+  }
+}

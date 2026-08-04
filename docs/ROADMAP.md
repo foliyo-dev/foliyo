@@ -69,11 +69,11 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 
 ## Phase A — Publish loop polish (now → MVP core)
 
-**Goal:** Public portfolio + resume look credible with 3 themes each; work items can deep-link to write-ups.
+**Goal:** Public portfolio + resume look credible across roles; work items can deep-link to write-ups.
 
 - [x] Wire `packages/themes` into public render (TS builders + inlined CSS)
-- [x] Portfolio themes: minimal, modern, creative — skills, projects, experience, education, certifications, languages, Gravatar/avatar
-- [x] Resume public page `GET /r/:token` with classic / compact / academic
+- [x] Portfolio themes: minimal, modern, creative, noir, atelier, editorial — skills, projects, experience, education, certifications, languages, Gravatar/avatar
+- [x] Resume public page `GET /r/:token` with classic / compact / academic / sidebar
 - [x] Self-host root `/` shows default public portfolio
 - [x] “Made with Foliyo” badge on public pages (plan-gated removal later)
 - [ ] Empty section UX polish + mobile visual QA pass on demo seed
@@ -154,8 +154,26 @@ Only after activation metrics exist:
 - Resume analytics
 - Hindi pilot
 - GitHub import / ATS checker
+- **AI resume import** — deferred until Foliyo Resume Spec interchange is stable; import should emit `foliyo/resume` v1 JSON
 - MeshQL `@meshql/client` + access plugin hardening
 - Avatar upload (Gravatar remains fallback)
+
+### Foliyo Resume Spec (shipped foundation)
+
+- Spec docs: [`specs/resume/`](../specs/resume/) — schema, `.fio`, Status API
+- `GET /api/resumes/:id/export.fio` — signed ZIP export (all plans)
+- `GET|POST /v1/verify` — integrity verify
+- Dashboard **Applications** tracker (manual status)
+- `POST /v1/status/notify` — authenticated ATS webhook (seed partner via `seed-ats-partner.ts`)
+- First Indian ATS PoC — still open (BD + one integration)
+
+### AI resume import (hosted Pro)
+
+- Entitlement `ai_resume_import` on Pro / lifetime / selfhost
+- Cloud `POST /api/import/resume` — PDF or pasted text → OpenRouter → Foliyo Resume Spec draft (no auto-write)
+- Dashboard `/import` — review/select → save via library CRUD
+- Daily cap via `ai_import_usage` + `AI_IMPORT_DAILY_CAP` (default 5)
+- Env: `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`
 
 ---
 

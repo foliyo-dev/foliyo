@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Foliyo Resume Spec</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f4ef;
+        --ink: #1a1a1a;
+        --muted: #5c574f;
+        --accent: #0f6b4c;
+        --card: #fffdf9;
+        --line: #e4ddd2;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        background:
+          radial-gradient(1200px 600px at 10% -10%, #d9efe4 0%, transparent 55%),
+          radial-gradient(900px 500px at 100% 0%, #f0e6d8 0%, transparent 50%),
+          var(--bg);
+        color: var(--ink);
+        line-height: 1.55;
+      }
+      main {
+        max-width: 44rem;
+        margin: 0 auto;
+        padding: 3.5rem 1.25rem 5rem;
+      }
+      .brand {
+        font-size: 0.8rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-family: system-ui, sans-serif;
+        font-weight: 700;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        line-height: 1.15;
+        margin: 0.4rem 0 0.75rem;
+        font-weight: 600;
+      }
+      .lede {
+        font-size: 1.125rem;
+        color: var(--muted);
+        margin: 0 0 2rem;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1.25rem 1.35rem;
+        margin: 0 0 1rem;
+      }
+      h2 {
+        margin: 0 0 0.6rem;
+        font-size: 1.15rem;
+      }
+      p, li { color: var(--muted); }
+      code, .mono {
+        font-family: var(--mono);
+        font-size: 0.9em;
+      }
+      a { color: var(--accent); }
+      ul { padding-left: 1.2rem; margin: 0.4rem 0; }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        margin-top: 1.5rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.95rem;
+      }
+      .verify {
+        display: grid;
+        gap: 0.6rem;
+      }
+      input, button, textarea {
+        font: inherit;
+        font-family: system-ui, sans-serif;
+      }
+      input, textarea {
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      button {
+        justify-self: start;
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:hover { filter: brightness(1.05); }
+      #verify-result {
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        background: #f3f0ea;
+        border-radius: 8px;
+        padding: 0.75rem;
+        min-height: 3rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">Foliyo · Open Spec</div>
+      <h1>Foliyo Resume Spec</h1>
+      <p class="lede">
+        Structured, portable resumes — JSON data, <span class="mono">.fio</span> packages,
+        and optional ATS status updates. Hosted under <span class="mono">foliyo.dev</span>.
+      </p>
+
+      <section>
+        <h2>What it is</h2>
+        <ul>
+          <li><strong>Data spec</strong> — machine-readable resume JSON (no PDF parsing)</li>
+          <li><strong>File format</strong> — <span class="mono">.fio</span> ZIP with signature</li>
+          <li><strong>Status API</strong> — ATS notifies candidates of application progress</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Naming</h2>
+        <ul>
+          <li>Spec: Foliyo Resume Spec (<span class="mono">foliyo/resume</span> v0.1)</li>
+          <li>Extension: <span class="mono">.fio</span></li>
+          <li>Schema: <span class="mono">https://spec.foliyo.dev/resume/v1</span></li>
+        </ul>
+        <p>Unrelated to the FOLIO library services platform (folio.org).</p>
+      </section>
+
+      <section>
+        <h2>Verify a share token</h2>
+        <div class="verify">
+          <label>
+            Share token
+            <input id="token" placeholder="resume share_token" autocomplete="off" />
+          </label>
+          <label>
+            API origin (optional)
+            <input id="origin" placeholder="http://localhost:8080" />
+          </label>
+          <button type="button" id="verify-btn">Verify</button>
+          <pre id="verify-result">Paste a public resume share token to verify.</pre>
+        </div>
+      </section>
+
+      <div class="links">
+        <a href="./schema/v1.json">JSON Schema</a>
+        <a href="./examples/sample.json">Sample document</a>
+        <a href="./STATUS.md">Status API</a>
+        <a href="./README.md">Full README</a>
+        <a href="https://foliyo.dev">foliyo.dev</a>
+      </div>
+    </main>
+    <script>
+      const btn = document.getElementById("verify-btn");
+      const out = document.getElementById("verify-result");
+      btn.addEventListener("click", async () => {
+        const token = document.getElementById("token").value.trim();
+        const origin = (document.getElementById("origin").value.trim() || window.location.origin).replace(/\/$/, "");
+        if (!token) {
+          out.textContent = "Enter a share token.";
+          return;
+        }
+        out.textContent = "Checking…";
+        try {
+          const res = await fetch(origin + "/v1/verify/" + encodeURIComponent(token));
+          const body = await res.json();
+          out.textContent = JSON.stringify(body, null, 2);
+        } catch (err) {
+          out.textContent = String(err);
+        }
+      });
+    </script>
+  </body>
+</html>

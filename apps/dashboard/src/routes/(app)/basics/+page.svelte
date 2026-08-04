@@ -8,6 +8,7 @@
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import { getProfile, updateProfile, type Profile } from '$lib/api/profile';
 	import { showToast } from '$lib/stores/toast';
+	import { isSaas } from '$lib/config';
 
 	let shell: EditorWithPreview;
 	let loading = true;
@@ -25,6 +26,9 @@
 		linkedin: '',
 		twitter: ''
 	};
+
+	$: emptyBasics = !profile.name?.trim() || !profile.headline?.trim();
+	$: showImportCta = isSaas && emptyBasics;
 
 	onMount(async () => {
 		try {
@@ -66,6 +70,15 @@
 	{#if loading}
 		<p class="muted">Loading…</p>
 	{:else}
+		{#if showImportCta}
+			<Card>
+				<p class="import-cta">
+					Skip the blank form —
+					<a href="/import">import a resume with AI</a>
+					(Pro) to fill basics and your library from a PDF or pasted text.
+				</p>
+			</Card>
+		{/if}
 		<Card>
 			<div class="fields">
 				<Input label="Name" bind:value={profile.name} placeholder="Jane Doe" />
@@ -103,6 +116,14 @@
 		margin: 1rem 0 0;
 		font-size: 0.875rem;
 		color: var(--color-muted);
+	}
+	.import-cta {
+		margin: 0;
+		font-size: 0.9375rem;
+		color: var(--color-muted);
+	}
+	.import-cta a {
+		font-weight: 600;
 	}
 	.actions {
 		margin-top: 1.5rem;

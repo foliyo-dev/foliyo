@@ -1,0 +1,78 @@
+{
+  "$schema": "https://spec.foliyo.dev/resume/v1",
+  "$version": "0.1.0",
+  "meta": {
+    "generated_at": "2026-06-12T10:00:00.000Z",
+    "generated_by": "foliyo",
+    "content_hash": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "integrity_token": "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+    "share_token": "r_abc123xyz",
+    "public_url": "https://foliyo.dev/r/r_abc123xyz",
+    "resume_name": "Node.js Pro",
+    "theme_slug": "classic"
+  },
+  "candidate": {
+    "name": "John Doe",
+    "headline": "Senior Node.js Developer",
+    "bio": "Backend engineer focused on APIs and developer tools.",
+    "email": "john@example.com",
+    "location": "Bengaluru, India",
+    "avatar_url": null,
+    "links": {
+      "github": "https://github.com/john",
+      "linkedin": "https://linkedin.com/in/john",
+      "website": "https://johndoe.com"
+    }
+  },
+  "skills": [
+    { "name": "Node.js", "level": "expert", "category": "languages" },
+    { "name": "PostgreSQL", "level": "advanced", "category": "databases" }
+  ],
+  "experience": [
+    {
+      "company": "Acme Corp",
+      "role": "Senior Developer",
+      "location": "Bengaluru",
+      "start": "2022-03",
+      "end": null,
+      "current": true,
+      "description": "Built internal platform APIs.",
+      "url": null
+    }
+  ],
+  "education": [
+    {
+      "institution": "Example University",
+      "degree": "B.Tech",
+      "field": "Computer Science",
+      "start": "2016-08",
+      "end": "2020-05",
+      "description": null
+    }
+  ],
+  "projects": [
+    {
+      "title": "Open CLI",
+      "description": "Developer tooling for local workflows.",
+      "url": "https://example.com",
+      "repo_url": "https://github.com/john/open-cli",
+      "tags": ["typescript", "cli"],
+      "featured": true
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Solutions Architect",
+      "issuer": "Amazon",
+      "credential_id": "ABC-123",
+      "credential_url": null,
+      "issued_at": "2024-01",
+      "expires_at": null,
+      "description": null
+    }
+  ],
+  "languages": [
+    { "language": "English", "proficiency": "fluent" },
+    { "language": "Hindi", "proficiency": "native" }
+  ]
+}

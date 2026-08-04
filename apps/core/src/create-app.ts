@@ -15,10 +15,13 @@ import { languagesRoutes } from "./routes/languages.js";
 import { socialLinksRoutes } from "./routes/social-links.js";
 import { portfoliosRoutes } from "./routes/portfolios.js";
 import { resumesRoutes } from "./routes/resumes.js";
+import { applicationsRoutes } from "./routes/applications.js";
 import { blogRoutes } from "./routes/blog.js";
 import { settingsRoutes, uploadRoutes } from "./routes/settings.js";
 import { previewRoutes } from "./routes/preview.js";
 import { publicRoutes } from "./routes/public.js";
+import { specRoutes } from "./routes/spec.js";
+import { statusNotifyRoutes } from "./routes/status-notify.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 export type CreateFoliyoAppOptions = {
@@ -53,6 +56,9 @@ export function createFoliyoApp(
 
   app.route("/", createMeshRouter(db));
   app.route("/", publicRoutes(db, config));
+  // Foliyo Resume Spec — public verify + ATS status notify (HMAC + API key)
+  app.route("/v1", specRoutes(db, config));
+  app.route("/v1", statusNotifyRoutes(db, config));
 
   // SaaS public routes (signup, verify, handle check) before core /api/auth
   // so hosted signup is not shadowed by OSS auth routes.
@@ -72,6 +78,7 @@ export function createFoliyoApp(
   api.route("/social-links", socialLinksRoutes(db));
   api.route("/portfolios", portfoliosRoutes(db, config));
   api.route("/resumes", resumesRoutes(db, config));
+  api.route("/applications", applicationsRoutes(db));
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));
   api.route("/settings", settingsRoutes(db));

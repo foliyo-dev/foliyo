@@ -78,6 +78,7 @@
 		name = item.name;
 		proficiency = item.proficiency;
 		sortOrder = String(item.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -111,7 +112,7 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title="Languages"
+		title={editingId ? 'Edit language' : 'Languages'}
 		description="Spoken and written languages for your public profile and resume."
 	/>
 

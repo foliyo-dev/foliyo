@@ -1,0 +1,228 @@
+/* Foliyo portfolio theme: atelier — gallery-like, quiet chrome, visual-first */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@400;500;600&display=swap");
+
+:root {
+  --ink: #1c1a17;
+  --muted: #7a7368;
+  --line: #e4ddd2;
+  --accent: #3d4a3f;
+  --bg: #f7f4ef;
+  --surface: #fffcf8;
+  --max: 58rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-atelier {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, #efeae2 0%, var(--bg) 18%, var(--bg) 100%);
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.theme-atelier .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.75rem;
+  background: transparent;
+}
+
+.theme-atelier .topbar a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.theme-atelier .topbar .brand {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.theme-atelier .topbar .handle { color: var(--muted); }
+
+.theme-atelier .page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 4.5rem;
+}
+
+.theme-atelier .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.25rem;
+  margin-bottom: 3.5rem;
+  padding: 1rem 0 2.5rem;
+}
+
+.theme-atelier .avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 2px;
+  object-fit: cover;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.theme-atelier h1 {
+  margin: 0 0 0.4rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.theme-atelier .headline {
+  margin: 0 0 0.85rem;
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.theme-atelier .bio,
+.theme-atelier .desc {
+  margin: 0.5rem auto 0;
+  color: var(--muted);
+  max-width: 32rem;
+  font-size: 1.05rem;
+}
+
+.theme-atelier .section { margin-top: 2.75rem; }
+
+.theme-atelier .section h2 {
+  margin: 0 0 1.35rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.65rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--ink);
+}
+
+.theme-atelier .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.theme-atelier .tags li {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.theme-atelier .cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.25rem;
+}
+
+.theme-atelier .cards li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0;
+  min-height: 14rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.theme-atelier .cards li::before {
+  content: "";
+  display: block;
+  height: 8.5rem;
+  background:
+    linear-gradient(145deg, #d9d2c6 0%, #ebe4d8 45%, #cfc6b8 100%);
+}
+
+.theme-atelier .cards li strong {
+  display: block;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  padding: 1rem 1.15rem 0.35rem;
+}
+
+.theme-atelier .cards li p {
+  margin: 0;
+  padding: 0 1.15rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  flex: 1;
+}
+
+.theme-atelier .cards li .links {
+  margin: 0;
+  padding: 0.85rem 1.15rem 1.1rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.theme-atelier .timeline {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 36rem;
+}
+
+.theme-atelier .timeline li {
+  padding: 0 0 1.5rem;
+  margin: 0 0 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-atelier .timeline li:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.theme-atelier .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.theme-atelier .item-head strong {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.theme-atelier .item-sub { color: var(--muted); font-size: 0.9375rem; margin-top: 0.2rem; }
+
+.theme-atelier .links a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.theme-atelier .links a:hover { text-decoration: underline; }
+.theme-atelier .muted { color: var(--muted); font-size: 0.875rem; }
+
+.theme-atelier .site-footer {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.theme-atelier .site-footer a { color: var(--accent); }
+
+.theme-atelier .social-links {
+  justify-content: center;
+}

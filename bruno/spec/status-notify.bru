@@ -1,0 +1,36 @@
+meta {
+  name: Status notify
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/status/notify
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{atsApiKey}}
+  X-Foliyo-Signature: {{atsSignature}}
+  X-Foliyo-Timestamp: {{atsTimestamp}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "resume_token": "{{shareToken}}",
+    "event": "status_changed",
+    "status": "viewed",
+    "company": "Acme Corp",
+    "role": "Senior Node.js Engineer",
+    "job_id": "JOB_4521",
+    "ats": "dev-ats",
+    "timestamp": "2026-06-13T09:00:00.000Z"
+  }
+}
+
+docs {
+  ATS Status API — requires partner API key + HMAC of raw body.
+  Seed a partner with: `npx tsx src/seed-ats-partner.ts`
+}

@@ -87,6 +87,7 @@
 		label = item.label ?? '';
 		value = item.value;
 		sortOrder = String(item.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -125,7 +126,7 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title="Social"
+		title={editingId ? 'Edit link' : 'Social'}
 		description="Profiles and sites shown on your public folio — pick a common network or add any URL."
 	/>
 

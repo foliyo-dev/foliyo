@@ -14,5 +14,12 @@ export const getSettings = () => api<Settings>('/settings');
 export const updateSettings = (data: Partial<Settings>) =>
 	api<Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) });
 
-export const portfolioThemes = ['minimal', 'modern', 'creative'] as const;
-export const resumeThemes = ['classic', 'compact', 'academic'] as const;
+export const portfolioThemes = [
+	'minimal',
+	'modern',
+	'creative',
+	'noir',
+	'atelier',
+	'editorial'
+] as const;
+export const resumeThemes = ['classic', 'compact', 'academic', 'sidebar'] as const;

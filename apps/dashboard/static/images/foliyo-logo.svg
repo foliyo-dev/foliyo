@@ -1,9 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" width="160" height="40">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 44" width="168" height="44">
   <title>Foliyo</title>
-  <desc>Foliyo logo — document lines mark with wordmark</desc>
-  <rect x="0" y="4" width="32" height="32" rx="8" fill="#534AB7"/>
-  <rect x="6" y="11" width="20" height="3" rx="1.5" fill="white"/>
-  <rect x="6" y="18" width="13" height="3" rx="1.5" fill="white"/>
-  <rect x="6" y="25" width="16" height="3" rx="1.5" fill="white"/>
-  <text x="42" y="26" font-family="Inter,Geist,system-ui,sans-serif" font-size="20" font-weight="400" letter-spacing="-0.4" fill="#1a1a2e">foliyo</text>
+  <desc>Foliyo logo — tile mark with wordmark (light backgrounds)</desc>
+  <rect x="4" y="4" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="17" y="4" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="30" y="4" width="10" height="11" rx="2.5" fill="#2a2760" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="4" y="17" width="11" height="11" rx="2.5" fill="#2a2760" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="17" y="17" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="30" y="17" width="10" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="4" y="30" width="11" height="10" rx="2.5" fill="#534AB7"/>
+  <rect x="17" y="30" width="24" height="10" rx="2.5" fill="#E8C547"/>
+  <text x="56" y="28" font-family="Inter,Geist,system-ui,sans-serif" font-size="22" font-weight="500" letter-spacing="-0.6" fill="#1a1a2e">foliyo</text>
 </svg>

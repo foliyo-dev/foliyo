@@ -1,0 +1,236 @@
+/* Foliyo resume theme: sidebar — two-column with left rail */
+@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap");
+
+:root {
+  --ink: #15202b;
+  --muted: #5b6b7c;
+  --line: #d5dde5;
+  --accent: #1f3a4d;
+  --rail: #1f3a4d;
+  --rail-text: #e8eef3;
+  --rail-muted: #a8b8c6;
+  --bg: #f4f6f8;
+  --max: 54rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-sidebar {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding-bottom: 5rem;
+}
+
+.theme-sidebar .page {
+  max-width: var(--max);
+  margin: 1.5rem auto;
+  padding: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.theme-sidebar .resume-layout {
+  display: grid;
+  grid-template-columns: 15.5rem 1fr;
+  min-height: 28rem;
+}
+
+.theme-sidebar .resume-sidebar {
+  background: var(--rail);
+  color: var(--rail-text);
+  padding: 1.75rem 1.25rem 2rem;
+}
+
+.theme-sidebar .resume-main {
+  padding: 1.75rem 1.6rem 2rem;
+}
+
+.theme-sidebar .hero {
+  margin-bottom: 1.25rem;
+}
+
+.theme-sidebar h1 {
+  margin: 0;
+  font-family: "Libre Franklin", system-ui, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.theme-sidebar .headline {
+  margin: 0.45rem 0 0;
+  color: var(--rail-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.theme-sidebar .contact {
+  margin: 0 0 1.35rem;
+  font-size: 0.8rem;
+  color: var(--rail-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.theme-sidebar .contact a {
+  color: #fff;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.theme-sidebar .contact a:hover { text-decoration: underline; }
+
+.theme-sidebar .resume-sidebar .section { margin-top: 1.25rem; }
+
+.theme-sidebar .resume-sidebar .section h2 {
+  margin: 0 0 0.55rem;
+  font-family: "Libre Franklin", system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rail-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  padding-bottom: 0.3rem;
+}
+
+.theme-sidebar .resume-sidebar .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.theme-sidebar .resume-sidebar .tags li {
+  font-size: 0.85rem;
+  color: var(--rail-text);
+}
+
+.theme-sidebar .resume-sidebar .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-sidebar .resume-sidebar .timeline li {
+  margin-bottom: 0.65rem;
+  font-size: 0.85rem;
+}
+
+.theme-sidebar .resume-sidebar .timeline a { color: #fff; }
+.theme-sidebar .resume-sidebar .muted { color: var(--rail-muted); font-size: 0.8rem; }
+
+.theme-sidebar .resume-sidebar .social-links {
+  margin-top: 0.85rem;
+}
+
+.theme-sidebar .resume-sidebar .social-links a {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--rail-text);
+}
+
+.theme-sidebar .resume-sidebar .social-links a:hover {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-sidebar .resume-main .section { margin-top: 1.35rem; }
+.theme-sidebar .resume-main .section:first-child { margin-top: 0; }
+
+.theme-sidebar .resume-main .section h2 {
+  margin: 0 0 0.7rem;
+  font-family: "Libre Franklin", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.25rem;
+}
+
+.theme-sidebar .cards,
+.theme-sidebar .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-sidebar .cards li,
+.theme-sidebar .timeline li {
+  margin-bottom: 0.95rem;
+}
+
+.theme-sidebar .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.theme-sidebar .item-head strong {
+  font-family: "Libre Franklin", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.theme-sidebar .item-sub { color: var(--muted); font-size: 0.9rem; }
+.theme-sidebar .links { margin: 0.25rem 0 0; font-size: 0.85rem; }
+.theme-sidebar .links a { color: var(--accent); }
+.theme-sidebar .muted { color: var(--muted); font-size: 0.85rem; }
+
+.theme-sidebar .site-footer {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.theme-sidebar .site-footer a { color: var(--accent); }
+
+.theme-sidebar .print-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 50;
+}
+
+.theme-sidebar .print-btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.7rem 1.1rem;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(31, 58, 77, 0.28);
+}
+
+.theme-sidebar .print-btn:hover { filter: brightness(1.08); }
+
+@media (max-width: 720px) {
+  .theme-sidebar .resume-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body.theme-sidebar { background: #fff; }
+  .theme-sidebar .page { margin: 0; border: 0; max-width: none; }
+  .theme-sidebar .resume-layout { grid-template-columns: 14rem 1fr; }
+  .theme-sidebar .site-footer,
+  .theme-sidebar .no-print { display: none !important; }
+}

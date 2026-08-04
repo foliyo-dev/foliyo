@@ -78,6 +78,7 @@
 		level = skill.level as (typeof levels)[number];
 		category = skill.category;
 		sortOrder = String(skill.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -112,7 +113,10 @@
 </script>
 
 <EditorWithPreview bind:this={shell}>
-	<PageHeader title="Skills" description="Master list of skills — attach them to portfolios later." />
+	<PageHeader
+		title={editingId ? 'Edit skill' : 'Skills'}
+		description="Master list of skills — attach them to portfolios later."
+	/>
 
 	<Card>
 		<h2 class="section-title">{editingId ? 'Edit skill' : 'Add skill'}</h2>

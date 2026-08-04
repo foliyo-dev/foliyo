@@ -96,6 +96,7 @@
 		present = !item.end_date;
 		description = item.description;
 		sortOrder = String(item.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -128,7 +129,10 @@
 </script>
 
 <EditorWithPreview bind:this={shell}>
-	<PageHeader title="Education" description="Degrees and schools — shared with your public profile and resume." />
+	<PageHeader
+		title={editingId ? 'Edit education' : 'Education'}
+		description="Degrees and schools — shared with your public profile and resume."
+	/>
 
 	<Card>
 	<h2 class="section-title">{editingId ? 'Edit education' : 'Add education'}</h2>

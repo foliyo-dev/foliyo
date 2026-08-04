@@ -1,0 +1,14 @@
+{
+  "name": "Sidebar",
+  "slug": "sidebar",
+  "description": "Two-column resume with contact and skills in a left rail",
+  "colors": {
+    "primary": "#1f3a4d",
+    "background": "#f4f6f8",
+    "text": "#15202b"
+  },
+  "fonts": {
+    "heading": "Libre Franklin",
+    "body": "Source Sans 3"
+  }
+}

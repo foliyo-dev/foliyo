@@ -118,6 +118,7 @@
 		tagsInput = tagsFromJson(project.tags);
 		featured = project.featured === 1;
 		sortOrder = String(project.sort_order);
+		shell?.scrollToForm();
 	}
 
 	async function saveEdit() {
@@ -151,7 +152,7 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title="Projects"
+		title={editingId ? 'Edit project' : 'Projects'}
 		description="Showcase your work — demos, repos, and write-ups (Foliyo or any external blog)."
 	/>
 

@@ -1,0 +1,20 @@
+meta {
+  name: Export .fio
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/resumes/{{resumeId}}/export.fio
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+docs {
+  Downloads a Foliyo Resume Spec `.fio` ZIP (manifest + resume.json + signature.sig).
+  Available on all plans — PDF HTML export remains Pro at /export.
+}

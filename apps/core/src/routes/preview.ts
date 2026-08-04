@@ -5,7 +5,14 @@ import type { FoliyoDb } from "../db.js";
 import { loadLibraryPreview } from "../public/pages.js";
 import { renderPortfolioHtml } from "../public/themes.js";
 
-const THEME_SLUGS = new Set(["minimal", "modern", "creative"]);
+const THEME_SLUGS = new Set([
+  "minimal",
+  "modern",
+  "creative",
+  "noir",
+  "atelier",
+  "editorial",
+]);
 
 /** Authenticated HTML preview of the full content library as a synthetic portfolio. */
 export function previewRoutes(db: FoliyoDb, config: Config) {

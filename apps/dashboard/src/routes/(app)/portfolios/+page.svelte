@@ -66,8 +66,18 @@
 	let showCertifications = true;
 	let showLanguages = true;
 
+	let showCreate = false;
+
 	$: atLimit = !pro && items.length >= FREE_PORTFOLIO_LIMIT;
 	$: overLimit = !pro && items.length > FREE_PORTFOLIO_LIMIT;
+	$: selectedCount =
+		selectedSkills.size +
+		selectedProjects.size +
+		selectedExperience.size +
+		selectedEducation.size +
+		selectedCertifications.size +
+		selectedLanguages.size;
+	$: showCreateForm = showCreate || (!loading && items.length === 0);
 
 	onMount(async () => {
 		try {
@@ -179,6 +189,7 @@
 				});
 			}
 			resetForm();
+			showCreate = false;
 			showToast('Portfolio created', 'success');
 			if (created) await goto(`/portfolios/${created.id}`);
 		} catch (err) {
@@ -233,59 +244,10 @@
 	/>
 {/if}
 
-{#if !atLimit}
-	<Card>
-		<h2 class="section-title">New portfolio</h2>
-		<div class="fields">
-			<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
-			<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-			<Textarea label="Description" bind:value={description} rows={2} />
-			<label class="field">
-				<span class="label">Theme</span>
-				<select bind:value={themeSlug}>
-					{#each portfolioThemes as t}
-						<option value={t}>{t}</option>
-					{/each}
-				</select>
-			</label>
-			<label class="checkbox">
-				<input type="checkbox" bind:checked={isPublic} />
-				Publish publicly
-			</label>
-		</div>
-
-		<PortfolioLibraryPicker
-			{skills}
-			{projects}
-			{experiences}
-			{educations}
-			{certifications}
-			{languages}
-			bind:selectedSkills
-			bind:selectedProjects
-			bind:selectedExperience
-			bind:selectedEducation
-			bind:selectedCertifications
-			bind:selectedLanguages
-			bind:showSkills
-			bind:showProjects
-			bind:showExperience
-			bind:showEducation
-			bind:showCertifications
-			bind:showLanguages
-			hint="Choose which library items this portfolio includes. Everything is selected by default."
-		/>
-
-		<div class="form-actions">
-			<Button disabled={creating} on:click={add}>{creating ? 'Creating…' : 'Create portfolio'}</Button>
-		</div>
-	</Card>
-{/if}
-
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else if items.length === 0}
-	<p class="muted empty">No portfolios yet — create one above.</p>
+	<p class="muted empty">No portfolios yet — create your first one below.</p>
 {:else}
 	<ul class="list">
 		{#each items as p (p.id)}
@@ -315,16 +277,118 @@
 	</ul>
 {/if}
 
+{#if !atLimit}
+	{#if !showCreateForm}
+		<div class="create-cta">
+			<Button on:click={() => (showCreate = true)}>New portfolio</Button>
+		</div>
+	{:else}
+		<Card>
+			<div class="create-head">
+				<h2 class="section-title">New portfolio</h2>
+				{#if items.length > 0}
+					<Button variant="ghost" on:click={() => (showCreate = false)}>Cancel</Button>
+				{/if}
+			</div>
+
+			<details class="step" open>
+				<summary>1. Details</summary>
+				<div class="fields">
+					<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
+					<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+					<Textarea label="Description" bind:value={description} rows={2} />
+					<label class="field">
+						<span class="label">Theme</span>
+						<select bind:value={themeSlug}>
+							{#each portfolioThemes as t}
+								<option value={t}>{t}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={isPublic} />
+						Publish publicly
+					</label>
+				</div>
+			</details>
+
+			<details class="step" open>
+				<summary>2. Library content <span class="step-meta">{selectedCount} selected</span></summary>
+				<PortfolioLibraryPicker
+					{skills}
+					{projects}
+					{experiences}
+					{educations}
+					{certifications}
+					{languages}
+					bind:selectedSkills
+					bind:selectedProjects
+					bind:selectedExperience
+					bind:selectedEducation
+					bind:selectedCertifications
+					bind:selectedLanguages
+					bind:showSkills
+					bind:showProjects
+					bind:showExperience
+					bind:showEducation
+					bind:showCertifications
+					bind:showLanguages
+					hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim."
+				/>
+			</details>
+
+			<div class="form-actions">
+				<Button disabled={creating} on:click={add}
+					>{creating ? 'Creating…' : 'Create portfolio'}</Button
+				>
+			</div>
+		</Card>
+	{/if}
+{/if}
+
 <style>
 	.section-title {
-		margin: 0 0 1rem;
+		margin: 0;
 		font-size: 1rem;
+	}
+	.create-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	.create-cta {
+		margin-top: 1.25rem;
+	}
+	.step {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		padding: 0.65rem 0.85rem;
+		margin-bottom: 0.75rem;
+		background: var(--color-bg, transparent);
+	}
+	.step summary {
+		cursor: pointer;
+		font-weight: 600;
+		font-size: 0.9rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.step-meta {
+		font-weight: 500;
+		font-size: 0.75rem;
+		color: var(--color-muted);
+	}
+	.step[open] summary {
+		margin-bottom: 0.75rem;
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-		margin-bottom: 1rem;
+		margin-bottom: 0.25rem;
 	}
 	.field {
 		display: flex;

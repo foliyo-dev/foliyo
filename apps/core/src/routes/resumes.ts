@@ -7,6 +7,7 @@ import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
 import { entitlementsFor, getEffectiveUserPlan, upgradePayload } from "../plan.js";
 import { loadPortfolioContent } from "../public/pages.js";
 import { renderResumeHtml } from "../public/themes.js";
+import { buildFioFromPortfolio, FIO_MIME } from "../spec/fio.js";
 
 const resumeSchema = z.object({
   portfolio_id: z.string().min(1),
@@ -66,6 +67,46 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
       token, id, userId,
     ]);
     return c.json({ share_token: token });
+  });
+
+  /**
+   * Foliyo Resume Spec `.fio` export — available on all plans (growth lever).
+   * PDF/HTML print export remains Pro via GET /:id/export.
+   */
+  r.get("/:id/export.fio", (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+
+    const resume = queryOne<{
+      id: string;
+      name: string;
+      theme_slug: string;
+      portfolio_id: string;
+      share_token: string;
+      is_public: number;
+    }>(db, "SELECT * FROM resumes WHERE id = ? AND user_id = ?", [id, userId]);
+
+    if (!resume) return c.json({ error: "not found" }, 404);
+
+    const data = loadPortfolioContent(db, resume.portfolio_id);
+    if (!data) return c.json({ error: "portfolio not found" }, 404);
+
+    const fio = buildFioFromPortfolio(
+      data,
+      {
+        name: resume.name,
+        theme_slug: resume.theme_slug,
+        share_token: resume.share_token,
+        is_public: resume.is_public,
+      },
+      { siteUrl: config.siteUrl, integritySecret: config.integritySecret },
+    );
+
+    c.header("Content-Type", FIO_MIME);
+    c.header("Content-Disposition", `attachment; filename="${fio.filename}"`);
+    c.header("X-Foliyo-Export", "fio");
+    c.header("X-Foliyo-Content-Hash", fio.manifest.content_hash);
+    return c.body(Buffer.from(fio.bytes));
   });
 
   /**

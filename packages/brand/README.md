@@ -22,4 +22,14 @@ import logoUrl from '@foliyo/brand/assets/foliyo-logo.svg?url';
 | `foliyo-icon.svg` | Favicon, app icon |
 | `foliyo-icon-outlined.svg` | Light UI accents |
 
-This package is the source of truth. App `static/images/` copies are for runtime/public serving until build pipelines import from here.
+## Colors
+
+| Token | Value | Role |
+|-------|-------|------|
+| `--color-primary` | `#534AB7` | Brand purple |
+| `--color-primary-muted` | `#7F77DD` | Lighter purple |
+| `--color-primary-deep` | `#2A2760` | Deep purple |
+| `--color-accent` | `#E8C547` | Gold highlight |
+| `--color-text` / `--color-text-inverse` | `#1A1A2E` / `#F0EDE8` | Light / dark UI text |
+
+This package is the source of truth. App `static/images/` copies are for runtime/public serving — run `foliyo/scripts/sync-brand-assets.sh` after changing assets.

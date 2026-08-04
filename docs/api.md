@@ -24,6 +24,9 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | CRUD | `/api/portfolios`, `/api/portfolios/:id` |
 | CRUD | `/api/resumes`, `/api/resumes/:id` |
 | GET | `/api/resumes/:id/export` — Pro: printable HTML; Free: **402** + upgrade payload |
+| GET | `/api/resumes/:id/export.fio` — Foliyo Resume Spec `.fio` ZIP (all plans) |
+| CRUD | `/api/applications` — manual application tracker |
+| POST | `/api/import/resume` — **hosted Pro**: PDF/text → Foliyo Resume Spec draft (OpenRouter; no DB write) |
 | GET | `/api/plan` — plan, pricing, entitlements |
 | GET, PUT | `/api/settings` |
 
@@ -35,6 +38,16 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | GET | `/u/:handle`, `/u/:handle/:slug` |
 | GET | `/r/:token` — shared resume HTML |
 | GET | `/welcome` |
+| GET | `/spec` — Foliyo Resume Spec docs (local static) |
+| GET | `/v1/verify/:share_token` — live Foliyo Resume Spec verify |
+| POST | `/v1/verify` — offline verify `{ resume, signature }` |
+| POST | `/v1/status/notify` — ATS status webhook (API key + HMAC) |
+
+## Foliyo Resume Spec
+
+See [`specs/resume/`](../specs/resume/) (schema, `.fio` format, Status API).
+
+AI resume import (hosted **Pro** only): PDF/text is gated (magic bytes, size/pages, resume heuristics) before OpenRouter; free users get **402** and no upload UI.
 
 ## Account (DPDP — hosted / cloud-api)
 

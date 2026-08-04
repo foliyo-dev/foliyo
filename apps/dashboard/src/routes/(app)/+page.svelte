@@ -122,6 +122,16 @@
 		const steps: NextStep[] = [];
 		const p = ctx.profile;
 		if (!p?.name?.trim() || !p?.headline?.trim()) {
+			if (isSaas) {
+				steps.push({
+					title: pro ? 'Import your resume' : 'Import resume (Pro)',
+					detail: pro
+						? 'Upload a PDF or paste text — AI fills your library.'
+						: 'Upgrade to Pro to fill your library from a PDF or pasted CV.',
+					href: '/import',
+					cta: pro ? 'Import resume' : 'See Pro import'
+				});
+			}
 			steps.push({
 				title: 'Complete your basics',
 				detail: 'Add your name and headline — they appear on every public page.',
@@ -357,6 +367,17 @@
 						</li>
 					{/each}
 				</ul>
+			{/if}
+			{#if isSaas}
+				<Card>
+					{#if pro}
+						<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
+						<a href="/import">AI resume import →</a>
+					{:else}
+						<p class="muted">AI resume import is a Pro feature — upgrade to extract a CV into Foliyo.</p>
+						<a href="/import">Import resume (Pro) →</a>
+					{/if}
+				</Card>
 			{/if}
 		</div>
 	</section>

@@ -1,0 +1,15 @@
+meta {
+  name: Verify share token
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/verify/{{shareToken}}
+  body: none
+  auth: none
+}
+
+docs {
+  Live Foliyo Resume Spec verify for a resume share_token.
+}

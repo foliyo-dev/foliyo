@@ -122,6 +122,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Claim your handle · Foliyo</title>
+</svelte:head>
+
 <div class="auth-page">
 	<Card>
 		<h1>Choose your public URL</h1>

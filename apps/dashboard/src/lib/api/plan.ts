@@ -9,6 +9,7 @@ export type PlanEntitlements = {
 	portfolios_unlimited: boolean;
 	pdf_export: boolean;
 	remove_branding: boolean;
+	ai_resume_import: boolean;
 	portfolio_limit: number | null;
 };
 

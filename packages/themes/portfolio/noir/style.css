@@ -1,0 +1,177 @@
+/* Foliyo portfolio theme: noir — dark, high-contrast, muted gold */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap");
+
+:root {
+  --ink: #e8e6e3;
+  --muted: #9a9590;
+  --line: #2a2e36;
+  --accent: #d4a574;
+  --bg: #0f1115;
+  --surface: #181b22;
+  --max: 44rem;
+}
+
+* { box-sizing: border-box; }
+
+body.theme-noir {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 420px at 85% -10%, rgba(212, 165, 116, 0.08) 0%, transparent 55%),
+    var(--bg);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.theme-noir .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  background: rgba(15, 17, 21, 0.92);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.theme-noir .topbar a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.theme-noir .topbar .brand {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.theme-noir .topbar .handle { color: var(--accent); }
+
+.theme-noir .page {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 3rem 1.25rem 4rem;
+}
+
+.theme-noir .hero {
+  display: flex;
+  gap: 1.35rem;
+  align-items: flex-start;
+  margin-bottom: 2.75rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-noir .avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.theme-noir h1 {
+  margin: 0 0 0.35rem;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.theme-noir .headline {
+  margin: 0 0 0.85rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.theme-noir .bio,
+.theme-noir .desc {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  max-width: 34rem;
+}
+
+.theme-noir .section { margin-top: 2.35rem; }
+
+.theme-noir .section h2 {
+  margin: 0 0 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.theme-noir .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.theme-noir .tags li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.theme-noir .cards,
+.theme-noir .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-noir .cards li,
+.theme-noir .timeline li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1.15rem 1.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.theme-noir .cards li strong,
+.theme-noir .timeline li strong {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.theme-noir .item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.theme-noir .item-sub { color: var(--muted); font-size: 0.9375rem; margin-top: 0.2rem; }
+
+.theme-noir .links { margin: 0.5rem 0 0; font-size: 0.875rem; }
+.theme-noir .links a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.theme-noir .links a:hover { text-decoration: underline; }
+.theme-noir .muted { color: var(--muted); font-size: 0.875rem; }
+
+.theme-noir .site-footer {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.theme-noir .site-footer a { color: var(--accent); }
+
+@media (max-width: 560px) {
+  .theme-noir .hero { flex-direction: column; align-items: center; text-align: center; }
+}

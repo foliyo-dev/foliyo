@@ -207,61 +207,80 @@
 	{/if}
 
 	<Card>
-		<h2 class="section-title">Details &amp; identity</h2>
-		<div class="fields">
-			<Input label="Name" bind:value={name} />
-			<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-			<Textarea label="Short description" bind:value={description} rows={2} />
-			<Input
-				label="Headline (optional override)"
-				bind:value={headline}
-				placeholder="Falls back to Basics if empty"
-			/>
-			<Textarea
-				label="Bio (optional override)"
-				bind:value={bio}
-				rows={4}
-				placeholder="Falls back to Basics if empty"
-			/>
-			<label class="field">
-				<span class="label">Theme</span>
-				<select bind:value={themeSlug}>
-					{#each portfolioThemes as t}
-						<option value={t}>{t}</option>
-					{/each}
-				</select>
-			</label>
-			<div class="toggles">
-				<label class="checkbox"><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label>
-				<label class="checkbox"><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label>
+		<details class="block" open>
+			<summary>Details &amp; identity</summary>
+			<div class="fields">
+				<Input label="Name" bind:value={name} />
+				<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+				<Textarea label="Short description" bind:value={description} rows={2} />
+				<Input
+					label="Headline (optional override)"
+					bind:value={headline}
+					placeholder="Falls back to Basics if empty"
+				/>
+				<Textarea
+					label="Bio (optional override)"
+					bind:value={bio}
+					rows={4}
+					placeholder="Falls back to Basics if empty"
+				/>
+				<label class="field">
+					<span class="label">Theme</span>
+					<select bind:value={themeSlug}>
+						{#each portfolioThemes as t}
+							<option value={t}>{t}</option>
+						{/each}
+					</select>
+				</label>
+				<div class="toggles">
+					<label class="checkbox"
+						><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label
+					>
+					<label class="checkbox"
+						><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label
+					>
+				</div>
 			</div>
-		</div>
+		</details>
 	</Card>
 
 	<Card>
-		<PortfolioLibraryPicker
-			{skills}
-			{projects}
-			{experiences}
-			{educations}
-			{certifications}
-			{languages}
-			bind:selectedSkills
-			bind:selectedProjects
-			bind:selectedExperience
-			bind:selectedEducation
-			bind:selectedCertifications
-			bind:selectedLanguages
-			bind:showSkills
-			bind:showProjects
-			bind:showExperience
-			bind:showEducation
-			bind:showCertifications
-			bind:showLanguages
-		/>
+		<details class="block" open>
+			<summary>
+				Library content
+				<span class="step-meta"
+					>{selectedSkills.size +
+						selectedProjects.size +
+						selectedExperience.size +
+						selectedEducation.size +
+						selectedCertifications.size +
+						selectedLanguages.size} selected</span
+				>
+			</summary>
+			<PortfolioLibraryPicker
+				{skills}
+				{projects}
+				{experiences}
+				{educations}
+				{certifications}
+				{languages}
+				bind:selectedSkills
+				bind:selectedProjects
+				bind:selectedExperience
+				bind:selectedEducation
+				bind:selectedCertifications
+				bind:selectedLanguages
+				bind:showSkills
+				bind:showProjects
+				bind:showExperience
+				bind:showEducation
+				bind:showCertifications
+				bind:showLanguages
+			/>
+		</details>
 	</Card>
 
-	<div class="actions">
+	<div class="actions sticky">
 		<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save portfolio'}</Button>
 		<Button variant="ghost" on:click={() => goto('/portfolios')}>Back</Button>
 		<Button variant="ghost" on:click={remove}>Delete</Button>
@@ -276,9 +295,25 @@
 		margin: 0 0 1rem;
 		font-size: 0.875rem;
 	}
-	.section-title {
-		margin: 0 0 1rem;
+	.block {
+		margin: 0;
+	}
+	.block summary {
+		cursor: pointer;
+		font-weight: 600;
 		font-size: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		margin-bottom: 0;
+	}
+	.block[open] summary {
+		margin-bottom: 1rem;
+	}
+	.step-meta {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-muted);
 	}
 	.fields {
 		display: flex;
@@ -316,5 +351,17 @@
 		flex-wrap: wrap;
 		gap: 0.5rem;
 		margin-top: 1rem;
+	}
+	.actions.sticky {
+		position: sticky;
+		bottom: 0;
+		z-index: 5;
+		margin-top: 1.25rem;
+		padding: 0.75rem 0;
+		background: linear-gradient(
+			to top,
+			var(--color-bg, #f8fafc) 70%,
+			color-mix(in srgb, var(--color-bg, #f8fafc) 0%, transparent)
+		);
 	}
 </style>

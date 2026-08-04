@@ -60,6 +60,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Sign up · Foliyo</title>
+</svelte:head>
+
 <div class="auth-page">
 	<Card>
 		<h1>Create your account</h1>

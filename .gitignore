@@ -6,6 +6,10 @@ dist/
 # Dependencies
 node_modules/
 
+# Caches
+.turbo/
+**/.turbo/
+
 # Data
 data/
 *.db
@@ -27,3 +31,4 @@ vendor/
 .DS_Store
 .idea/
 .vscode/
+*.bak

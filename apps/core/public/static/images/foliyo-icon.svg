@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">
   <title>Foliyo icon</title>
-  <desc>Foliyo icon mark — document lines in purple square</desc>
-  <rect x="0" y="0" width="40" height="40" rx="10" fill="#534AB7"/>
-  <rect x="8" y="11" width="24" height="3.5" rx="1.75" fill="white"/>
-  <rect x="8" y="19" width="16" height="3.5" rx="1.75" fill="white"/>
-  <rect x="8" y="27" width="20" height="3.5" rx="1.75" fill="white"/>
+  <desc>Foliyo icon — tile mark</desc>
+  <rect x="4" y="4" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="17" y="4" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="30" y="4" width="10" height="11" rx="2.5" fill="#2a2760" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="4" y="17" width="11" height="11" rx="2.5" fill="#2a2760" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="17" y="17" width="11" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="30" y="17" width="10" height="11" rx="2.5" fill="#534AB7"/>
+  <rect x="4" y="30" width="11" height="10" rx="2.5" fill="#534AB7"/>
+  <rect x="17" y="30" width="24" height="10" rx="2.5" fill="#E8C547"/>
 </svg>

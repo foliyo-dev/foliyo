@@ -1,17 +1,27 @@
 /**
  * Foliyo brand tokens — single source for dashboard, landing, and product UI.
  * Do not duplicate these values in app CSS; import this file instead.
+ *
+ * Palette: primary purple #534AB7 · muted #7F77DD · light wash #EEEDFE
+ *          accent gold #E8C547 · deep tile #2A2760
  */
 :root {
   --color-primary: #534ab7;
   --color-primary-hover: #4339a0;
   --color-primary-light: #eeedfe;
   --color-primary-muted: #7f77dd;
+  --color-primary-deep: #2a2760;
+  --color-accent: #e8c547;
+  --color-accent-hover: #d4b23a;
   --color-text: #1a1a2e;
+  --color-text-inverse: #f0ede8;
   --color-muted: #888780;
   --color-bg: #f8f7fc;
+  --color-bg-dark: #0f0f0f;
   --color-surface: #ffffff;
+  --color-surface-dark: #171717;
   --color-border: #e4e2ef;
+  --color-border-dark: #2a2a2a;
   --color-error: #dc2626;
   --color-success: #16a34a;
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;

@@ -1,0 +1,14 @@
+{
+  "name": "Atelier",
+  "slug": "atelier",
+  "description": "Image-forward gallery layout for photographers and visual creatives",
+  "colors": {
+    "primary": "#3d4a3f",
+    "background": "#f7f4ef",
+    "text": "#1c1a17"
+  },
+  "fonts": {
+    "heading": "Cormorant Garamond",
+    "body": "Outfit"
+  }
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Import resume (text)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/import/resume
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "text": "Jane Doe\nSenior Engineer\njane@example.com\nBengaluru\n\nExperience\nAcme Corp — Senior Developer (2022-03 – Present)\nBuilt APIs in Node.js.\n\nSkills: Node.js, PostgreSQL, TypeScript"
+  }
+}
+
+docs {
+  Hosted Pro only. Returns Foliyo Resume Spec draft — no DB writes.
+  Requires OPENROUTER_API_KEY on cloud-api.
+}

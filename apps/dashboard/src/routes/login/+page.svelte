@@ -32,6 +32,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Log in · Foliyo</title>
+</svelte:head>
+
 <div class="login-page">
 	<Card>
 		<Logo

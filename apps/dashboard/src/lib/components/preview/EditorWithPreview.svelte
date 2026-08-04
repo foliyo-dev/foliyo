@@ -2,13 +2,28 @@
 	import LibraryPreview from './LibraryPreview.svelte';
 
 	let preview: LibraryPreview;
+	let root: HTMLDivElement;
 
 	export async function refreshPreview(): Promise<void> {
 		await preview?.refresh();
 	}
+
+	/** Scroll the app content pane to the top so the edit form is visible. */
+	export function scrollToForm(): void {
+		let el: HTMLElement | null = root?.parentElement ?? null;
+		while (el) {
+			const { overflowY } = getComputedStyle(el);
+			if (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') {
+				el.scrollTo({ top: 0, behavior: 'smooth' });
+				return;
+			}
+			el = el.parentElement;
+		}
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
 </script>
 
-<div class="editor-with-preview">
+<div class="editor-with-preview" bind:this={root}>
 	<div class="editor">
 		<slot />
 	</div>

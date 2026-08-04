@@ -46,6 +46,10 @@
 	init();
 </script>
 
+<svelte:head>
+	<title>Check your email · Foliyo</title>
+</svelte:head>
+
 <div class="auth-page">
 	<Card>
 		{#if loading}

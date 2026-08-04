@@ -83,7 +83,14 @@ export const updatePortfolioContent = (id: string, content: PortfolioContent) =>
 		body: JSON.stringify(content)
 	});
 
-export const portfolioThemes = ['minimal', 'modern', 'creative'] as const;
+export const portfolioThemes = [
+	'minimal',
+	'modern',
+	'creative',
+	'noir',
+	'atelier',
+	'editorial'
+] as const;
 
 export function corePublicUrl(path = ''): string {
 	const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
