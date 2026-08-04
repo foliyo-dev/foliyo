@@ -21,7 +21,7 @@
 		type Portfolio
 	} from '$lib/api/portfolios';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
-	import { getPlan, isProPlan } from '$lib/api/plan';
+	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import { listSkills, type Skill } from '$lib/api/skills';
 	import { listProjects, type Project } from '$lib/api/projects';
 	import { listExperience, type Experience } from '$lib/api/experience';
@@ -36,7 +36,7 @@
 	let creating = false;
 	let pro = false;
 	let billingAvailable = false;
-	let planPricing: { monthlyInr: number; lifetimeInr: number } | null = null;
+	let planPricing: PlanInfo['pricing'] | null = null;
 
 	let name = '';
 	let slug = '';
