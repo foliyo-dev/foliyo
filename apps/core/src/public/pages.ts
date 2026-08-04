@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { resolveCoreTemplatesDir } from "../assets.js";
 import type { Config } from "../config.js";
 import { queryAll, queryOne, type FoliyoDb } from "../db.js";
 import { renderPortfolioHtml } from "./themes.js";
@@ -212,7 +212,7 @@ export function loadLibraryPreview(
 }
 
 export function renderWelcome(config: Config): string {
-  const path = join(dirname(fileURLToPath(import.meta.url)), "../templates/welcome.html");
+  const path = join(resolveCoreTemplatesDir(import.meta.url), "welcome.html");
   let html = readFileSync(path, "utf8");
   html = html.replaceAll("{{.DashboardURL}}", config.dashboardUrl);
   html = html.replaceAll("{{.Title}}", "Welcome to Foliyo");

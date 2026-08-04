@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveThemesDir } from "../assets.js";
 import type { Config } from "../config.js";
 import type { PublicPortfolio } from "./pages.js";
 import { effectivePlan, showFoliyoBranding } from "../plan.js";
@@ -10,13 +11,23 @@ import {
   socialIconSvg,
 } from "../social/providers.js";
 
-const PORTFOLIO_SLUGS = new Set(["minimal", "modern", "creative"]);
-const RESUME_SLUGS = new Set(["classic", "compact", "academic"]);
+const PORTFOLIO_SLUGS = new Set([
+  "minimal",
+  "modern",
+  "creative",
+  "noir",
+  "atelier",
+  "editorial",
+]);
+const RESUME_SLUGS = new Set(["classic", "compact", "academic", "sidebar"]);
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** Resolve packages/themes for OSS core and pnpm file: copies used by foliyo-cloud. */
+/** Resolve packages/themes for OSS core, cloud, and release bundles. */
 function resolveThemesRoot(): string {
+  const fromBundle = resolveThemesDir(import.meta.url);
+  if (fromBundle) return fromBundle;
+
   const marker = join("portfolio", "minimal", "style.css");
   const candidates = [
     // apps/core/src/public → ../../../../packages/themes (real monorepo layout)
@@ -100,7 +111,21 @@ function projectLinks(pr: Record<string, unknown>): string {
   return links.length ? `<p class="links">${links.join(" · ")}</p>` : "";
 }
 
-function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
+type SectionParts = {
+  contactHtml: string;
+  skillsHtml: string;
+  projectsHtml: string;
+  expHtml: string;
+  eduHtml: string;
+  certHtml: string;
+  langHtml: string;
+};
+
+function sectionParts(
+  data: PublicPortfolio,
+  mode: "portfolio" | "resume",
+  opts?: { contactJoin?: string },
+): SectionParts {
   const skillsHtml = data.skills.length
     ? `<section class="section section-skills"><h2>Skills</h2><ul class="tags">${
       data.skills
@@ -196,10 +221,38 @@ function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): stri
 
   const contactHtml =
     mode === "resume" && contactBits.length
-      ? `<p class="contact">${contactBits.join(" · ")}</p>`
+      ? `<p class="contact">${contactBits.join(opts?.contactJoin ?? " · ")}</p>`
       : "";
 
-  return `${contactHtml}${skillsHtml}${projectsHtml}${expHtml}${eduHtml}${certHtml}${langHtml}`;
+  return { contactHtml, skillsHtml, projectsHtml, expHtml, eduHtml, certHtml, langHtml };
+}
+
+function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
+  const p = sectionParts(data, mode);
+  return `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}`;
+}
+
+function resumeBodyHtml(data: PublicPortfolio, slug: string): string {
+  const hero = heroHtml(data, "resume");
+  if (slug !== "sidebar") {
+    return `${hero}${sectionsHtml(data, "resume")}`;
+  }
+
+  const p = sectionParts(data, "resume", { contactJoin: "" });
+  return `<div class="resume-layout">
+    <aside class="resume-sidebar">
+      ${hero}
+      ${p.contactHtml}
+      ${p.skillsHtml}
+      ${p.langHtml}
+      ${p.certHtml}
+    </aside>
+    <div class="resume-main">
+      ${p.expHtml}
+      ${p.eduHtml}
+      ${p.projectsHtml}
+    </div>
+  </div>`;
 }
 
 function socialLinksHtml(data: PublicPortfolio): string {
@@ -277,6 +330,8 @@ function documentShell(opts: {
 .social-links svg{width:1rem;height:1rem;flex-shrink:0;display:block}
 .theme-creative .social-links a{background:rgba(255,255,255,.08);border-color:rgba(232,196,160,.35);color:#f8f1e8}
 .theme-creative .social-links a:hover{border-color:#e8c4a0;color:#f0a06a;background:rgba(255,255,255,.12)}
+.theme-noir .social-links a{background:var(--surface,#181b22);border-color:var(--line,#2a2e36);color:var(--ink,#e8e6e3)}
+.theme-noir .social-links a:hover{border-color:var(--accent,#d4a574);color:var(--accent,#d4a574)}
 </style>
 </head>
 <body class="${opts.themeClass}">
@@ -338,7 +393,7 @@ export function renderResumeHtml(
     title: resumeTitle,
     themeClass: `theme-resume theme-${slug}`,
     css,
-    body: `${heroHtml(data, "resume")}${sectionsHtml(data, "resume")}`,
+    body: resumeBodyHtml(data, slug),
     chrome,
     footer,
   });

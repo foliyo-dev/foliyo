@@ -39,6 +39,7 @@
     "node": ">=22.5.0"
   },
   "exports": {
+    "./assets": "./src/assets.ts",
     "./create-app": "./src/create-app.ts",
     "./config": "./src/config.ts",
     "./db": "./src/db.ts",

@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { resolveCoreMigrationsDir } from "./assets.js";
 import type { FoliyoDb } from "./db.js";
 
-const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "migrations");
+const migrationsDir = resolveCoreMigrationsDir(import.meta.url);
 
 export function runMigrations(db: FoliyoDb): void {
   db.exec(`

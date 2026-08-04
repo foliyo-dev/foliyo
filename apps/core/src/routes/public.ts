@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { resolveCorePublicDir } from "../assets.js";
 import type { Config } from "../config.js";
 import type { FoliyoDb } from "../db.js";
 import {
@@ -16,7 +17,10 @@ import { renderResumeHtml } from "../public/themes.js";
 export function publicRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
-  r.get("/static/*", serveStatic({ root: "./public" }));
+  r.get("/static/*", serveStatic({ root: resolveCorePublicDir(import.meta.url) }));
+
+  r.get("/spec", (c) => c.redirect("/static/spec/index.html"));
+  r.get("/spec/", (c) => c.redirect("/static/spec/index.html"));
 
   r.get("/welcome", (c) => c.html(renderWelcome(config)));
 
