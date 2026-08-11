@@ -18,7 +18,7 @@ CLOUD_ROOT := $(ROOT)/../foliyo-cloud
 CLOUD_API_DATA := $(CLOUD_ROOT)/apps/api/data
 CLOUD_DB_PATH := $(CLOUD_API_DATA)/foliyo-cloud.db
 
-.PHONY: all help setup deps build test clean release
+.PHONY: all help setup deps build test clean release bundle-core
 .PHONY: dev dev-all-tmux dev-stop-tmux dev-attach-tmux dev-status-tmux
 .PHONY: dev-core dev-dashboard dev-landing sync-brand migrate migrate-fresh seed-demo seed-demo-cloud health
 
@@ -46,6 +46,9 @@ clean:
 
 release:
 	@./scripts/release.sh
+
+bundle-core:
+	@./scripts/build-core-bundle.sh
 
 dev-core:
 	@mkdir -p $(DATA_DIR)
@@ -121,6 +124,8 @@ help:
 	@echo "  make dev          core + dashboard + landing in tmux"
 	@echo "  make sync-brand   copy @foliyo/brand assets into static dirs"
 	@echo "  make build        turbo build"
+	@echo "  make bundle-core  Node release bundle → dist/foliyo-core.tar.gz"
+	@echo "  make release      brand + dashboard + core bundle artifacts"
 	@echo "  make migrate      run SQL migrations"
 	@echo "  make seed-demo    fill OSS DB data/foliyo.db (ARGS=--force to reset)"
 	@echo "  make seed-demo-cloud  fill cloud DB (foliyo-cloud apps/api/data)"

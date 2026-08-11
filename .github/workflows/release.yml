@@ -2,6 +2,7 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -14,23 +15,66 @@ jobs:
         with:
           node-version: "22"
           cache: "pnpm"
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: "v2.x"
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
+      - name: Sync brand assets
+        run: ./scripts/sync-brand-assets.sh
       - name: Build dashboard
         run: pnpm --filter @foliyo/dashboard build
-      - name: Compile binaries
-        run: |
-          pnpm --filter @foliyo/core compile:amd64
-          pnpm --filter @foliyo/core compile:arm64
+      - name: Bundle core (Node 22)
+        env:
+          SKIP_PNPM_INSTALL: "1"
+        run: ./scripts/build-core-bundle.sh
       - name: Package dashboard
+        run: tar -czf dist/dashboard-build.tar.gz -C apps/dashboard build/
+      - name: Smoke start
         run: |
-          mkdir -p dist
-          tar -czf dist/dashboard-build.tar.gz -C apps/dashboard build/
+          set -euo pipefail
+          SMOKE_DATA="$RUNNER_TEMP/foliyo-smoke"
+          mkdir -p "$SMOKE_DATA"
+          FOLIYO_ADMIN_EMAIL=smoke@localhost \
+          FOLIYO_ADMIN_PASSWORD=changeme \
+          FOLIYO_DATA_DIR="$SMOKE_DATA" \
+          FOLIYO_DB_PATH="$SMOKE_DATA/foliyo.db" \
+          FOLIYO_PORT=18080 \
+          ./dist/core/foliyo &
+          PID=$!
+          cleanup() { kill "$PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:18080/welcome" >/dev/null; then
+              echo "Smoke OK"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Smoke failed: core did not respond on :18080/welcome" >&2
+          exit 1
+      - name: Release notes
+        id: meta
+        run: |
+          {
+            echo "body<<EOF"
+            echo "Self-host artifacts (Node.js **22.5+** required on the VPS)."
+            echo ""
+            echo "- \`foliyo-core.tar.gz\` — API + public pages (\`./foliyo\` wrapper)"
+            echo "- \`dashboard-build.tar.gz\` — static dashboard"
+            echo ""
+            echo "Install: \`curl -sSL https://foliyo.dev/install.sh | bash\`"
+            echo "Or: extract tarballs and run \`./foliyo\` under pqpm (see docs/self-hosting.md)."
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            dist/foliyo-linux-amd64
-            dist/foliyo-linux-arm64
+            dist/foliyo-core.tar.gz
+            dist/dashboard-build.tar.gz
+          body: ${{ steps.meta.outputs.body }}
+          fail_on_unmatched_files: true
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: foliyo-release
+          path: |
+            dist/foliyo-core.tar.gz
             dist/dashboard-build.tar.gz

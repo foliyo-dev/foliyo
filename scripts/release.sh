@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Build OSS release artifacts locally (same as GitHub Release on v* tags).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -10,11 +11,14 @@ mkdir -p "$DIST"
 
 echo "Building release artifacts (version: $VERSION)..."
 
-pnpm build
-pnpm --filter @foliyo/core compile:amd64 2>/dev/null || echo "Skip compile (deno not installed)"
+./scripts/sync-brand-assets.sh
+pnpm --filter @foliyo/dashboard build
+SKIP_PNPM_INSTALL="${SKIP_PNPM_INSTALL:-0}" ./scripts/build-core-bundle.sh
 
-if [ -d apps/dashboard/build ]; then
-  tar -czf "$DIST/dashboard-build.tar.gz" -C apps/dashboard build
-fi
+tar -czf "$DIST/dashboard-build.tar.gz" -C apps/dashboard build
 
+echo ""
 echo "Release bundle in $DIST/"
+ls -lh "$DIST/foliyo-core.tar.gz" "$DIST/dashboard-build.tar.gz"
+echo "Smoke: FOLIYO_ADMIN_EMAIL=admin@localhost FOLIYO_ADMIN_PASSWORD=changeme \\"
+echo "         FOLIYO_DATA_DIR=$DIST/smoke-data $DIST/core/foliyo"

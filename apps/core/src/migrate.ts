@@ -2,12 +2,20 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveCoreMigrationsDir } from "./assets.js";
 import { execSql, queryAll, run, type FoliyoDb } from "./db.js";
+import { sqliteMigrationForSqlite, sqliteMigrationToPostgres } from "./sql-dialect.js";
 
 const migrationsDir = resolveCoreMigrationsDir(import.meta.url);
 
-/** Strip `--` line comments, then split on `;`. */
-function splitStatements(sql: string): string[] {
-  const withoutLineComments = sql
+/**
+ * Apply dialect sections first (markers are `--` comments), then strip remaining
+ * line comments and split on `;`. Filtering after comment-strip would leak
+ * postgres-only DDL into SQLite (and vice versa).
+ */
+function splitStatements(sql: string, driver: FoliyoDb["driver"]): string[] {
+  const dialected =
+    driver === "postgres" ? sqliteMigrationToPostgres(sql) : sqliteMigrationForSqlite(sql);
+
+  const withoutLineComments = dialected
     .split("\n")
     .map((line) => {
       const idx = line.indexOf("--");
@@ -55,7 +63,7 @@ export async function runMigrations(db: FoliyoDb): Promise<void> {
   for (const file of files) {
     if (applied.has(file)) continue;
     const sql = readFileSync(join(migrationsDir, file), "utf8");
-    const statements = splitStatements(sql);
+    const statements = splitStatements(sql, db.driver);
     for (const stmt of statements) {
       try {
         await execSql(db, stmt + ";");

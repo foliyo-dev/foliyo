@@ -1,8 +1,9 @@
 # Foliyo process config for pqpm
-# Copy this file, fill in real paths, run: pqpm start foliyo
+# Copy this file, fill in real paths / secrets, run: pqpm start foliyo
+# Layout matches scripts/install.sh (Node 22.5+ bundle under apps/foliyo).
 
 [service.foliyo]
-command = "/home/foliyo/bin/foliyo"
+command = "/home/foliyo/apps/foliyo/foliyo"
 restart = "always"
 max_memory = "1GB"
 cpu_limit = "40%"
@@ -17,6 +18,11 @@ env = {
   FOLIYO_DB_DRIVER = "sqlite",
   FOLIYO_DB_PATH = "/home/foliyo/data/foliyo.db",
   FOLIYO_DATA_DIR = "/home/foliyo/data",
+  FOLIYO_ASSETS_DIR = "/home/foliyo/apps/foliyo/assets",
   FOLIYO_MODE = "single",
+  FOLIYO_SITE_URL = "https://yourdomain.com",
+  FOLIYO_DASHBOARD_URL = "https://app.yourdomain.com",
+  FOLIYO_ADMIN_EMAIL = "you@example.com",
+  FOLIYO_ADMIN_PASSWORD = "change-me",
   NODE_ENV = "production"
 }

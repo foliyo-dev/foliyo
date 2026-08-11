@@ -23,7 +23,9 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | 7 | **Email verification + onboarding emails** | Required for hosted trust / DPDP consent path | Done (SMTP optional; logs links in dev) |
 | 8 | **Landing marketing page** | Convert traffic; portfolio+resume message only | Done (full marketing scroll) |
 | 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Done (privacy page, sync export, 30-day delete) |
-| 10 | **Self-host binary + install.sh smoke** | OSS differentiator | Next |
+| 10 | **Self-host Node bundle + install.sh smoke** | OSS differentiator | Done |
+
+**Next after Phase D:** empty-section + mobile QA (Phase A leftover), onboarding handle/first-portfolio nudge (Phase C leftover), then tag **v1.0.0** hosted + self-host release.
 
 **Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest trial, MeshQL client migration, password-protect, Hindi UI.
 
@@ -61,7 +63,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
 | File uploads | 501 stub |
 | DPDP export/delete/consent UX | Done (Settings + privacy page; 30-day delete grace) |
-| Deno single-binary release | Untested |
+| Deno single-binary release | Replaced by Node 22 bundle (`foliyo-core.tar.gz`) |
 
 **Local demo:** `make seed-demo ARGS=--force` → login `admin@localhost` / `changeme` → `/u/admin`, `/u/priya`, `/u/priya/opensource`, `/u/arjun`.
 
@@ -129,11 +131,11 @@ Proof of work on resumes/portfolios without hosting posts yet.
 
 **Goal:** OSS install path is real.
 
-- [ ] Deno compile amd64/arm64 smoke on Ubuntu VPS
-- [ ] `install.sh` + nginx example end-to-end
-- [ ] GitHub Release on `v*`
-- [ ] Sync brand/assets in release artifacts
-- [ ] Document demo seed as optional for self-hosters
+- [x] Node 22 core bundle (`scripts/build-core-bundle.sh`) + CI smoke on `/welcome`
+- [x] `install.sh` + nginx example end-to-end (generated pqpm + nginx conf)
+- [x] GitHub Release on `v*` (`foliyo-core.tar.gz` + `dashboard-build.tar.gz`)
+- [x] Sync brand/assets in release artifacts
+- [x] Document demo seed as optional for self-hosters
 
 **Exit:** Fresh VPS install serves a public portfolio.
 
@@ -183,7 +185,7 @@ Only after activation metrics exist:
 Sprint N+1   Phase B — Plan gates + browser Print/PDF on share links (done)
 Sprint N+2   Phase B — Razorpay + pricing page (done)
 Sprint N+3   Phase C — Email verify + onboarding polish
-Sprint N+4   Phase D — Binary + install smoke + DPDP minimum
+Sprint N+4   Phase D — Node core bundle + install smoke + DPDP minimum
 Launch       Hosted MVP + self-host v1 tag
 Post-MVP     Phase E — Foliyo blog CMS (optional; links already work to any host)
 ```

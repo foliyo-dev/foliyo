@@ -45,13 +45,13 @@ make help             # all commands
 
 ## Self-hosting
 
-See [docs/self-hosting.md](docs/self-hosting.md).
+See [docs/self-hosting.md](docs/self-hosting.md). Requires **Node.js 22.5+** on the VPS.
 
 ```bash
 curl -sSL https://foliyo.dev/install.sh | bash
 ```
 
-When you self-host Foliyo, your data never leaves your server. You are the Data Fiduciary.
+Release artifacts: `foliyo-core.tar.gz` (API + public pages) and `dashboard-build.tar.gz`. Demo seed (`make seed-demo`) is optional and for local/marketing only.
 
 ## License
 

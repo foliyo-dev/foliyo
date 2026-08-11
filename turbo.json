@@ -9,10 +9,6 @@
       "persistent": true,
       "cache": false
     },
-    "compile": {
-      "dependsOn": ["build"],
-      "outputs": ["../../dist/**"]
-    },
     "test": {
       "dependsOn": ["build"]
     },
