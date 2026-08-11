@@ -22,11 +22,10 @@ export function sqliteMigrationToPostgres(sql: string): string {
   // Strip SQLite-only pragmas
   out = out.replace(/^\s*PRAGMA\b[^;]*;/gim, "");
 
-  // INSERT OR IGNORE → ON CONFLICT DO NOTHING
-  out = out.replace(/\bINSERT\s+OR\s+IGNORE\s+INTO\b/gi, "INSERT INTO");
+  // INSERT OR IGNORE → INSERT … ON CONFLICT DO NOTHING (idempotent; migrate may rewrite twice)
   out = out.replace(
-    /(INSERT\s+INTO\s+\w+\s*\([^)]+\)\s*SELECT\b[^;]+);/gi,
-    "$1 ON CONFLICT DO NOTHING;",
+    /\bINSERT\s+OR\s+IGNORE\s+INTO\s+(\w+\s*\([^)]+\)\s*(?:SELECT|VALUES)\b[^;]*?);/gi,
+    "INSERT INTO $1 ON CONFLICT DO NOTHING;",
   );
 
   // randomblob(N) hex defaults → pgcrypto
