@@ -116,6 +116,12 @@ body.theme-classic {
   box-shadow: 0 8px 24px rgba(17, 24, 39, 0.22);
 }
 
+@media (max-width: 560px) {
+  body.theme-classic { padding: 1rem 0.75rem 4.5rem; }
+  .theme-classic .resume-sheet { padding: 1.25rem 1rem 1.5rem; }
+  .theme-classic .item-head { flex-direction: column; }
+}
+
 @media print {
   body.theme-classic { background: #fff; padding: 0; }
   .theme-classic .resume-sheet {

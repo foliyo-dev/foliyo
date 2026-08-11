@@ -329,9 +329,35 @@ function siteNavHtml(data: PublicPortfolio): string {
   </nav>`;
 }
 
+function isSparsePortfolio(data: PublicPortfolio): boolean {
+  return (
+    data.skills.length === 0 &&
+    data.projects.length === 0 &&
+    data.experience.length === 0 &&
+    data.education.length === 0 &&
+    data.certifications.length === 0 &&
+    data.languages.length === 0
+  );
+}
+
+function sparseSectionHtml(mode: "portfolio" | "resume"): string {
+  const copy =
+    mode === "portfolio"
+      ? "This folio is just getting started — check back soon."
+      : "Sections will appear here once content is added.";
+  return `<section class="section section-sparse" aria-label="Empty"><p class="muted sparse-copy">${copy}</p></section>`;
+}
+
 function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
   const p = sectionParts(data, mode);
-  return `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}`;
+  const body = `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}`;
+  if (mode === "portfolio" && isSparsePortfolio(data) && !body.trim()) {
+    return sparseSectionHtml(mode);
+  }
+  if (mode === "resume" && isSparsePortfolio(data) && !body.trim()) {
+    return sparseSectionHtml(mode);
+  }
+  return body;
 }
 
 function resumeBodyHtml(data: PublicPortfolio, slug: string): string {
@@ -451,6 +477,15 @@ const SITE_SHELL_CSS = `
 .site-nav-links a{font-size:0.8125rem;font-weight:500;color:var(--muted,#78716c);text-decoration:none}
 .site-nav-links a:hover{color:var(--accent,#0f766e)}
 .section[id],.hero[id]{scroll-margin-top:4.5rem}
+.section-sparse{padding:2rem 0 3rem}
+.sparse-copy{margin:0;font-size:0.9375rem;text-align:center;color:var(--muted,#78716c)}
+@media (max-width:560px){
+  .site-nav{padding:0.65rem 1rem;gap:0.5rem 0.75rem}
+  .site-nav .site-name{font-size:0.875rem}
+  .site-nav-links{width:100%;gap:0.5rem 0.75rem}
+  .site-nav-links a{font-size:0.75rem}
+  .section[id],.hero[id]{scroll-margin-top:5.5rem}
+}
 `;
 
 const DOCUMENT_SHELL_CSS = `

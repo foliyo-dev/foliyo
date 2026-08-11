@@ -129,6 +129,12 @@ body.theme-academic {
   box-shadow: 0 8px 24px rgba(30, 58, 95, 0.28);
 }
 
+@media (max-width: 560px) {
+  body.theme-academic { padding: 1rem 0.75rem 4.5rem; }
+  .theme-academic .resume-sheet { padding: 1.25rem 1rem 1.5rem; }
+  .theme-academic .item-head { flex-direction: column; }
+}
+
 @media print {
   body.theme-academic { background: #fff; padding: 0; }
   .theme-academic .resume-sheet {

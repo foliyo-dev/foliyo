@@ -25,7 +25,7 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | 9 | **DPDP minimum** (consent, export, delete) | Before public launch | Done (privacy page, sync export, 30-day delete) |
 | 10 | **Self-host Node bundle + install.sh smoke** | OSS differentiator | Done |
 
-**Next after Phase D:** empty-section + mobile QA (Phase A leftover), onboarding handle/first-portfolio nudge (Phase C leftover), then tag **v1.0.0** hosted + self-host release.
+**Next after Phase D:** tag **v1.0.0** hosted + self-host release (QA / launch assets). Empty-section + onboarding leftovers are done.
 
 **Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest trial, MeshQL client migration, password-protect, Hindi UI.
 
@@ -78,7 +78,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 - [x] Resume public page `GET /r/:token` with classic / compact / academic / sidebar
 - [x] Self-host root `/` shows default public portfolio
 - [x] “Made with Foliyo” badge on public pages (plan-gated removal later)
-- [ ] Empty section UX polish + mobile visual QA pass on demo seed
+- [x] Empty section UX polish + mobile visual QA pass on demo seed
 
 ### Content write-up links (MVP — not a blog CMS)
 
@@ -118,7 +118,7 @@ Proof of work on resumes/portfolios without hosting posts yet.
 **Goal:** Trustworthy signup for India-hosted users.
 
 - [x] Email verification flow (signup already partially in cloud-api)
-- [ ] Onboarding: handle claim + first portfolio nudge
+- [x] Onboarding: handle claim + first portfolio nudge
 - [x] Transactional emails (verify, welcome)
 - [x] Consent capture on signup (privacy policy)
 - [x] Account export + delete request (`data_requests`)

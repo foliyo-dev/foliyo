@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -40,6 +41,7 @@
 	let pro = false;
 	let billingAvailable = false;
 	let planPricing: PlanInfo['pricing'] | null = null;
+	let showWelcome = false;
 
 	let name = '';
 	let slug = '';
@@ -110,6 +112,12 @@
 			: null;
 
 	onMount(async () => {
+		if ($page.url.searchParams.get('welcome') === '1') {
+			showWelcome = true;
+			const next = new URL($page.url);
+			next.searchParams.delete('welcome');
+			void goto(`${next.pathname}${next.search}`, { replaceState: true, noScroll: true });
+		}
 		try {
 			const plan = await getPlan();
 			pro = isProPlan(plan.plan);
@@ -285,12 +293,38 @@
 	function publicUrl(p: Portfolio) {
 		return portfolioPublicUrl($user?.handle, p);
 	}
+
+	function dismissWelcome() {
+		showWelcome = false;
+	}
 </script>
 
 <PageHeader
 	title="Portfolios"
 	description="Curated public views of your content library. Default portfolio powers /u/your-handle."
 />
+
+{#if showWelcome}
+	<div class="welcome-banner" role="status">
+		<div>
+			<strong>
+				{#if $user?.handle}
+					You’re live at /u/{$user.handle}
+				{:else}
+					You’re in — create your first folio
+				{/if}
+			</strong>
+			<p>
+				{#if items.length === 0}
+					Name it, pick a theme, add library items, then publish when you’re ready.
+				{:else}
+					Publish or polish a portfolio so visitors have somewhere to land.
+				{/if}
+			</p>
+		</div>
+		<button type="button" class="welcome-dismiss" on:click={dismissWelcome}>Dismiss</button>
+	</div>
+{/if}
 
 {#if atLimit}
 	<UpgradePrompt
@@ -571,5 +605,35 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.25rem;
+	}
+	.welcome-banner {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		margin: 0 0 1.25rem;
+		padding: 1rem 1.15rem;
+		border: 1px solid var(--color-primary, #0f766e);
+		border-radius: 8px;
+		background: var(--color-primary-light, #ecfdf5);
+	}
+	.welcome-banner strong {
+		display: block;
+		margin-bottom: 0.25rem;
+	}
+	.welcome-banner p {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--color-muted);
+	}
+	.welcome-dismiss {
+		flex-shrink: 0;
+		border: none;
+		background: transparent;
+		color: var(--color-muted);
+		font: inherit;
+		font-size: 0.8125rem;
+		cursor: pointer;
+		text-decoration: underline;
 	}
 </style>

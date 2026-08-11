@@ -98,7 +98,7 @@
 			const res = await claimHandle(h);
 			user.update((u) => (u ? { ...u, handle: res.handle, onboarding_complete: 1 } : u));
 			showToast(`Claimed /u/${res.handle}`, 'success');
-			goto('/');
+			goto('/portfolios?welcome=1');
 		} catch (err) {
 			showToast(apiErrorMessage(err, 'Could not save handle'), 'error');
 		} finally {
@@ -113,7 +113,7 @@
 			user.update((u) =>
 				u ? { ...u, handle: res.handle ?? u.handle, onboarding_complete: 1 } : u
 			);
-			goto('/');
+			goto('/portfolios?welcome=1');
 		} catch {
 			showToast('Could not continue', 'error');
 		} finally {

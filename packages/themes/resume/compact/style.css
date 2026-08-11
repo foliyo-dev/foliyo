@@ -130,6 +130,12 @@ body.theme-compact {
   box-shadow: 0 8px 22px rgba(15, 118, 110, 0.28);
 }
 
+@media (max-width: 560px) {
+  body.theme-compact { padding: 0.85rem 0.65rem 4.5rem; }
+  .theme-compact .resume-sheet { padding: 1rem 0.85rem 1.25rem; }
+  .theme-compact .item-head { flex-direction: column; }
+}
+
 @media print {
   body.theme-compact { background: #fff; padding: 0; }
   .theme-compact .resume-sheet {
