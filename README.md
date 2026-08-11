@@ -60,6 +60,7 @@ MIT — see LICENSE
 ## Docs
 
 - [docs/ROADMAP.md](docs/ROADMAP.md) — engineering build order (start here for “what’s next”)
+- [docs/packages.md](docs/packages.md) — `@foliyo/*` GH Release tarballs (npm later)
 - [FOLIYO_SCAFFOLD.md](FOLIYO_SCAFFOLD.md) — full architecture reference
 - [docs/api.md](docs/api.md) — API contract
 - [bruno/](bruno/) — Bruno API collection (local testing)

@@ -26,6 +26,10 @@ jobs:
         run: ./scripts/build-core-bundle.sh
       - name: Package dashboard
         run: tar -czf dist/dashboard-build.tar.gz -C apps/dashboard build/
+      - name: Pack @foliyo/* libraries
+        run: |
+          chmod +x ./scripts/pack-libs.sh
+          ./scripts/pack-libs.sh
       - name: Smoke start
         run: |
           set -euo pipefail
@@ -52,15 +56,26 @@ jobs:
       - name: Release notes
         id: meta
         run: |
+          VER="${GITHUB_REF_NAME#v}"
           {
             echo "body<<EOF"
-            echo "Self-host artifacts (Node.js **22.5+** required on the VPS)."
+            echo "## Self-host (Node.js 22.5+)"
             echo ""
             echo "- \`foliyo-core.tar.gz\` — API + public pages (\`./foliyo\` wrapper)"
             echo "- \`dashboard-build.tar.gz\` — static dashboard"
             echo ""
             echo "Install: \`curl -sSL https://foliyo.dev/install.sh | bash\`"
-            echo "Or: extract tarballs and run \`./foliyo\` under pqpm (see docs/self-hosting.md)."
+            echo ""
+            echo "## Libraries (\`@foliyo/*\` — npm later)"
+            echo ""
+            echo "Install from this release (example):"
+            echo ""
+            echo '```json'
+            echo "\"@foliyo/core\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-core-${VER}.tgz\","
+            echo "\"@foliyo/themes\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-themes-${VER}.tgz\","
+            echo "\"@foliyo/brand\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-brand-${VER}.tgz\","
+            echo "\"@foliyo/ui\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-ui-${VER}.tgz\""
+            echo '```'
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v3
@@ -69,6 +84,10 @@ jobs:
           files: |
             dist/foliyo-core.tar.gz
             dist/dashboard-build.tar.gz
+            dist/packages/foliyo-core-*.tgz
+            dist/packages/foliyo-brand-*.tgz
+            dist/packages/foliyo-ui-*.tgz
+            dist/packages/foliyo-themes-*.tgz
           body: ${{ steps.meta.outputs.body }}
           fail_on_unmatched_files: true
       - uses: actions/upload-artifact@v7
@@ -78,3 +97,4 @@ jobs:
           path: |
             dist/foliyo-core.tar.gz
             dist/dashboard-build.tar.gz
+            dist/packages/*.tgz

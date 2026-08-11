@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/ui",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Shared Foliyo UI primitives (Svelte)",
   "type": "module",
@@ -19,7 +19,7 @@
     "src"
   ],
   "peerDependencies": {
-    "@foliyo/brand": ">=0.1.0",
+    "@foliyo/brand": ">=0.5.0",
     "svelte": "^5.0.0"
   },
   "devDependencies": {
