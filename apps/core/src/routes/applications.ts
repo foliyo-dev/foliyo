@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
-import type { SQLInputValue } from "node:sqlite";
-import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
+import { queryAll, queryOne, run, type FoliyoDb, type SqlValue } from "../db.js";
 
 export const APPLICATION_STATUSES = [
   "application_received",
@@ -35,9 +34,9 @@ const updateSchema = createSchema.partial();
 export function applicationsRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
-  r.get("/", (c) => {
+  r.get("/", async (c) => {
     const userId = c.get("userId");
-    const items = queryAll(
+    const items = await queryAll(
       db,
       `SELECT a.*, r.name AS resume_name, r.share_token AS resume_share_token
        FROM applications a
@@ -49,9 +48,9 @@ export function applicationsRoutes(db: FoliyoDb) {
     return c.json(items);
   });
 
-  r.get("/:id", (c) => {
+  r.get("/:id", async (c) => {
     const userId = c.get("userId");
-    const item = queryOne(
+    const item = await queryOne(
       db,
       `SELECT a.*, r.name AS resume_name
        FROM applications a
@@ -60,7 +59,7 @@ export function applicationsRoutes(db: FoliyoDb) {
       [c.req.param("id"), userId],
     );
     if (!item) return c.json({ error: "not found" }, 404);
-    const events = queryAll(
+    const events = await queryAll(
       db,
       "SELECT * FROM application_events WHERE application_id = ? ORDER BY created_at DESC",
       [c.req.param("id")],
@@ -75,14 +74,14 @@ export function applicationsRoutes(db: FoliyoDb) {
     const d = body.data;
 
     if (d.resume_id) {
-      const resume = queryOne(db, "SELECT id FROM resumes WHERE id = ? AND user_id = ?", [
+      const resume = await queryOne(db, "SELECT id FROM resumes WHERE id = ? AND user_id = ?", [
         d.resume_id,
         userId,
       ]);
       if (!resume) return c.json({ error: "resume not found" }, 400);
     }
 
-    run(
+    await run(
       db,
       `INSERT INTO applications
         (user_id, resume_id, company, role, job_id, ats, status, next_step, notes, source, applied_at, status_updated_at)
@@ -101,13 +100,13 @@ export function applicationsRoutes(db: FoliyoDb) {
       ],
     );
 
-    const created = queryOne(
+    const created = await queryOne(
       db,
       "SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
       [userId],
     );
     if (created) {
-      run(
+      await run(
         db,
         "INSERT INTO application_events (application_id, event, status, payload_json) VALUES (?,?,?,?)",
         [
@@ -119,7 +118,7 @@ export function applicationsRoutes(db: FoliyoDb) {
       );
     }
 
-    const items = queryAll(
+    const items = await queryAll(
       db,
       `SELECT a.*, r.name AS resume_name
        FROM applications a
@@ -134,7 +133,7 @@ export function applicationsRoutes(db: FoliyoDb) {
   r.put("/:id", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");
-    const existing = queryOne<{ id: string; status: string }>(
+    const existing = await queryOne<{ id: string; status: string }>(
       db,
       "SELECT id, status FROM applications WHERE id = ? AND user_id = ?",
       [id, userId],
@@ -146,7 +145,7 @@ export function applicationsRoutes(db: FoliyoDb) {
     const d = body.data;
 
     if (d.resume_id) {
-      const resume = queryOne(db, "SELECT id FROM resumes WHERE id = ? AND user_id = ?", [
+      const resume = await queryOne(db, "SELECT id FROM resumes WHERE id = ? AND user_id = ?", [
         d.resume_id,
         userId,
       ]);
@@ -154,11 +153,11 @@ export function applicationsRoutes(db: FoliyoDb) {
     }
 
     const cols: string[] = [];
-    const vals: SQLInputValue[] = [];
+    const vals: SqlValue[] = [];
     for (const [key, value] of Object.entries(d)) {
       if (value === undefined) continue;
       cols.push(`${key}=?`);
-      vals.push(value as SQLInputValue);
+      vals.push(value as SqlValue);
     }
     if (cols.length === 0) return c.json({ ok: true });
 
@@ -167,14 +166,14 @@ export function applicationsRoutes(db: FoliyoDb) {
     }
     cols.push("updated_at=CURRENT_TIMESTAMP");
 
-    run(db, `UPDATE applications SET ${cols.join(", ")} WHERE id=? AND user_id=?`, [
+    await run(db, `UPDATE applications SET ${cols.join(", ")} WHERE id=? AND user_id=?`, [
       ...vals,
       id,
       userId,
     ]);
 
     if (d.status && d.status !== existing.status) {
-      run(
+      await run(
         db,
         "INSERT INTO application_events (application_id, event, status, payload_json) VALUES (?,?,?,?)",
         [id, "status_changed", d.status, JSON.stringify({ source: "manual", next_step: d.next_step ?? null })],
@@ -184,9 +183,9 @@ export function applicationsRoutes(db: FoliyoDb) {
     return c.json({ ok: true });
   });
 
-  r.delete("/:id", (c) => {
+  r.delete("/:id", async (c) => {
     const userId = c.get("userId");
-    run(db, "DELETE FROM applications WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
+    await run(db, "DELETE FROM applications WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
     return c.body(null, 204);
   });
 

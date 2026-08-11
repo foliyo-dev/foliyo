@@ -8,7 +8,7 @@
   --accent: #0f766e;
   --bg: #fafaf9;
   --surface: #ffffff;
-  --max: 40rem;
+  --max: 48rem;
 }
 
 * { box-sizing: border-box; }
@@ -22,24 +22,17 @@ body.theme-minimal {
   line-height: 1.6;
 }
 
-.theme-minimal .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+.theme-minimal .site-nav {
+  border-bottom-color: var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
 }
 
-.theme-minimal .topbar a {
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
+.theme-minimal .site-nav .site-name {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
-.theme-minimal .topbar .brand { letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.75rem; }
-.theme-minimal .topbar .handle { color: var(--muted); }
+.theme-minimal .site-nav-links a:hover { color: var(--accent); }
 
 .theme-minimal .page {
   max-width: var(--max);

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import { queryOne, type FoliyoDb } from "../db.js";
-import { loadPortfolioContent } from "../public/pages.js";
+import { loadResumeContent } from "../public/pages.js";
 import {
   buildFoliyoResumeDocument,
   contentHashForDoc,
@@ -27,13 +27,13 @@ export function specRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
   /** Live verify: rebuild hash from current public resume content. */
-  r.get("/verify/:token", (c) => {
+  r.get("/verify/:token", async (c) => {
     const token = c.req.param("token");
-    const resume = queryOne<{
+    const resume = await queryOne<{
       id: string;
       name: string;
       theme_slug: string;
-      portfolio_id: string;
+      portfolio_id: string | null;
       share_token: string;
       is_public: number;
       user_id: string;
@@ -43,9 +43,9 @@ export function specRoutes(db: FoliyoDb, config: Config) {
       return c.json({ valid: false, error: "resume_not_found" }, 404);
     }
 
-    const data = loadPortfolioContent(db, resume.portfolio_id);
+    const data = await loadResumeContent(db, resume.id);
     if (!data) {
-      return c.json({ valid: false, error: "portfolio_not_found" }, 404);
+      return c.json({ valid: false, error: "resume_content_not_found" }, 404);
     }
 
     const built = buildFoliyoResumeDocument({

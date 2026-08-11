@@ -8,6 +8,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
+	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		getPortfolio,
 		updatePortfolio,
@@ -19,6 +20,7 @@
 		portfolioPublicUrl,
 		type PortfolioDetail
 	} from '$lib/api/portfolios';
+	import type { PortfolioDraftPreview } from '$lib/api/preview';
 	import { user } from '$lib/stores/auth';
 	import { listSkills, type Skill } from '$lib/api/skills';
 	import { listProjects, type Project } from '$lib/api/projects';
@@ -64,6 +66,37 @@
 
 	$: portfolioId = $page.params.id;
 
+	$: draft = (loading
+		? null
+		: {
+				name: name.trim() || 'Portfolio',
+				description,
+				headline,
+				bio,
+				theme_slug: themeSlug,
+				show_skills: showSkills ? 1 : 0,
+				show_projects: showProjects ? 1 : 0,
+				show_experience: showExperience ? 1 : 0,
+				show_education: showEducation ? 1 : 0,
+				show_certifications: showCertifications ? 1 : 0,
+				show_languages: showLanguages ? 1 : 0,
+				skill_ids: [...selectedSkills],
+				project_ids: [...selectedProjects],
+				experience_ids: [...selectedExperience],
+				education_ids: [...selectedEducation],
+				certification_ids: [...selectedCertifications],
+				language_ids: [...selectedLanguages]
+			}) satisfies PortfolioDraftPreview | null;
+
+	$: liveUrl =
+		isPublic && $user?.handle
+			? portfolioPublicUrl($user.handle, {
+					slug,
+					is_public: 1,
+					is_default: isDefault ? 1 : 0
+				})
+			: null;
+
 	onMount(load);
 
 	async function load() {
@@ -75,7 +108,7 @@
 		try {
 			const [p, sk, pr, ex, ed, certs, langs] = await Promise.all([
 				getPortfolio(portfolioId),
-				listSkills(),
+				listSkills('confirmed'),
 				listProjects(),
 				listExperience(),
 				listEducation(),
@@ -183,108 +216,103 @@
 		description="Select library content, set headline/bio overrides, theme, and publish."
 	/>
 
-	{#if isPublic}
+	{#if isPublic && liveUrl}
 		<p class="url-banner">
 			Live at
-			<a
-				href={portfolioPublicUrl($user?.handle, {
-					slug,
-					is_public: 1,
-					is_default: isDefault ? 1 : 0
-				})}
-				target="_blank"
-				rel="noreferrer"
-			>
-				{portfolioPublicUrl($user?.handle, {
-					slug,
-					is_public: 1,
-					is_default: isDefault ? 1 : 0
-				})}
-			</a>
+			<a href={liveUrl} target="_blank" rel="noreferrer">{liveUrl}</a>
 		</p>
 	{:else}
-		<p class="url-banner muted">Private — turn on publish below to go live.</p>
+		<p class="url-banner muted">
+			Private — turn on publish below to go live. Preview still works on the right.
+		</p>
 	{/if}
 
-	<Card>
-		<details class="block" open>
-			<summary>Details &amp; identity</summary>
-			<div class="fields">
-				<Input label="Name" bind:value={name} />
-				<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-				<Textarea label="Short description" bind:value={description} rows={2} />
-				<Input
-					label="Headline (optional override)"
-					bind:value={headline}
-					placeholder="Falls back to Basics if empty"
-				/>
-				<Textarea
-					label="Bio (optional override)"
-					bind:value={bio}
-					rows={4}
-					placeholder="Falls back to Basics if empty"
-				/>
-				<label class="field">
-					<span class="label">Theme</span>
-					<select bind:value={themeSlug}>
-						{#each portfolioThemes as t}
-							<option value={t}>{t}</option>
-						{/each}
-					</select>
-				</label>
-				<div class="toggles">
-					<label class="checkbox"
-						><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label
-					>
-					<label class="checkbox"
-						><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label
-					>
+	<EditorWithPortfolioPreview
+		portfolioId={portfolio.id}
+		{draft}
+		portfolioName={name.trim() || portfolio.name}
+		{liveUrl}
+	>
+		<Card>
+			<details class="block" open>
+				<summary>Details &amp; identity</summary>
+				<div class="fields">
+					<Input label="Name" bind:value={name} />
+					<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+					<Textarea label="Short description" bind:value={description} rows={2} />
+					<Input
+						label="Headline (optional override)"
+						bind:value={headline}
+						placeholder="Falls back to Basics if empty"
+					/>
+					<Textarea
+						label="Bio (optional override)"
+						bind:value={bio}
+						rows={4}
+						placeholder="Falls back to Basics if empty"
+					/>
+					<label class="field">
+						<span class="label">Theme</span>
+						<select bind:value={themeSlug}>
+							{#each portfolioThemes as t}
+								<option value={t}>{t}</option>
+							{/each}
+						</select>
+					</label>
+					<div class="toggles">
+						<label class="checkbox"
+							><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label
+						>
+						<label class="checkbox"
+							><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label
+						>
+					</div>
 				</div>
-			</div>
-		</details>
-	</Card>
+			</details>
+		</Card>
 
-	<Card>
-		<details class="block" open>
-			<summary>
-				Library content
-				<span class="step-meta"
-					>{selectedSkills.size +
-						selectedProjects.size +
-						selectedExperience.size +
-						selectedEducation.size +
-						selectedCertifications.size +
-						selectedLanguages.size} selected</span
-				>
-			</summary>
-			<PortfolioLibraryPicker
-				{skills}
-				{projects}
-				{experiences}
-				{educations}
-				{certifications}
-				{languages}
-				bind:selectedSkills
-				bind:selectedProjects
-				bind:selectedExperience
-				bind:selectedEducation
-				bind:selectedCertifications
-				bind:selectedLanguages
-				bind:showSkills
-				bind:showProjects
-				bind:showExperience
-				bind:showEducation
-				bind:showCertifications
-				bind:showLanguages
-			/>
-		</details>
-	</Card>
+		<Card>
+			<details class="block" open>
+				<summary>
+					Library content
+					<span class="step-meta"
+						>{selectedSkills.size +
+							selectedProjects.size +
+							selectedExperience.size +
+							selectedEducation.size +
+							selectedCertifications.size +
+							selectedLanguages.size} selected</span
+					>
+				</summary>
+				<PortfolioLibraryPicker
+					{skills}
+					{projects}
+					{experiences}
+					{educations}
+					{certifications}
+					{languages}
+					bind:selectedSkills
+					bind:selectedProjects
+					bind:selectedExperience
+					bind:selectedEducation
+					bind:selectedCertifications
+					bind:selectedLanguages
+					bind:showSkills
+					bind:showProjects
+					bind:showExperience
+					bind:showEducation
+					bind:showCertifications
+					bind:showLanguages
+				/>
+			</details>
+		</Card>
 
-	<div class="actions sticky">
-		<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save portfolio'}</Button>
-		<Button variant="ghost" on:click={() => goto('/portfolios')}>Back</Button>
-		<Button variant="ghost" on:click={remove}>Delete</Button>
-	</div>
+		<div class="actions sticky">
+			<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save portfolio'}</Button>
+			<Button variant="ghost" on:click={() => goto('/portfolios')}>Back</Button>
+			<Button variant="ghost" on:click={remove}>Delete</Button>
+		</div>
+	</EditorWithPortfolioPreview>
 {/if}
 
 <style>
@@ -363,5 +391,8 @@
 			var(--color-bg, #f8fafc) 70%,
 			color-mix(in srgb, var(--color-bg, #f8fafc) 0%, transparent)
 		);
+	}
+	:global(.card + .card) {
+		margin-top: 1rem;
 	}
 </style>

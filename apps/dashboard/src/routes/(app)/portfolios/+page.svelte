@@ -7,6 +7,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
+	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		listPortfolios,
 		createPortfolio,
@@ -20,6 +21,8 @@
 		parseApiError,
 		type Portfolio
 	} from '$lib/api/portfolios';
+	import type { PortfolioDraftPreview } from '$lib/api/preview';
+	import { createResume } from '$lib/api/resumes';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import { listSkills, type Skill } from '$lib/api/skills';
@@ -67,6 +70,7 @@
 	let showLanguages = true;
 
 	let showCreate = false;
+	let previewingId: string | null = null;
 
 	$: atLimit = !pro && items.length >= FREE_PORTFOLIO_LIMIT;
 	$: overLimit = !pro && items.length > FREE_PORTFOLIO_LIMIT;
@@ -78,6 +82,32 @@
 		selectedCertifications.size +
 		selectedLanguages.size;
 	$: showCreateForm = showCreate || (!loading && items.length === 0);
+
+	$: createDraft = (showCreateForm
+		? {
+				name: name.trim() || 'New portfolio',
+				description,
+				theme_slug: themeSlug,
+				show_skills: showSkills ? 1 : 0,
+				show_projects: showProjects ? 1 : 0,
+				show_experience: showExperience ? 1 : 0,
+				show_education: showEducation ? 1 : 0,
+				show_certifications: showCertifications ? 1 : 0,
+				show_languages: showLanguages ? 1 : 0,
+				skill_ids: [...selectedSkills],
+				project_ids: [...selectedProjects],
+				experience_ids: [...selectedExperience],
+				education_ids: [...selectedEducation],
+				certification_ids: [...selectedCertifications],
+				language_ids: [...selectedLanguages]
+			}
+		: null) satisfies PortfolioDraftPreview | null;
+
+	$: previewPortfolio = previewingId ? items.find((p) => p.id === previewingId) ?? null : null;
+	$: previewLiveUrl =
+		previewPortfolio && previewPortfolio.is_public === 1
+			? publicUrl(previewPortfolio)
+			: null;
 
 	onMount(async () => {
 		try {
@@ -96,7 +126,7 @@
 		try {
 			const [portfolios, sk, pr, ex, ed, certs, langs] = await Promise.all([
 				listPortfolios(),
-				listSkills(),
+				listSkills('confirmed'),
 				listProjects(),
 				listExperience(),
 				listEducation(),
@@ -161,6 +191,7 @@
 		}
 		creating = true;
 		const createdSlug = slug.trim();
+		const wasFirstPortfolio = items.length === 0;
 		try {
 			items = await createPortfolio({
 				name: name.trim(),
@@ -168,7 +199,7 @@
 				description,
 				theme_slug: themeSlug,
 				is_public: isPublic ? 1 : 0,
-				is_default: items.length === 0 ? 1 : 0,
+				is_default: wasFirstPortfolio ? 1 : 0,
 				show_skills: showSkills ? 1 : 0,
 				show_projects: showProjects ? 1 : 0,
 				show_experience: showExperience ? 1 : 0,
@@ -187,10 +218,30 @@
 					certification_ids: [...selectedCertifications],
 					language_ids: [...selectedLanguages]
 				});
+				if (wasFirstPortfolio) {
+					const when = new Date().toLocaleString('en-US', {
+						month: 'short',
+						year: 'numeric'
+					});
+					try {
+						await createResume({
+							name: `${created.name} — ${when}`,
+							portfolio_id: created.id,
+							theme_slug: 'classic',
+							is_public: 0
+						});
+						showToast('Portfolio created · private resume draft ready', 'success');
+					} catch {
+						showToast('Portfolio created', 'success');
+					}
+				} else {
+					showToast('Portfolio created', 'success');
+				}
+			} else {
+				showToast('Portfolio created', 'success');
 			}
 			resetForm();
 			showCreate = false;
-			showToast('Portfolio created', 'success');
 			if (created) await goto(`/portfolios/${created.id}`);
 		} catch (err) {
 			const parsed = parseApiError(err);
@@ -214,10 +265,21 @@
 		try {
 			await deletePortfolio(id);
 			items = items.filter((p) => p.id !== id);
+			if (previewingId === id) previewingId = null;
 			showToast('Portfolio deleted', 'success');
 		} catch {
 			showToast('Failed to delete portfolio', 'error');
 		}
+	}
+
+	function togglePreview(id: string) {
+		showCreate = false;
+		previewingId = previewingId === id ? null : id;
+	}
+
+	function openCreate() {
+		previewingId = null;
+		showCreate = true;
 	}
 
 	function publicUrl(p: Portfolio) {
@@ -244,107 +306,137 @@
 	/>
 {/if}
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else if items.length === 0}
-	<p class="muted empty">No portfolios yet — create your first one below.</p>
-{:else}
-	<ul class="list">
-		{#each items as p (p.id)}
-			<li>
-				<Card>
-					<div class="row">
-						<div>
-							<h2>
-								{p.name}
-								{#if p.is_default}<span class="star">default</span>{/if}
-								{#if p.is_public}<span class="tag public">public</span>{:else}<span class="tag private">private</span>{/if}
-							</h2>
-							<p class="slug">/{p.slug}{#if p.is_default} · also <code>/u/{$user?.handle ?? 'you'}</code>{/if}</p>
-							<p class="url">{publicUrl(p)}</p>
-						</div>
-						<div class="actions">
-							<Button variant="ghost" on:click={() => goto(`/portfolios/${p.id}`)}>Edit</Button>
-							{#if !p.is_default}
-								<Button variant="ghost" on:click={() => makeDefault(p.id)}>Set default</Button>
-							{/if}
-							<Button variant="ghost" on:click={() => remove(p.id)}>Delete</Button>
-						</div>
-					</div>
-				</Card>
-			</li>
-		{/each}
-	</ul>
-{/if}
-
-{#if !atLimit}
-	{#if !showCreateForm}
-		<div class="create-cta">
-			<Button on:click={() => (showCreate = true)}>New portfolio</Button>
-		</div>
+<EditorWithPortfolioPreview
+	portfolioId={showCreateForm ? null : previewingId}
+	draft={createDraft}
+	portfolioName={showCreateForm
+		? name.trim() || 'New portfolio'
+		: previewPortfolio?.name ?? 'Portfolio'}
+	liveUrl={showCreateForm ? null : previewLiveUrl}
+>
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else if items.length === 0}
+		<p class="muted empty">No portfolios yet — create your first one below.</p>
 	{:else}
-		<Card>
-			<div class="create-head">
-				<h2 class="section-title">New portfolio</h2>
-				{#if items.length > 0}
-					<Button variant="ghost" on:click={() => (showCreate = false)}>Cancel</Button>
-				{/if}
-			</div>
-
-			<details class="step" open>
-				<summary>1. Details</summary>
-				<div class="fields">
-					<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
-					<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-					<Textarea label="Description" bind:value={description} rows={2} />
-					<label class="field">
-						<span class="label">Theme</span>
-						<select bind:value={themeSlug}>
-							{#each portfolioThemes as t}
-								<option value={t}>{t}</option>
-							{/each}
-						</select>
-					</label>
-					<label class="checkbox">
-						<input type="checkbox" bind:checked={isPublic} />
-						Publish publicly
-					</label>
-				</div>
-			</details>
-
-			<details class="step" open>
-				<summary>2. Library content <span class="step-meta">{selectedCount} selected</span></summary>
-				<PortfolioLibraryPicker
-					{skills}
-					{projects}
-					{experiences}
-					{educations}
-					{certifications}
-					{languages}
-					bind:selectedSkills
-					bind:selectedProjects
-					bind:selectedExperience
-					bind:selectedEducation
-					bind:selectedCertifications
-					bind:selectedLanguages
-					bind:showSkills
-					bind:showProjects
-					bind:showExperience
-					bind:showEducation
-					bind:showCertifications
-					bind:showLanguages
-					hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim."
-				/>
-			</details>
-
-			<div class="form-actions">
-				<Button disabled={creating} on:click={add}
-					>{creating ? 'Creating…' : 'Create portfolio'}</Button
-				>
-			</div>
-		</Card>
+		<ul class="list">
+			{#each items as p (p.id)}
+				<li>
+					<Card>
+						<div class="row">
+							<div>
+								<h2>
+									{p.name}
+									{#if p.is_default}<span class="star">default</span>{/if}
+									{#if p.is_public}<span class="tag public">public</span>{:else}<span
+											class="tag private">private</span
+										>{/if}
+								</h2>
+								<p class="slug">
+									/{p.slug}{#if p.is_default}
+										· also <code>/u/{$user?.handle ?? 'you'}</code>{/if}
+								</p>
+								<p class="url">{publicUrl(p)}</p>
+							</div>
+							<div class="actions">
+								<Button
+									variant="ghost"
+									on:click={() => togglePreview(p.id)}
+									aria-pressed={previewingId === p.id && !showCreateForm}
+								>
+									{previewingId === p.id && !showCreateForm ? 'Hide preview' : 'Preview'}
+								</Button>
+								<Button variant="ghost" on:click={() => goto(`/portfolios/${p.id}`)}
+									>Edit</Button
+								>
+								{#if !p.is_default}
+									<Button variant="ghost" on:click={() => makeDefault(p.id)}
+										>Set default</Button
+									>
+								{/if}
+								<Button variant="ghost" on:click={() => remove(p.id)}>Delete</Button>
+							</div>
+						</div>
+					</Card>
+				</li>
+			{/each}
+		</ul>
 	{/if}
-{/if}
+
+	{#if !atLimit}
+		{#if !showCreateForm}
+			<div class="create-cta">
+				<Button on:click={openCreate}>New portfolio</Button>
+			</div>
+		{:else}
+			<Card>
+				<div class="create-head">
+					<h2 class="section-title">New portfolio</h2>
+					{#if items.length > 0}
+						<Button
+							variant="ghost"
+							on:click={() => {
+								showCreate = false;
+							}}>Cancel</Button
+						>
+					{/if}
+				</div>
+
+				<details class="step" open>
+					<summary>1. Details</summary>
+					<div class="fields">
+						<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
+						<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+						<Textarea label="Description" bind:value={description} rows={2} />
+						<label class="field">
+							<span class="label">Theme</span>
+							<select bind:value={themeSlug}>
+								{#each portfolioThemes as t}
+									<option value={t}>{t}</option>
+								{/each}
+							</select>
+						</label>
+						<label class="checkbox">
+							<input type="checkbox" bind:checked={isPublic} />
+							Publish publicly
+						</label>
+					</div>
+				</details>
+
+				<details class="step" open>
+					<summary>2. Library content <span class="step-meta">{selectedCount} selected</span></summary>
+					<PortfolioLibraryPicker
+						{skills}
+						{projects}
+						{experiences}
+						{educations}
+						{certifications}
+						{languages}
+						bind:selectedSkills
+						bind:selectedProjects
+						bind:selectedExperience
+						bind:selectedEducation
+						bind:selectedCertifications
+						bind:selectedLanguages
+						bind:showSkills
+						bind:showProjects
+						bind:showExperience
+						bind:showEducation
+						bind:showCertifications
+						bind:showLanguages
+						hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim."
+					/>
+				</details>
+
+				<div class="form-actions">
+					<Button disabled={creating} on:click={add}
+						>{creating ? 'Creating…' : 'Create portfolio'}</Button
+					>
+				</div>
+			</Card>
+		{/if}
+	{/if}
+</EditorWithPortfolioPreview>
 
 <style>
 	.section-title {

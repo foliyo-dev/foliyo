@@ -1,0 +1,25 @@
+meta {
+  name: Clear all content
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/settings/clear-content
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "confirm": "CLEAR"
+  }
+}
+
+docs {
+  Wipes resumes, portfolios, and library. Keeps login, plan, email_verified, profile.
+}

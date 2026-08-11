@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { checkPassword } from "../auth/password.js";
 import { bearerToken, createToken, deleteToken, getTokenUserId } from "../auth/tokens.js";
-import type { FoliyoDb } from "../db.js";
+import { queryOne, type FoliyoDb } from "../db.js";
 
 const loginSchema = z.object({
   email: z.string().min(1),
@@ -17,11 +17,7 @@ export function authRoutes(db: FoliyoDb) {
     if (!body.success) {
       return c.json({ error: "invalid body" }, 400);
     }
-    const user = db
-      .prepare(
-        "SELECT id, email, password, plan, handle, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
-      )
-      .get(body.data.email) as {
+    const user = await queryOne<{
       id: string;
       email: string;
       password: string;
@@ -30,7 +26,11 @@ export function authRoutes(db: FoliyoDb) {
       onboarding_complete: number;
       email_verified: number;
       mode: string;
-    } | undefined;
+    }>(
+      db,
+      "SELECT id, email, password, plan, handle, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
+      [body.data.email],
+    );
     if (!user || !checkPassword(user.password, body.data.password)) {
       return c.json({ error: "invalid credentials" }, 401);
     }
@@ -44,7 +44,7 @@ export function authRoutes(db: FoliyoDb) {
         403,
       );
     }
-    const token = createToken(db, user.id);
+    const token = await createToken(db, user.id);
     return c.json({
       token,
       user: {
@@ -60,27 +60,27 @@ export function authRoutes(db: FoliyoDb) {
 
   r.post("/logout", async (c) => {
     const token = bearerToken(c.req.header("Authorization"));
-    if (token) deleteToken(db, token);
+    if (token) await deleteToken(db, token);
     return c.json({});
   });
 
   r.get("/me", async (c) => {
     const token = bearerToken(c.req.header("Authorization"));
     if (!token) return c.json({ error: "unauthorized" }, 401);
-    const userId = getTokenUserId(db, token);
+    const userId = await getTokenUserId(db, token);
     if (!userId) return c.json({ error: "unauthorized" }, 401);
-    const user = db
-      .prepare(
-        "SELECT id, email, plan, handle, onboarding_complete, email_verified FROM users WHERE id = ?",
-      )
-      .get(userId) as {
+    const user = await queryOne<{
       id: string;
       email: string;
       plan: string;
       handle: string | null;
       onboarding_complete: number;
       email_verified: number;
-    } | undefined;
+    }>(
+      db,
+      "SELECT id, email, plan, handle, onboarding_complete, email_verified FROM users WHERE id = ?",
+      [userId],
+    );
     if (!user) return c.json({ error: "not found" }, 404);
     return c.json({
       user: {

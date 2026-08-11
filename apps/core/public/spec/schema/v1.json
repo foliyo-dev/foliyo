@@ -68,7 +68,11 @@
             "type": ["string", "null"],
             "enum": ["beginner", "intermediate", "advanced", "expert", null]
           },
-          "category": { "type": ["string", "null"] }
+          "category": { "type": ["string", "null"] },
+          "recency": {
+            "type": ["string", "null"],
+            "enum": ["current", "past", null]
+          }
         }
       }
     },
@@ -86,7 +90,8 @@
           "end": { "type": ["string", "null"] },
           "current": { "type": "boolean" },
           "description": { "type": ["string", "null"] },
-          "url": { "type": ["string", "null"] }
+          "url": { "type": ["string", "null"] },
+          "skills_developed": { "type": "array", "items": { "type": "string" } }
         }
       }
     },
@@ -102,7 +107,8 @@
           "field": { "type": ["string", "null"] },
           "start": { "type": ["string", "null"] },
           "end": { "type": ["string", "null"] },
-          "description": { "type": ["string", "null"] }
+          "description": { "type": ["string", "null"] },
+          "skills_developed": { "type": "array", "items": { "type": "string" } }
         }
       }
     },
@@ -117,7 +123,7 @@
           "description": { "type": ["string", "null"] },
           "url": { "type": ["string", "null"] },
           "repo_url": { "type": ["string", "null"] },
-          "tags": { "type": "array", "items": { "type": "string" } },
+          "skills_developed": { "type": "array", "items": { "type": "string" } },
           "featured": { "type": "boolean" }
         }
       }
@@ -135,7 +141,8 @@
           "credential_url": { "type": ["string", "null"] },
           "issued_at": { "type": ["string", "null"] },
           "expires_at": { "type": ["string", "null"] },
-          "description": { "type": ["string", "null"] }
+          "description": { "type": ["string", "null"] },
+          "skills_developed": { "type": "array", "items": { "type": "string" } }
         }
       }
     },

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
 import { queryOne, run, type FoliyoDb } from "../db.js";
 import type { Config } from "../config.js";
+import { clearUserContent } from "../account/clear-content.js";
 
 const settingsSchema = z.object({
   site_title: z.string().optional(),
@@ -13,12 +14,16 @@ const settingsSchema = z.object({
   seo_keywords: z.string().optional(),
 });
 
+const clearSchema = z.object({
+  confirm: z.literal("CLEAR"),
+});
+
 export function settingsRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
-  r.get("/", (c) => {
+  r.get("/", async (c) => {
     const userId = c.get("userId");
-    const settings = queryOne(db, "SELECT * FROM settings WHERE user_id = ?", [userId]);
+    const settings = await queryOne(db, "SELECT * FROM settings WHERE user_id = ?", [userId]);
     if (!settings) return c.json({ error: "not found" }, 404);
     return c.json(settings);
   });
@@ -28,9 +33,9 @@ export function settingsRoutes(db: FoliyoDb) {
     const body = settingsSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
     const d = body.data;
-    const existing = queryOne(db, "SELECT id FROM settings WHERE user_id = ?", [userId]);
+    const existing = await queryOne(db, "SELECT id FROM settings WHERE user_id = ?", [userId]);
     if (existing) {
-      run(
+      await run(
         db,
         `UPDATE settings SET site_title=?, site_description=?, theme_slug=?, resume_theme=?,
          custom_domain=?, seo_keywords=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?`,
@@ -40,7 +45,7 @@ export function settingsRoutes(db: FoliyoDb) {
         ],
       );
     } else {
-      run(
+      await run(
         db,
         `INSERT INTO settings (user_id, site_title, site_description, theme_slug, resume_theme, custom_domain, seo_keywords)
          VALUES (?,?,?,?,?,?,?)`,
@@ -51,8 +56,24 @@ export function settingsRoutes(db: FoliyoDb) {
         ],
       );
     }
-    const settings = queryOne(db, "SELECT * FROM settings WHERE user_id = ?", [userId]);
+    const settings = await queryOne(db, "SELECT * FROM settings WHERE user_id = ?", [userId]);
     return c.json(settings);
+  });
+
+  /**
+   * Clear all portfolio/library content. Keeps login email, password, plan, email_verified, profile.
+   */
+  r.post("/clear-content", async (c) => {
+    const userId = c.get("userId");
+    const body = clearSchema.safeParse(await c.req.json().catch(() => ({})));
+    if (!body.success) {
+      return c.json(
+        { error: "confirm_required", message: 'Type CLEAR and send { "confirm": "CLEAR" }.' },
+        400,
+      );
+    }
+    const deleted = await clearUserContent(db, userId);
+    return c.json({ ok: true, deleted });
   });
 
   return r;

@@ -4,7 +4,7 @@ import { runMigrations } from "./migrate.js";
 import { seedAdmin } from "./seed.js";
 
 const config = loadConfig();
-const db = openDatabase(config);
-runMigrations(db);
-seedAdmin(db, config);
+const db = await openDatabase(config);
+await runMigrations(db);
+await seedAdmin(db, config);
 console.log("Migrations complete");

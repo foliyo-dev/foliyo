@@ -1,4 +1,4 @@
-/* Foliyo resume theme: sidebar — two-column with left rail */
+/* Foliyo resume theme: sidebar — two-column document with left rail */
 @import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap");
 
 :root {
@@ -9,8 +9,9 @@
   --rail: #1f3a4d;
   --rail-text: #e8eef3;
   --rail-muted: #a8b8c6;
-  --bg: #f4f6f8;
-  --max: 54rem;
+  --bg: #d9e0e7;
+  --surface: #ffffff;
+  --max: 8.5in;
 }
 
 * { box-sizing: border-box; }
@@ -22,15 +23,21 @@ body.theme-sidebar {
   font-family: "Source Sans 3", system-ui, sans-serif;
   font-size: 0.95rem;
   line-height: 1.5;
-  padding-bottom: 5rem;
+  padding: 1.5rem 1rem 5rem;
 }
 
-.theme-sidebar .page {
+.theme-sidebar .page.resume-page {
   max-width: var(--max);
-  margin: 1.5rem auto;
+  margin: 0 auto;
   padding: 0;
-  background: #fff;
+  background: transparent;
+  border: 0;
+}
+
+.theme-sidebar .resume-sheet {
+  background: var(--surface);
   border: 1px solid var(--line);
+  box-shadow: 0 4px 24px rgba(21, 32, 43, 0.1);
   overflow: hidden;
 }
 
@@ -50,14 +57,12 @@ body.theme-sidebar {
   padding: 1.75rem 1.6rem 2rem;
 }
 
-.theme-sidebar .hero {
-  margin-bottom: 1.25rem;
-}
+.theme-sidebar .hero { margin-bottom: 1rem; }
 
 .theme-sidebar h1 {
   margin: 0;
   font-family: "Libre Franklin", system-ui, sans-serif;
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -65,19 +70,19 @@ body.theme-sidebar {
 }
 
 .theme-sidebar .headline {
-  margin: 0.45rem 0 0;
+  margin: 0.4rem 0 0;
   color: var(--rail-muted);
   font-weight: 500;
   font-size: 0.9rem;
 }
 
 .theme-sidebar .contact {
-  margin: 0 0 1.35rem;
+  margin: 0.55rem 0 0;
   font-size: 0.8rem;
   color: var(--rail-muted);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .theme-sidebar .contact a {
@@ -87,6 +92,16 @@ body.theme-sidebar {
 }
 
 .theme-sidebar .contact a:hover { text-decoration: underline; }
+
+.theme-sidebar .resume-sidebar .social-links-doc {
+  justify-content: flex-start;
+  margin-top: 0.65rem;
+}
+
+.theme-sidebar .resume-sidebar .social-links-doc a,
+.theme-sidebar .resume-sidebar .doc-link {
+  color: #fff;
+}
 
 .theme-sidebar .resume-sidebar .section { margin-top: 1.25rem; }
 
@@ -127,24 +142,7 @@ body.theme-sidebar {
   font-size: 0.85rem;
 }
 
-.theme-sidebar .resume-sidebar .timeline a { color: #fff; }
 .theme-sidebar .resume-sidebar .muted { color: var(--rail-muted); font-size: 0.8rem; }
-
-.theme-sidebar .resume-sidebar .social-links {
-  margin-top: 0.85rem;
-}
-
-.theme-sidebar .resume-sidebar .social-links a {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--rail-text);
-}
-
-.theme-sidebar .resume-sidebar .social-links a:hover {
-  border-color: #fff;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-}
 
 .theme-sidebar .resume-main .section { margin-top: 1.35rem; }
 .theme-sidebar .resume-main .section:first-child { margin-top: 0; }
@@ -170,7 +168,7 @@ body.theme-sidebar {
 
 .theme-sidebar .cards li,
 .theme-sidebar .timeline li {
-  margin-bottom: 0.95rem;
+  margin-bottom: 0.85rem;
 }
 
 .theme-sidebar .item-head {
@@ -186,8 +184,8 @@ body.theme-sidebar {
 }
 
 .theme-sidebar .item-sub { color: var(--muted); font-size: 0.9rem; }
-.theme-sidebar .links { margin: 0.25rem 0 0; font-size: 0.85rem; }
-.theme-sidebar .links a { color: var(--accent); }
+.theme-sidebar .links { margin: 0.2rem 0 0; font-size: 0.8rem; }
+.theme-sidebar .doc-link { color: var(--accent); }
 .theme-sidebar .muted { color: var(--muted); font-size: 0.85rem; }
 
 .theme-sidebar .site-footer {
@@ -199,27 +197,10 @@ body.theme-sidebar {
 
 .theme-sidebar .site-footer a { color: var(--accent); }
 
-.theme-sidebar .print-fab {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 50;
-}
-
 .theme-sidebar .print-btn {
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.7rem 1.1rem;
-  border: none;
   background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  cursor: pointer;
   box-shadow: 0 8px 24px rgba(31, 58, 77, 0.28);
 }
-
-.theme-sidebar .print-btn:hover { filter: brightness(1.08); }
 
 @media (max-width: 720px) {
   .theme-sidebar .resume-layout {
@@ -228,9 +209,12 @@ body.theme-sidebar {
 }
 
 @media print {
-  body.theme-sidebar { background: #fff; }
-  .theme-sidebar .page { margin: 0; border: 0; max-width: none; }
-  .theme-sidebar .resume-layout { grid-template-columns: 14rem 1fr; }
-  .theme-sidebar .site-footer,
-  .theme-sidebar .no-print { display: none !important; }
+  body.theme-sidebar { background: #fff; padding: 0; }
+  .theme-sidebar .resume-sheet {
+    border: 0;
+    box-shadow: none;
+  }
+  .theme-sidebar .resume-layout {
+    grid-template-columns: 14rem 1fr;
+  }
 }

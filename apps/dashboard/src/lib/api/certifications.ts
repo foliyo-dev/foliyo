@@ -9,6 +9,7 @@ export type Certification = {
 	issued_at: string | null;
 	expires_at: string | null;
 	description: string;
+	skills_developed: string;
 	sort_order: number;
 };
 

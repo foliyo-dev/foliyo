@@ -1,14 +1,32 @@
 # Future Docker support — VPS + pqpm is the primary deployment method.
 version: "3.8"
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: foliyo
+      POSTGRES_PASSWORD: foliyo
+      POSTGRES_DB: foliyo
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foliyo -d foliyo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   core:
     build: ./apps/core
     ports: ["8080:8080"]
     volumes: ["./data:/data"]
     environment:
       - NODE_ENV=production
-      - FOLIYO_DB_PATH=/data/foliyo.db
+      - FOLIYO_DB_DRIVER=postgres
+      - FOLIYO_DB_URL=postgres://foliyo:foliyo@postgres:5432/foliyo
       - FOLIYO_DATA_DIR=/data
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   dashboard:
     build: ./apps/dashboard
@@ -20,3 +38,6 @@ services:
     volumes:
       - ./infra/example.nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on: [core, dashboard]
+
+volumes:
+  pgdata:

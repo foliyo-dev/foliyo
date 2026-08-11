@@ -8,7 +8,7 @@ export type Project = {
   repo_url: string;
   article_url: string;
   image_url: string;
-  tags: string;
+  skills_developed: string;
   featured: number;
   sort_order: number;
 };

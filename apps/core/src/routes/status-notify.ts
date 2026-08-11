@@ -58,7 +58,7 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
       return c.json({ error: "timestamp_skew" }, 401);
     }
 
-    const partner = queryOne<{
+    const partner = await queryOne<{
       id: string;
       slug: string;
       hmac_secret: string;
@@ -85,7 +85,7 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
     }
     const d = body.data;
 
-    const resume = queryOne<{
+    const resume = await queryOne<{
       id: string;
       user_id: string;
       share_token: string;
@@ -105,12 +105,12 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
     const ats = d.ats?.trim() || partner.slug;
 
     let application = d.job_id
-      ? queryOne<{ id: string; status: string }>(
+      ? await queryOne<{ id: string; status: string }>(
           db,
           "SELECT id, status FROM applications WHERE user_id = ? AND job_id = ?",
           [resume.user_id, d.job_id],
         )
-      : queryOne<{ id: string; status: string }>(
+      : await queryOne<{ id: string; status: string }>(
           db,
           `SELECT id, status FROM applications
            WHERE user_id = ? AND resume_id = ? AND company = ? AND role = ?
@@ -119,7 +119,7 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
         );
 
     if (!application) {
-      run(
+      await run(
         db,
         `INSERT INTO applications
           (user_id, resume_id, company, role, job_id, ats, status, next_step, notes, source, applied_at, status_updated_at)
@@ -136,13 +136,13 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
           d.notes ?? null,
         ],
       );
-      application = queryOne<{ id: string; status: string }>(
+      application = await queryOne<{ id: string; status: string }>(
         db,
         "SELECT id, status FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
         [resume.user_id],
       );
     } else {
-      run(
+      await run(
         db,
         `UPDATE applications SET
           status=?, next_step=?, notes=COALESCE(?, notes), ats=COALESCE(?, ats),
@@ -163,7 +163,7 @@ export function statusNotifyRoutes(db: FoliyoDb, _config: Config) {
 
     if (!application) return c.json({ error: "failed_to_upsert" }, 500);
 
-    run(
+    await run(
       db,
       "INSERT INTO application_events (application_id, event, status, payload_json) VALUES (?,?,?,?)",
       [

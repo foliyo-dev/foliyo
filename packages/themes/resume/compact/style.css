@@ -1,4 +1,4 @@
-/* Foliyo resume theme: compact — denser, tighter spacing */
+/* Foliyo resume theme: compact — dense document for longer histories */
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap");
 
 :root {
@@ -6,8 +6,9 @@
   --muted: #64748b;
   --line: #e2e8f0;
   --accent: #0f766e;
-  --bg: #f1f5f9;
-  --max: 44rem;
+  --bg: #dce3ea;
+  --surface: #ffffff;
+  --max: 8.5in;
 }
 
 * { box-sizing: border-box; }
@@ -17,51 +18,60 @@ body.theme-compact {
   color: var(--ink);
   background: var(--bg);
   font-family: "IBM Plex Sans", system-ui, sans-serif;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  padding-bottom: 5rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  padding: 1rem 0.75rem 5rem;
 }
 
-.theme-compact .page {
+.theme-compact .page.resume-page {
   max-width: var(--max);
-  margin: 1rem auto;
-  padding: 1.25rem 1.35rem 1.75rem;
-  background: #fff;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.theme-compact .resume-sheet {
+  background: var(--surface);
   border: 1px solid var(--line);
+  box-shadow: 0 3px 18px rgba(15, 23, 42, 0.08);
+  padding: 0.5in 0.55in 0.55in;
 }
 
 .theme-compact .hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   border-bottom: 2px solid var(--accent);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
 }
 
 .theme-compact h1 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-.theme-compact .headline { margin: 0.15rem 0 0; color: var(--accent); font-weight: 500; font-size: 0.9rem; }
+.theme-compact .headline {
+  margin: 0.1rem 0 0;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
 
 .theme-compact .contact {
-  margin: 0 0 0.85rem;
-  font-size: 0.8rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .theme-compact .contact a { color: var(--accent); text-decoration: none; }
+.theme-compact .social-links-doc { justify-content: flex-start; margin-top: 0.35rem; }
 
-.theme-compact .section { margin-top: 0.85rem; }
+.theme-compact .section { margin-top: 0.7rem; }
 
 .theme-compact .section h2 {
-  margin: 0 0 0.4rem;
-  font-size: 0.7rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -74,7 +84,7 @@ body.theme-compact {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem 0.65rem;
+  gap: 0.15rem 0.55rem;
 }
 
 .theme-compact .cards,
@@ -86,25 +96,25 @@ body.theme-compact {
 
 .theme-compact .cards li,
 .theme-compact .timeline li {
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.4rem;
 }
 
 .theme-compact .cards li p,
 .theme-compact .timeline li p {
-  margin: 0.2rem 0 0;
+  margin: 0.12rem 0 0;
 }
 
 .theme-compact .item-head {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.15rem 0.75rem;
+  gap: 0.1rem 0.65rem;
 }
 
-.theme-compact .item-sub { color: var(--muted); font-size: 0.8rem; }
-.theme-compact .links { margin: 0.15rem 0 0; font-size: 0.8rem; }
-.theme-compact .links a { color: var(--accent); }
-.theme-compact .muted { color: var(--muted); font-size: 0.8rem; }
+.theme-compact .item-sub { color: var(--muted); font-size: 0.75rem; }
+.theme-compact .links { margin: 0.1rem 0 0; font-size: 0.72rem; }
+.theme-compact .doc-link { color: var(--accent); }
+.theme-compact .muted { color: var(--muted); font-size: 0.75rem; }
 
 .theme-compact .site-footer {
   text-align: center;
@@ -115,31 +125,16 @@ body.theme-compact {
 
 .theme-compact .site-footer a { color: var(--accent); }
 
-.theme-compact .print-fab {
-  position: fixed;
-  right: 1.1rem;
-  bottom: 1.1rem;
-  z-index: 50;
-}
-
 .theme-compact .print-btn {
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.8rem;
-  padding: 0.6rem 1rem;
-  border: none;
   background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  cursor: pointer;
   box-shadow: 0 8px 22px rgba(15, 118, 110, 0.28);
 }
 
-.theme-compact .print-btn:hover { filter: brightness(1.06); }
-
 @media print {
-  body.theme-compact { background: #fff; }
-  .theme-compact .page { margin: 0; border: 0; max-width: none; }
-  .theme-compact .site-footer,
-  .theme-compact .no-print { display: none !important; }
+  body.theme-compact { background: #fff; padding: 0; }
+  .theme-compact .resume-sheet {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
 }

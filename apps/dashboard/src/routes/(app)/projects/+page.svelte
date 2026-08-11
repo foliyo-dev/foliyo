@@ -27,7 +27,7 @@
 	let repoUrl = '';
 	let articleUrl = '';
 	let imageUrl = '';
-	let tagsInput = '';
+	let skillsInput = '';
 	let featured = false;
 	let sortOrder = '0';
 
@@ -45,15 +45,15 @@
 		}
 	}
 
-	function tagsToJson(input: string): string {
-		const tags = input
+	function skillsToJson(input: string): string {
+		const skills = input
 			.split(',')
 			.map((t) => t.trim())
 			.filter(Boolean);
-		return JSON.stringify(tags);
+		return JSON.stringify(skills);
 	}
 
-	function tagsFromJson(json: string): string {
+	function skillsFromJson(json: string): string {
 		try {
 			const arr = JSON.parse(json);
 			return Array.isArray(arr) ? arr.join(', ') : '';
@@ -69,7 +69,7 @@
 		repoUrl = '';
 		articleUrl = '';
 		imageUrl = '';
-		tagsInput = '';
+		skillsInput = '';
 		featured = false;
 		sortOrder = String(items.length);
 		editingId = null;
@@ -83,7 +83,7 @@
 			repo_url: repoUrl,
 			article_url: articleUrl,
 			image_url: imageUrl,
-			tags: tagsToJson(tagsInput),
+			skills_developed: skillsToJson(skillsInput),
 			featured: featured ? 1 : 0,
 			sort_order: Number(sortOrder) || 0
 		};
@@ -115,7 +115,7 @@
 		repoUrl = project.repo_url;
 		articleUrl = project.article_url ?? '';
 		imageUrl = project.image_url;
-		tagsInput = tagsFromJson(project.tags);
+		skillsInput = skillsFromJson(project.skills_developed);
 		featured = project.featured === 1;
 		sortOrder = String(project.sort_order);
 		shell?.scrollToForm();
@@ -171,7 +171,7 @@
 				placeholder="https://dev.to/… or Medium, docs, future Foliyo post…"
 			/>
 			<Input label="Image URL" bind:value={imageUrl} placeholder="https://…" />
-			<Input label="Tags (comma-separated)" bind:value={tagsInput} placeholder="react, node" />
+			<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="React, Node.js" />
 			<div class="row">
 				<Input label="Sort order" bind:value={sortOrder} />
 				<label class="checkbox">
@@ -218,8 +218,8 @@
 										{#if project.url || project.repo_url} · {/if}
 										<a href={project.article_url} target="_blank" rel="noreferrer">Write-up</a>
 									{/if}
-									{#if tagsFromJson(project.tags)}
-										 · {tagsFromJson(project.tags)}
+									{#if skillsFromJson(project.skills_developed)}
+										 · {skillsFromJson(project.skills_developed)}
 									{/if}
 								</p>
 							</div>

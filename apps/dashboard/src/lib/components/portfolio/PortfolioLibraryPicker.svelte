@@ -27,6 +27,10 @@
 	export let showCertifications = true;
 	export let showLanguages = true;
 
+	/** When false, hide per-section “Show on folio” toggles (e.g. resume Custom). */
+	export let showSectionVisibility = true;
+
+	export let title = 'Include from your library';
 	export let hint = 'Edit items under My content; select which ones appear in this portfolio.';
 
 	type SectionId =
@@ -130,7 +134,7 @@
 <div class="picker">
 	<div class="picker-head">
 		<div>
-			<h2 class="section-title">Include from your library</h2>
+			<h2 class="section-title">{title}</h2>
 			<p class="hint">{hint}</p>
 		</div>
 		<p class="summary" aria-live="polite">{totalSelected} selected</p>
@@ -141,7 +145,7 @@
 		<input type="search" bind:value={filter} placeholder="Filter skills, projects…" />
 	</label>
 
-	<div class="sections" role="list">
+	<div class="sections" class:no-visibility={!showSectionVisibility} role="list">
 		<!-- Skills -->
 		<section class="section" class:open={openSection === 'skills'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('skills')}>
@@ -149,10 +153,12 @@
 				<span class="section-label">Skills</span>
 				<span class="counts">{selectedSkills.size}/{skills.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showSkills} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showSkills} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'skills'}
 				<div class="section-body">
 					{#if skills.length === 0}
@@ -220,10 +226,12 @@
 				<span class="section-label">Projects</span>
 				<span class="counts">{selectedProjects.size}/{projects.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showProjects} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showProjects} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'projects'}
 				<div class="section-body">
 					{#if projects.length === 0}
@@ -290,10 +298,12 @@
 				<span class="section-label">Experience</span>
 				<span class="counts">{selectedExperience.size}/{experiences.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showExperience} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showExperience} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'experience'}
 				<div class="section-body">
 					{#if experiences.length === 0}
@@ -360,10 +370,12 @@
 				<span class="section-label">Education</span>
 				<span class="counts">{selectedEducation.size}/{educations.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showEducation} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showEducation} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'education'}
 				<div class="section-body">
 					{#if educations.length === 0}
@@ -432,10 +444,12 @@
 				<span class="section-label">Certifications</span>
 				<span class="counts">{selectedCertifications.size}/{certifications.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showCertifications} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showCertifications} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'certifications'}
 				<div class="section-body">
 					{#if certifications.length === 0}
@@ -505,10 +519,12 @@
 				<span class="section-label">Languages</span>
 				<span class="counts">{selectedLanguages.size}/{languages.length}</span>
 			</button>
-			<label class="show-toggle" on:click|stopPropagation>
-				<input type="checkbox" bind:checked={showLanguages} />
-				Show on folio
-			</label>
+			{#if showSectionVisibility}
+				<label class="show-toggle" on:click|stopPropagation>
+					<input type="checkbox" bind:checked={showLanguages} />
+					Show on folio
+				</label>
+			{/if}
 			{#if openSection === 'languages'}
 				<div class="section-body">
 					{#if languages.length === 0}
@@ -636,6 +652,9 @@
 		align-items: center;
 		column-gap: 0.5rem;
 		border-bottom: 1px solid var(--color-border);
+	}
+	.sections.no-visibility .section {
+		grid-template-columns: 1fr;
 	}
 	.section:last-child {
 		border-bottom: 0;

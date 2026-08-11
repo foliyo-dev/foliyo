@@ -32,9 +32,9 @@ type ProfileRow = {
 export function profileRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
-  r.get("/", (c) => {
+  r.get("/", async (c) => {
     const userId = c.get("userId");
-    const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+    const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
     if (!profile) return c.json({ error: "not found" }, 404);
     return c.json(profile);
   });
@@ -44,7 +44,7 @@ export function profileRoutes(db: FoliyoDb) {
     const body = profileSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
 
-    const existing = queryOne<ProfileRow & { id: string }>(
+    const existing = await queryOne<ProfileRow & { id: string }>(
       db,
       "SELECT * FROM profile WHERE user_id = ?",
       [userId],
@@ -64,7 +64,7 @@ export function profileRoutes(db: FoliyoDb) {
     };
 
     if (existing) {
-      run(
+      await run(
         db,
         `UPDATE profile SET name=?, headline=?, bio=?, avatar_url=?, location=?,
          email=?, website=?, github=?, linkedin=?, twitter=?, updated_at=CURRENT_TIMESTAMP
@@ -84,7 +84,7 @@ export function profileRoutes(db: FoliyoDb) {
         ],
       );
     } else {
-      run(
+      await run(
         db,
         `INSERT INTO profile (user_id, name, headline, bio, avatar_url, location, email, website, github, linkedin, twitter)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
@@ -103,7 +103,7 @@ export function profileRoutes(db: FoliyoDb) {
         ],
       );
     }
-    const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+    const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
     return c.json(profile);
   });
 

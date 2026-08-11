@@ -12,6 +12,7 @@
 	import {
 		importResumeFromPdf,
 		importResumeFromText,
+		importResumeFromFio,
 		getImportUpgrade,
 		ImportLimitError,
 		type ResumeImportDraft
@@ -42,6 +43,7 @@
 	let saving = false;
 	let pasteText = '';
 	let fileInput: HTMLInputElement | null = null;
+	let fioInput: HTMLInputElement | null = null;
 	let draft: ResumeImportDraft | null = null;
 	let remainingToday: number | null = null;
 	let include: Record<SectionKey, boolean> = {
@@ -185,6 +187,28 @@
 		input.value = '';
 	}
 
+	async function extractFromFio(file: File) {
+		extracting = true;
+		try {
+			const res = await importResumeFromFio(file);
+			draft = coerceEditable(res.draft);
+			remainingToday = null;
+			initSelection(res.draft);
+			showToast('Signed .fio verified — review before saving', 'success');
+		} catch (err) {
+			await handleExtractError(err);
+		} finally {
+			extracting = false;
+		}
+	}
+
+	function onFioChange(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) void extractFromFio(file);
+		input.value = '';
+	}
+
 	function knownProvider(key: string): SocialProvider {
 		const k = key.toLowerCase();
 		const allowed: SocialProvider[] = [
@@ -293,7 +317,7 @@
 						repo_url: p.repo_url ?? '',
 						article_url: '',
 						image_url: '',
-						tags: JSON.stringify(p.tags ?? []),
+						skills_developed: JSON.stringify(p.tags ?? p.skills_developed ?? []),
 						featured: p.featured ? 1 : 0,
 						sort_order: i
 					});
@@ -345,89 +369,12 @@
 
 <PageHeader
 	title="Import resume"
-	description="Upload a text-based PDF or paste your CV. AI extracts a Foliyo Resume Spec draft — you review, then save into your library."
+	description={isSaas
+		? 'Upload a text-based PDF or paste your CV. AI extracts a Foliyo Resume Spec draft — you review, then save into your library.'
+		: 'Import a signed .fio package exported from Foliyo. Review the draft, then save into your library. Does not change login email or verification.'}
 />
 
-{#if !isSaas}
-	<Card>
-		<p class="muted">
-			AI resume import is available on hosted Foliyo (OpenRouter). Self-host builds can export/import
-			<code>.fio</code> files instead.
-		</p>
-	</Card>
-{:else if loadingPlan}
-	<p class="muted">Loading…</p>
-{:else if !pro}
-	<Card>
-		<p class="muted">
-			AI resume import is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
-			cannot use this feature.
-		</p>
-	</Card>
-	<div class="upgrade-wrap">
-		<UpgradePrompt
-			title="Upgrade for AI import"
-			message={upgradeMessage}
-			pricing={planInfo?.pricing ?? null}
-			billingAvailable={planInfo?.billing_available ?? false}
-			on:upgraded={(e) => {
-				planInfo = e.detail;
-				showUpgrade = false;
-			}}
-		/>
-	</div>
-{:else if showUpgrade}
-	<div class="upgrade-wrap">
-		<UpgradePrompt
-			title="Upgrade for AI import"
-			message={upgradeMessage}
-			pricing={planInfo?.pricing ?? null}
-			billingAvailable={planInfo?.billing_available ?? false}
-			on:upgraded={(e) => {
-				planInfo = e.detail;
-				showUpgrade = false;
-			}}
-		/>
-	</div>
-{:else if !draft}
-		<Card>
-			<h2 class="section-title">Upload or paste</h2>
-			<p class="hint">
-				Text-based PDFs only (max 12 pages / 4MB). No scanned/image PDFs. We check the file before
-				sending anything to AI.
-				{#if remainingToday != null}
-					<span class="remain">{remainingToday} left today</span>
-				{/if}
-			</p>
-			<div class="actions-row">
-				<input
-					bind:this={fileInput}
-					type="file"
-					accept="application/pdf,.pdf"
-					hidden
-					on:change={onFileChange}
-				/>
-				<Button
-					disabled={extracting}
-					on:click={() => fileInput?.click()}
-				>
-					{extracting ? 'Extracting…' : 'Upload PDF'}
-				</Button>
-			</div>
-			<div class="or">or paste text</div>
-			<Textarea
-				label="Resume text"
-				bind:value={pasteText}
-				rows={12}
-				placeholder="Paste your resume here…"
-			/>
-			<div class="form-actions">
-				<Button disabled={extracting} on:click={extractFromPaste}>
-					{extracting ? 'Extracting…' : 'Extract with AI'}
-				</Button>
-			</div>
-		</Card>
-{:else}
+{#if draft}
 		<Card>
 			<div class="review-head">
 				<h2 class="section-title">Review draft</h2>
@@ -435,7 +382,7 @@
 					<p class="hint">{remainingToday} imports left today</p>
 				{/if}
 			</div>
-			<p class="hint">Uncheck anything you don’t want saved. Nothing is written until you confirm.</p>
+			<p class="hint">Uncheck anything you don’t want saved. Nothing is written until you confirm. Public profile email is optional contact only — not your login.</p>
 
 			<label class="section-toggle">
 				<input type="checkbox" bind:checked={include.candidate} />
@@ -578,6 +525,99 @@
 					}}
 				>
 					Start over
+				</Button>
+			</div>
+		</Card>
+{:else if !isSaas}
+	<Card>
+		<h2 class="section-title">Import .fio</h2>
+		<p class="hint">
+			Upload a Foliyo Resume Spec package (<code>.fio</code>) exported from this or another instance
+			that shares the same integrity secret. Signature is checked before you review. AI import is
+			hosted-only.
+		</p>
+		<div class="actions-row">
+			<input
+				bind:this={fioInput}
+				type="file"
+				accept=".fio,application/vnd.foliyo.resume+zip,application/zip"
+				hidden
+				on:change={onFioChange}
+			/>
+			<Button disabled={extracting} on:click={() => fioInput?.click()}>
+				{extracting ? 'Verifying…' : 'Upload .fio'}
+			</Button>
+		</div>
+	</Card>
+{:else if loadingPlan}
+	<p class="muted">Loading…</p>
+{:else if !pro}
+	<Card>
+		<p class="muted">
+			AI resume import is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
+			cannot use this feature.
+		</p>
+	</Card>
+	<div class="upgrade-wrap">
+		<UpgradePrompt
+			title="Upgrade for AI import"
+			message={upgradeMessage}
+			pricing={planInfo?.pricing ?? null}
+			billingAvailable={planInfo?.billing_available ?? false}
+			on:upgraded={(e) => {
+				planInfo = e.detail;
+				showUpgrade = false;
+			}}
+		/>
+	</div>
+{:else if showUpgrade}
+	<div class="upgrade-wrap">
+		<UpgradePrompt
+			title="Upgrade for AI import"
+			message={upgradeMessage}
+			pricing={planInfo?.pricing ?? null}
+			billingAvailable={planInfo?.billing_available ?? false}
+			on:upgraded={(e) => {
+				planInfo = e.detail;
+				showUpgrade = false;
+			}}
+		/>
+	</div>
+{:else}
+		<Card>
+			<h2 class="section-title">Upload or paste</h2>
+			<p class="hint">
+				Text-based PDFs only (max 12 pages / 4MB). No scanned/image PDFs. We check the file before
+				sending anything to AI.
+				{#if remainingToday != null}
+					<span class="remain">{remainingToday} left today</span>
+				{/if}
+			</p>
+			<div class="actions-row">
+				<input
+					bind:this={fileInput}
+					type="file"
+					accept="application/pdf,.pdf"
+					hidden
+					on:change={onFileChange}
+				/>
+				<Button
+					disabled={extracting}
+					on:click={() => fileInput?.click()}
+				>
+					{extracting ? 'Extracting…' : 'Upload PDF'}
+				</Button>
+			</div>
+			<div class="or">or paste text</div>
+			<Textarea
+				label="Resume text"
+				bind:value={pasteText}
+				rows={12}
+				placeholder="Paste your resume here…"
+			/>
+			<div class="form-actions">
+				<Button disabled={extracting} on:click={extractFromPaste}>
+					{extracting ? 'Extracting…' : 'Extract with AI'}
 				</Button>
 			</div>
 		</Card>

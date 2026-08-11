@@ -8,14 +8,15 @@ import { createFoliyoApp } from "./create-app.js";
 import { planRoutes } from "./routes/plan.js";
 
 const config = loadConfig();
-const db = openDatabase(config);
-runMigrations(db);
-seedAdmin(db, config);
-ensureHandles(db);
+const db = await openDatabase(config);
+await runMigrations(db);
+await seedAdmin(db, config);
+await ensureHandles(db);
 
 const { app, api } = createFoliyoApp(db, config);
 api.route("/plan", planRoutes(db, config));
 
 serve({ fetch: app.fetch, port: config.port, hostname: config.host }, () => {
   console.log(`Foliyo running on http://${config.host}:${config.port}`);
+  console.log(`  DB:     ${config.dbDriver}${config.dbDriver === "postgres" ? ` (${config.dbUrl.replace(/:[^:@/]+@/, ":***@")})` : ` ${config.dbPath}`}`);
 });

@@ -1,0 +1,24 @@
+meta {
+  name: Import .fio
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/import/fio
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:multipart-form {
+  file: @file(/path/to/resume.fio)
+}
+
+docs {
+  OSS / core: unzip + HMAC verify .fio → library draft (no DB write, no identity restore).
+  AI import stays on cloud POST /api/import/resume only.
+}

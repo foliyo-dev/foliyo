@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Foliyo</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="top">
+        <div>
+          <strong>Foliyo</strong>
+          <p class="sub">Tailor resume</p>
+        </div>
+        <p id="sessionBar" class="session hidden">
+          <span id="sessionEmail"></span>
+          <button id="logoutBtn" type="button" class="linkish">Sign out</button>
+        </p>
+      </header>
+
+      <section id="view-login" class="view hidden">
+        <div class="card">
+          <h2 class="section-title">Sign in</h2>
+          <p class="hint">Use your Foliyo account to create a tailored resume.</p>
+          <div class="fields">
+            <label class="field">
+              <span class="label">API base</span>
+              <input id="apiBase" type="url" />
+            </label>
+            <label class="field">
+              <span class="label">Email</span>
+              <input id="email" type="email" autocomplete="username" />
+            </label>
+            <label class="field">
+              <span class="label">Password</span>
+              <input id="password" type="password" autocomplete="current-password" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button id="loginBtn" type="button" class="btn">Sign in</button>
+          </div>
+          <p id="loginError" class="error"></p>
+        </div>
+      </section>
+
+      <section id="view-app" class="view hidden">
+        <div class="card">
+          <div class="create-head">
+            <h2 class="section-title">New tailored resume</h2>
+          </div>
+
+          <details class="step" open>
+            <summary>1. Details</summary>
+            <div class="fields">
+              <fieldset class="mode" aria-label="How to tailor">
+                <label class="mode-option"
+                  ><input type="radio" name="mode" value="jd" checked /> Paste JD</label
+                >
+                <label class="mode-option"
+                  ><input type="radio" name="mode" value="skills" /> Pick skills</label
+                >
+              </fieldset>
+
+              <label class="field">
+                <span class="label">Resume name</span>
+                <input id="resumeName" type="text" placeholder="Backend role — Acme" />
+              </label>
+
+              <label class="field">
+                <span class="label">Target portfolio</span>
+                <select id="portfolio"></select>
+                <span class="field-hint">Seeds a resume snapshot from this portfolio (folio unchanged).</span>
+              </label>
+
+              <label class="field">
+                <span class="label">Theme</span>
+                <select id="theme">
+                  <option value="classic">classic</option>
+                  <option value="compact">compact</option>
+                  <option value="academic">academic</option>
+                  <option value="sidebar">sidebar</option>
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <details id="stepTarget" class="step" open>
+            <summary>
+              2. Matching
+              <span id="skillsMeta" class="step-meta"></span>
+            </summary>
+            <div class="fields">
+              <label id="jdWrap" class="field">
+                <span class="label">Job description</span>
+                <textarea id="jd" rows="5" placeholder="Paste the JD text here…"></textarea>
+              </label>
+
+              <div id="skillsWrap" class="skills-block">
+                <div class="skills-head">
+                  <span class="label"
+                    >Skills <span id="skillsHint" class="muted"></span
+                  ></span>
+                  <div class="section-tools">
+                    <button id="selectAllSkills" type="button" class="linkish">Select all</button>
+                    <button id="clearSkills" type="button" class="linkish">Clear</button>
+                  </div>
+                </div>
+                <label class="search">
+                  <span class="sr-only">Filter skills</span>
+                  <input id="skillFilter" type="search" placeholder="Filter skills…" />
+                </label>
+                <ul id="skills" class="chips"></ul>
+                <p id="skillsEmpty" class="muted hidden">No skills match.</p>
+              </div>
+
+              <label class="check">
+                <input id="includeMatching" type="checkbox" checked />
+                Include matching experience &amp; projects
+              </label>
+            </div>
+          </details>
+
+          <div class="form-actions">
+            <button id="createBtn" type="button" class="btn">Create resume</button>
+          </div>
+          <p id="appError" class="error"></p>
+        </div>
+
+        <div id="result" class="card result hidden">
+          <h2 class="section-title">Ready</h2>
+          <p id="appOk" class="ok"></p>
+          <div class="result-actions">
+            <button id="downloadBtn" type="button" class="btn">Download .fio</button>
+            <a id="dashboardLink" class="ghost-link" href="#" target="_blank" rel="noreferrer"
+              >Open in Foliyo</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

@@ -11,6 +11,7 @@ export type PlanEntitlements = {
 	remove_branding: boolean;
 	ai_resume_import: boolean;
 	portfolio_limit: number | null;
+	resume_limit: number | null;
 };
 
 export type PlanInfo = {

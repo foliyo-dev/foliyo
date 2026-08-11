@@ -1,4 +1,4 @@
-/* Foliyo resume theme: academic — emphatic CV headings */
+/* Foliyo resume theme: academic — emphatic CV document */
 @import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap");
 
 :root {
@@ -6,8 +6,9 @@
   --muted: #78716c;
   --line: #d6d3d1;
   --accent: #1e3a5f;
-  --bg: #f5f5f4;
-  --max: 50rem;
+  --bg: #e7e5e4;
+  --surface: #ffffff;
+  --max: 8.5in;
 }
 
 * { box-sizing: border-box; }
@@ -19,20 +20,25 @@ body.theme-academic {
   font-family: "Source Sans 3", system-ui, sans-serif;
   font-size: 0.95rem;
   line-height: 1.5;
-  padding-bottom: 5rem;
+  padding: 1.5rem 1rem 5rem;
 }
 
-.theme-academic .page {
+.theme-academic .page.resume-page {
   max-width: var(--max);
-  margin: 1.5rem auto;
-  padding: 2rem 2rem 2.5rem;
-  background: #fff;
-  border: 1px solid var(--line);
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
-.theme-academic .hero {
-  margin-bottom: 0.35rem;
+.theme-academic .resume-sheet {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 22px rgba(28, 25, 23, 0.08);
+  padding: 0.7in 0.8in 0.85in;
 }
+
+.theme-academic .hero { margin-bottom: 0.25rem; }
 
 .theme-academic h1 {
   margin: 0;
@@ -46,28 +52,29 @@ body.theme-academic {
 .theme-academic .headline {
   margin: 0.25rem 0 0;
   font-family: "Crimson Pro", Georgia, serif;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 500;
   color: var(--muted);
   font-style: italic;
 }
 
 .theme-academic .contact {
-  margin: 0.65rem 0 1.25rem;
-  padding-bottom: 0.75rem;
+  margin: 0.55rem 0 0;
+  padding-bottom: 0.65rem;
   border-bottom: 2px solid var(--accent);
   font-size: 0.875rem;
   color: var(--muted);
 }
 
 .theme-academic .contact a { color: var(--accent); }
+.theme-academic .social-links-doc { justify-content: flex-start; }
 
-.theme-academic .section { margin-top: 1.5rem; }
+.theme-academic .section { margin-top: 1.35rem; }
 
 .theme-academic .section h2 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.65rem;
   font-family: "Crimson Pro", Georgia, serif;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--accent);
   border-bottom: 1px solid var(--line);
@@ -92,7 +99,7 @@ body.theme-academic {
 
 .theme-academic .cards li,
 .theme-academic .timeline li {
-  margin-bottom: 0.95rem;
+  margin-bottom: 0.85rem;
 }
 
 .theme-academic .item-head {
@@ -104,8 +111,8 @@ body.theme-academic {
 
 .theme-academic .item-head strong { font-weight: 600; }
 .theme-academic .item-sub { color: var(--muted); font-style: italic; font-size: 0.9rem; }
-.theme-academic .links { margin: 0.3rem 0 0; font-size: 0.85rem; }
-.theme-academic .links a { color: var(--accent); }
+.theme-academic .links { margin: 0.25rem 0 0; font-size: 0.8rem; }
+.theme-academic .doc-link { color: var(--accent); }
 .theme-academic .muted { color: var(--muted); font-size: 0.85rem; }
 
 .theme-academic .site-footer {
@@ -117,31 +124,16 @@ body.theme-academic {
 
 .theme-academic .site-footer a { color: var(--accent); }
 
-.theme-academic .print-fab {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 50;
-}
-
 .theme-academic .print-btn {
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.7rem 1.1rem;
-  border: none;
   background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  cursor: pointer;
   box-shadow: 0 8px 24px rgba(30, 58, 95, 0.28);
 }
 
-.theme-academic .print-btn:hover { filter: brightness(1.08); }
-
 @media print {
-  body.theme-academic { background: #fff; }
-  .theme-academic .page { margin: 0; border: 0; max-width: none; }
-  .theme-academic .site-footer,
-  .theme-academic .no-print { display: none !important; }
+  body.theme-academic { background: #fff; padding: 0; }
+  .theme-academic .resume-sheet {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
 }

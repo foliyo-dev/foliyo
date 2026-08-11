@@ -28,6 +28,7 @@
 	let startDate = '';
 	let endDate = '';
 	let description = '';
+	let skillsInput = '';
 	let sortOrder = '0';
 
 	onMount(load);
@@ -44,6 +45,23 @@
 		}
 	}
 
+	function skillsToJson(input: string): string {
+		const skills = input
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
+		return JSON.stringify(skills);
+	}
+
+	function skillsFromJson(json: string): string {
+		try {
+			const arr = JSON.parse(json || '[]') as string[];
+			return Array.isArray(arr) ? arr.join(', ') : '';
+		} catch {
+			return '';
+		}
+	}
+
 	function resetForm() {
 		institution = '';
 		degree = '';
@@ -51,6 +69,7 @@
 		startDate = '';
 		endDate = '';
 		description = '';
+		skillsInput = '';
 		present = false;
 		sortOrder = String(items.length);
 		editingId = null;
@@ -64,6 +83,7 @@
 			start_date: startDate,
 			end_date: present ? null : endDate || null,
 			description,
+			skills_developed: skillsToJson(skillsInput),
 			sort_order: Number(sortOrder) || 0
 		};
 	}
@@ -95,6 +115,7 @@
 		endDate = item.end_date ?? '';
 		present = !item.end_date;
 		description = item.description;
+		skillsInput = skillsFromJson(item.skills_developed ?? '[]');
 		sortOrder = String(item.sort_order);
 		shell?.scrollToForm();
 	}
@@ -131,7 +152,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={editingId ? 'Edit education' : 'Education'}
-		description="Degrees and schools — shared with your public profile and resume."
+		description="Degrees and schools — add skills developed to feed your skill library."
 	/>
 
 	<Card>
@@ -151,6 +172,7 @@
 			Currently studying here
 		</label>
 		<Textarea label="Description" bind:value={description} rows={3} />
+		<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Python, Data structures" />
 		<Input label="Sort order" bind:value={sortOrder} />
 	</div>
 	<div class="form-actions">
@@ -181,6 +203,9 @@
 							<span class="meta">{item.start_date} – {item.end_date ?? 'Present'}</span>
 							{#if item.description}
 								<p class="desc">{item.description}</p>
+							{/if}
+							{#if skillsFromJson(item.skills_developed ?? '[]')}
+								<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
 							{/if}
 						</div>
 						<div class="row-actions">

@@ -6,11 +6,11 @@ import { sendMail } from "./send.js";
 
 const VERIFY_HOURS = 24;
 
-export function createEmailVerifyToken(db: FoliyoDb, userId: string): string {
+export async function createEmailVerifyToken(db: FoliyoDb, userId: string): Promise<string> {
   const token = nanoid(32);
   const expires = new Date();
   expires.setHours(expires.getHours() + VERIFY_HOURS);
-  run(
+  await run(
     db,
     `UPDATE users SET email_verify_token = ?, email_verify_expires = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [token, expires.toISOString(), userId],
@@ -18,33 +18,33 @@ export function createEmailVerifyToken(db: FoliyoDb, userId: string): string {
   return token;
 }
 
-export function clearEmailVerifyToken(db: FoliyoDb, userId: string): void {
-  run(
+export async function clearEmailVerifyToken(db: FoliyoDb, userId: string): Promise<void> {
+  await run(
     db,
     `UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [userId],
   );
 }
 
-export function markEmailVerified(db: FoliyoDb, userId: string): void {
-  run(
+export async function markEmailVerified(db: FoliyoDb, userId: string): Promise<void> {
+  await run(
     db,
     `UPDATE users SET email_verified = 1, email_verify_token = NULL, email_verify_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [userId],
   );
 }
 
-export function findUserByVerifyToken(
+export async function findUserByVerifyToken(
   db: FoliyoDb,
   token: string,
-): { id: string; email: string; email_verified: number } | null {
+): Promise<{ id: string; email: string; email_verified: number } | null> {
   return (
-    queryOne<{ id: string; email: string; email_verified: number }>(
+    (await queryOne<{ id: string; email: string; email_verified: number }>(
       db,
       `SELECT id, email, email_verified FROM users
        WHERE email_verify_token = ? AND email_verify_expires > CURRENT_TIMESTAMP`,
       [token],
-    ) ?? null
+    )) ?? null
   );
 }
 
@@ -113,8 +113,8 @@ export async function sendWelcomeEmail(
   });
 }
 
-export function markWelcomeEmailSent(db: FoliyoDb, userId: string): void {
-  run(
+export async function markWelcomeEmailSent(db: FoliyoDb, userId: string): Promise<void> {
+  await run(
     db,
     `UPDATE users SET welcome_email_sent = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [userId],

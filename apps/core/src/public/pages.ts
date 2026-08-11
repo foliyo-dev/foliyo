@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveCoreTemplatesDir } from "../assets.js";
 import type { Config } from "../config.js";
-import { queryAll, queryOne, type FoliyoDb } from "../db.js";
+import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
 import { renderPortfolioHtml } from "./themes.js";
 
 export type PublicPortfolio = {
@@ -27,59 +27,59 @@ function handleFromEmail(email: string): string {
 }
 
 /** Ensure every user has a handle (for /u/:handle URLs). */
-export function ensureHandles(db: FoliyoDb): void {
-  const users = queryAll<{ id: string; email: string; handle: string | null }>(
+export async function ensureHandles(db: FoliyoDb): Promise<void> {
+  const users = await queryAll<{ id: string; email: string; handle: string | null }>(
     db, "SELECT id, email, handle FROM users WHERE handle IS NULL OR handle = ''",
   );
   for (const u of users) {
     let handle = handleFromEmail(u.email);
     let n = 0;
-    while (queryOne(db, "SELECT id FROM users WHERE handle = ? AND id != ?", [handle, u.id])) {
+    while (await queryOne(db, "SELECT id FROM users WHERE handle = ? AND id != ?", [handle, u.id])) {
       n += 1;
       handle = `${handleFromEmail(u.email)}${n}`;
     }
-    db.prepare("UPDATE users SET handle = ? WHERE id = ?").run(handle, u.id);
+    await run(db, "UPDATE users SET handle = ? WHERE id = ?", [handle, u.id]);
   }
 }
 
-export function getUserByHandle(db: FoliyoDb, handle: string) {
+export async function getUserByHandle(db: FoliyoDb, handle: string) {
   return queryOne<{ id: string; handle: string; email: string }>(
     db, "SELECT id, handle, email FROM users WHERE handle = ?", [handle],
   );
 }
 
-export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicPortfolio | null {
-  const portfolio = queryOne(db, "SELECT * FROM portfolios WHERE id = ?", [portfolioId]);
+export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): Promise<PublicPortfolio | null> {
+  const portfolio = await queryOne(db, "SELECT * FROM portfolios WHERE id = ?", [portfolioId]);
   if (!portfolio) return null;
 
   const userId = portfolio.user_id as string;
-  const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
-  const user = queryOne<{ handle: string; plan: string; plan_expires: string | null }>(
+  const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+  const user = await queryOne<{ handle: string; plan: string; plan_expires: string | null }>(
     db,
     "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
     [userId],
   );
 
-  const skillIds = queryAll<{ skill_id: string }>(
+  const skillIds = (await queryAll<{ skill_id: string }>(
     db, "SELECT skill_id FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.skill_id);
-  const projectIds = queryAll<{ project_id: string }>(
+  )).map((r) => r.skill_id);
+  const projectIds = (await queryAll<{ project_id: string }>(
     db, "SELECT project_id FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.project_id);
-  const experienceIds = queryAll<{ experience_id: string }>(
+  )).map((r) => r.project_id);
+  const experienceIds = (await queryAll<{ experience_id: string }>(
     db, "SELECT experience_id FROM portfolio_experience WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.experience_id);
-  const educationIds = queryAll<{ education_id: string }>(
+  )).map((r) => r.experience_id);
+  const educationIds = (await queryAll<{ education_id: string }>(
     db, "SELECT education_id FROM portfolio_education WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.education_id);
-  const certificationIds = queryAll<{ certification_id: string }>(
+  )).map((r) => r.education_id);
+  const certificationIds = (await queryAll<{ certification_id: string }>(
     db, "SELECT certification_id FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.certification_id);
-  const languageIds = queryAll<{ language_id: string }>(
+  )).map((r) => r.certification_id);
+  const languageIds = (await queryAll<{ language_id: string }>(
     db, "SELECT language_id FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId],
-  ).map((r) => r.language_id);
+  )).map((r) => r.language_id);
 
-  const fetchByIds = (table: string, ids: string[]) => {
+  const fetchByIds = async (table: string, ids: string[]) => {
     if (!ids.length) return [];
     return queryAll(
       db,
@@ -88,17 +88,26 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
     );
   };
 
+  let skills =
+    portfolio.show_skills === 1 ? await fetchByIds("skills", skillIds) : [];
+  // Public surfaces only show confirmed skills.
+  skills = skills.filter(
+    (s) =>
+      (s.status as string | undefined) !== "pending" &&
+      (s.status as string | undefined) !== "dismissed",
+  );
+
   return {
     portfolio,
     profile: profile ?? { name: "", headline: "", bio: "" },
-    skills: portfolio.show_skills === 1 ? fetchByIds("skills", skillIds) : [],
-    projects: portfolio.show_projects === 1 ? fetchByIds("projects", projectIds) : [],
-    experience: portfolio.show_experience === 1 ? fetchByIds("experience", experienceIds) : [],
-    education: portfolio.show_education === 1 ? fetchByIds("education", educationIds) : [],
+    skills,
+    projects: portfolio.show_projects === 1 ? await fetchByIds("projects", projectIds) : [],
+    experience: portfolio.show_experience === 1 ? await fetchByIds("experience", experienceIds) : [],
+    education: portfolio.show_education === 1 ? await fetchByIds("education", educationIds) : [],
     certifications:
-      portfolio.show_certifications === 1 ? fetchByIds("certifications", certificationIds) : [],
-    languages: portfolio.show_languages === 1 ? fetchByIds("languages", languageIds) : [],
-    social_links: queryAll(
+      portfolio.show_certifications === 1 ? await fetchByIds("certifications", certificationIds) : [],
+    languages: portfolio.show_languages === 1 ? await fetchByIds("languages", languageIds) : [],
+    social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
       [userId],
@@ -109,24 +118,148 @@ export function loadPortfolioContent(db: FoliyoDb, portfolioId: string): PublicP
   };
 }
 
-export function getDefaultPublicPortfolio(db: FoliyoDb, userId?: string): PublicPortfolio | null {
+/**
+ * Load a resume's own content snapshot for preview / public / export.
+ * Uses resume_* junctions; portfolio_id is only for optional headline/bio overrides.
+ */
+export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise<PublicPortfolio | null> {
+  const resume = await queryOne<{
+    id: string;
+    user_id: string;
+    name: string;
+    theme_slug: string;
+    portfolio_id: string | null;
+  }>(db, "SELECT * FROM resumes WHERE id = ?", [resumeId]);
+  if (!resume) return null;
+
+  const userId = resume.user_id;
+  const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+  const user = await queryOne<{ handle: string; plan: string; plan_expires: string | null }>(
+    db,
+    "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
+    [userId],
+  );
+
+  const portfolio = resume.portfolio_id
+    ? await queryOne(db, "SELECT * FROM portfolios WHERE id = ?", [resume.portfolio_id])
+    : null;
+
+  const skillIds = (
+    await queryAll<{ skill_id: string }>(db, "SELECT skill_id FROM resume_skills WHERE resume_id = ?", [
+      resumeId,
+    ])
+  ).map((r) => r.skill_id);
+  const projectIds = (
+    await queryAll<{ project_id: string }>(
+      db,
+      "SELECT project_id FROM resume_projects WHERE resume_id = ?",
+      [resumeId],
+    )
+  ).map((r) => r.project_id);
+  const experienceIds = (
+    await queryAll<{ experience_id: string }>(
+      db,
+      "SELECT experience_id FROM resume_experience WHERE resume_id = ?",
+      [resumeId],
+    )
+  ).map((r) => r.experience_id);
+  const educationIds = (
+    await queryAll<{ education_id: string }>(
+      db,
+      "SELECT education_id FROM resume_education WHERE resume_id = ?",
+      [resumeId],
+    )
+  ).map((r) => r.education_id);
+  const certificationIds = (
+    await queryAll<{ certification_id: string }>(
+      db,
+      "SELECT certification_id FROM resume_certifications WHERE resume_id = ?",
+      [resumeId],
+    )
+  ).map((r) => r.certification_id);
+  const languageIds = (
+    await queryAll<{ language_id: string }>(
+      db,
+      "SELECT language_id FROM resume_languages WHERE resume_id = ?",
+      [resumeId],
+    )
+  ).map((r) => r.language_id);
+
+  const fetchByIds = async (table: string, ids: string[]) => {
+    if (!ids.length) return [];
+    return queryAll(
+      db,
+      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) ORDER BY sort_order`,
+      ids,
+    );
+  };
+
+  let skills = await fetchByIds("skills", skillIds);
+  skills = skills.filter(
+    (s) =>
+      (s.status as string | undefined) !== "pending" &&
+      (s.status as string | undefined) !== "dismissed",
+  );
+
+  const portfolioShell: Record<string, unknown> = portfolio
+    ? { ...portfolio }
+    : {
+        id: `resume-shell-${resume.id}`,
+        user_id: userId,
+        name: resume.name,
+        slug: "resume",
+        description: "",
+        theme_slug: "minimal",
+        headline: "",
+        bio: "",
+        is_public: 0,
+        is_default: 0,
+        show_skills: 1,
+        show_projects: 1,
+        show_experience: 1,
+        show_education: 1,
+        show_certifications: 1,
+        show_languages: 1,
+      };
+
+  return {
+    portfolio: portfolioShell,
+    profile: profile ?? { name: "", headline: "", bio: "" },
+    skills,
+    projects: await fetchByIds("projects", projectIds),
+    experience: await fetchByIds("experience", experienceIds),
+    education: await fetchByIds("education", educationIds),
+    certifications: await fetchByIds("certifications", certificationIds),
+    languages: await fetchByIds("languages", languageIds),
+    social_links: await queryAll(
+      db,
+      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      [userId],
+    ),
+    handle: user?.handle ?? "",
+    plan: user?.plan ?? "free",
+    plan_expires: user?.plan_expires ?? null,
+  };
+}
+
+export async function getDefaultPublicPortfolio(db: FoliyoDb, userId?: string): Promise<PublicPortfolio | null> {
   const portfolio = userId
-    ? queryOne(
+    ? await queryOne(
       db,
       "SELECT * FROM portfolios WHERE user_id = ? AND is_default = 1 AND is_public = 1",
       [userId],
     )
-    : queryOne(db, "SELECT * FROM portfolios WHERE is_default = 1 AND is_public = 1 LIMIT 1");
+    : await queryOne(db, "SELECT * FROM portfolios WHERE is_default = 1 AND is_public = 1 LIMIT 1");
   if (!portfolio) return null;
   return loadPortfolioContent(db, portfolio.id as string);
 }
 
-export function getPublicPortfolioBySlug(
+export async function getPublicPortfolioBySlug(
   db: FoliyoDb,
   userId: string,
   slug: string,
-): PublicPortfolio | null {
-  const portfolio = queryOne(
+): Promise<PublicPortfolio | null> {
+  const portfolio = await queryOne(
     db,
     "SELECT * FROM portfolios WHERE user_id = ? AND slug = ? AND is_public = 1",
     [userId, slug],
@@ -138,27 +271,35 @@ export function getPublicPortfolioBySlug(
 /**
  * Synthetic portfolio from the user's full content library (no portfolio required).
  * Used by the dashboard live preview pane.
+ * Theme matches the default portfolio when present so content preview shares
+ * the same design language as portfolio live preview.
  */
-export function loadLibraryPreview(
+export async function loadLibraryPreview(
   db: FoliyoDb,
   userId: string,
   themeOverride?: string,
-): PublicPortfolio | null {
-  const user = queryOne<{ handle: string | null; plan: string; plan_expires: string | null }>(
+): Promise<PublicPortfolio | null> {
+  const user = await queryOne<{ handle: string | null; plan: string; plan_expires: string | null }>(
     db,
     "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
     [userId],
   );
   if (!user) return null;
 
-  const profile = queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
-  const settings = queryOne<{ theme_slug: string }>(
+  const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+  const defaultPortfolio = await queryOne<{ theme_slug: string }>(
+    db,
+    "SELECT theme_slug FROM portfolios WHERE user_id = ? AND is_default = 1 LIMIT 1",
+    [userId],
+  );
+  const settings = await queryOne<{ theme_slug: string }>(
     db,
     "SELECT theme_slug FROM settings WHERE user_id = ?",
     [userId],
   );
 
-  const themeSlug = themeOverride || settings?.theme_slug || "minimal";
+  const themeSlug =
+    themeOverride || defaultPortfolio?.theme_slug || settings?.theme_slug || "minimal";
 
   return {
     portfolio: {
@@ -180,27 +321,135 @@ export function loadLibraryPreview(
       show_languages: 1,
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
-    skills: queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [
+    skills: await queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [
       userId,
     ]),
-    projects: queryAll(db, "SELECT * FROM projects WHERE user_id = ? ORDER BY sort_order, title", [
+    projects: await queryAll(db, "SELECT * FROM projects WHERE user_id = ? ORDER BY sort_order, title", [
       userId,
     ]),
-    experience: queryAll(db, "SELECT * FROM experience WHERE user_id = ? ORDER BY sort_order", [
+    experience: await queryAll(db, "SELECT * FROM experience WHERE user_id = ? ORDER BY sort_order", [
       userId,
     ]),
-    education: queryAll(db, "SELECT * FROM education WHERE user_id = ? ORDER BY sort_order", [
+    education: await queryAll(db, "SELECT * FROM education WHERE user_id = ? ORDER BY sort_order", [
       userId,
     ]),
-    certifications: queryAll(
+    certifications: await queryAll(
       db,
       "SELECT * FROM certifications WHERE user_id = ? ORDER BY sort_order",
       [userId],
     ),
-    languages: queryAll(db, "SELECT * FROM languages WHERE user_id = ? ORDER BY sort_order", [
+    languages: await queryAll(db, "SELECT * FROM languages WHERE user_id = ? ORDER BY sort_order", [
       userId,
     ]),
-    social_links: queryAll(
+    social_links: await queryAll(
+      db,
+      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      [userId],
+    ),
+    handle: user.handle ?? "",
+    plan: user.plan ?? "free",
+    plan_expires: user.plan_expires ?? null,
+  };
+}
+
+export type PortfolioDraftPreviewInput = {
+  name?: string;
+  description?: string;
+  headline?: string;
+  bio?: string;
+  theme_slug?: string;
+  show_skills?: number;
+  show_projects?: number;
+  show_experience?: number;
+  show_education?: number;
+  show_certifications?: number;
+  show_languages?: number;
+  skill_ids?: string[];
+  project_ids?: string[];
+  experience_ids?: string[];
+  education_ids?: string[];
+  certification_ids?: string[];
+  language_ids?: string[];
+};
+
+/**
+ * Owner-only synthetic portfolio for dashboard create/edit live preview
+ * before (or without) persisting junctions.
+ */
+export async function loadPortfolioDraftPreview(
+  db: FoliyoDb,
+  userId: string,
+  input: PortfolioDraftPreviewInput,
+): Promise<PublicPortfolio | null> {
+  const user = await queryOne<{ handle: string | null; plan: string; plan_expires: string | null }>(
+    db,
+    "SELECT handle, plan, plan_expires FROM users WHERE id = ?",
+    [userId],
+  );
+  if (!user) return null;
+
+  const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
+  const themeSlug = String(input.theme_slug ?? "minimal").trim().toLowerCase() || "minimal";
+
+  const show = (v: number | undefined, fallback = 1) => (v === 0 || v === 1 ? v : fallback);
+
+  const fetchOwned = async (table: string, ids: string[]) => {
+    if (!ids.length) return [];
+    return queryAll(
+      db,
+      `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")}) ORDER BY sort_order`,
+      [userId, ...ids],
+    );
+  };
+
+  let skills =
+    show(input.show_skills) === 1 ? await fetchOwned("skills", input.skill_ids ?? []) : [];
+  skills = skills.filter(
+    (s) =>
+      (s.status as string | undefined) !== "pending" &&
+      (s.status as string | undefined) !== "dismissed",
+  );
+
+  return {
+    portfolio: {
+      id: "draft-preview",
+      user_id: userId,
+      name: String(input.name ?? "").trim() || "Portfolio preview",
+      slug: "preview",
+      description: String(input.description ?? ""),
+      headline: String(input.headline ?? ""),
+      bio: String(input.bio ?? ""),
+      theme_slug: themeSlug,
+      is_public: 1,
+      is_default: 0,
+      show_skills: show(input.show_skills),
+      show_projects: show(input.show_projects),
+      show_experience: show(input.show_experience),
+      show_education: show(input.show_education),
+      show_certifications: show(input.show_certifications),
+      show_languages: show(input.show_languages),
+    },
+    profile: profile ?? { name: "", headline: "", bio: "" },
+    skills,
+    projects:
+      show(input.show_projects) === 1 ? await fetchOwned("projects", input.project_ids ?? []) : [],
+    experience:
+      show(input.show_experience) === 1
+        ? await fetchOwned("experience", input.experience_ids ?? [])
+        : [],
+    education:
+      show(input.show_education) === 1
+        ? await fetchOwned("education", input.education_ids ?? [])
+        : [],
+    certifications:
+      show(input.show_certifications) === 1
+        ? await fetchOwned("certifications", input.certification_ids ?? [])
+        : [],
+    languages:
+      show(input.show_languages) === 1
+        ? await fetchOwned("languages", input.language_ids ?? [])
+        : [],
+    social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
       [userId],

@@ -30,7 +30,7 @@
     {
       label: 'Publish',
       items: [
-        { href: '/portfolios', label: 'Portfolios' },
+		{ href: '/portfolios', label: 'Portfolios' },
         { href: '/resume', label: 'Resume' },
         { href: '/applications', label: 'Applications' }
       ]

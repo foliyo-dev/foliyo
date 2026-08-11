@@ -1,7 +1,20 @@
 import { api } from './client';
 
+export type ClearContentCounts = {
+	resumes: number;
+	portfolios: number;
+	skills: number;
+	projects: number;
+	experience: number;
+	education: number;
+	certifications: number;
+	languages: number;
+	social_links: number;
+	applications: number;
+	blog_posts: number;
+};
+
 export type Settings = {
-	id?: string;
 	site_title: string;
 	site_description: string;
 	theme_slug: string;
@@ -11,15 +24,13 @@ export type Settings = {
 };
 
 export const getSettings = () => api<Settings>('/settings');
+
 export const updateSettings = (data: Partial<Settings>) =>
 	api<Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) });
 
-export const portfolioThemes = [
-	'minimal',
-	'modern',
-	'creative',
-	'noir',
-	'atelier',
-	'editorial'
-] as const;
-export const resumeThemes = ['classic', 'compact', 'academic', 'sidebar'] as const;
+/** Wipe library/resumes/portfolios. Keeps login + email_verified. Confirm must be CLEAR. */
+export const clearAllContent = () =>
+	api<{ ok: true; deleted: ClearContentCounts }>('/settings/clear-content', {
+		method: 'POST',
+		body: JSON.stringify({ confirm: 'CLEAR' })
+	});

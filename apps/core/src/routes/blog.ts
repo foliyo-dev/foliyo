@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
-import { queryAll, run, type FoliyoDb } from "../db.js";
+import { queryAll, run, type FoliyoDb, type SqlValue } from "../db.js";
 
 const postSchema = z.object({
   title: z.string().min(1),
@@ -17,9 +17,9 @@ const postSchema = z.object({
 export function blogRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
-  r.get("/posts", (c) => {
+  r.get("/posts", async (c) => {
     const userId = c.get("userId");
-    const items = queryAll(db, "SELECT * FROM blog_posts WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+    const items = await queryAll(db, "SELECT * FROM blog_posts WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     return c.json(items);
   });
 
@@ -28,13 +28,13 @@ export function blogRoutes(db: FoliyoDb) {
     const body = postSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
     const d = body.data;
-    run(
+    await run(
       db,
       `INSERT INTO blog_posts (user_id, title, slug, content, excerpt, cover_image, tags, status, published_at)
        VALUES (?,?,?,?,?,?,?,?,?)`,
       [userId, d.title, d.slug, d.content, d.excerpt, d.cover_image, d.tags, d.status, d.published_at ?? null],
     );
-    const items = queryAll(db, "SELECT * FROM blog_posts WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+    const items = await queryAll(db, "SELECT * FROM blog_posts WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     return c.json(items, 201);
   });
 
@@ -46,15 +46,15 @@ export function blogRoutes(db: FoliyoDb) {
     const cols = Object.keys(body.data);
     if (cols.length === 0) return c.json({ ok: true });
     const sets = cols.map((col) => `${col}=?`).join(", ");
-    run(db, `UPDATE blog_posts SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
-      ...Object.values(body.data), id, userId,
+    await run(db, `UPDATE blog_posts SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
+      ...Object.values(body.data) as SqlValue[], id, userId,
     ]);
     return c.json({ ok: true });
   });
 
-  r.delete("/posts/:id", (c) => {
+  r.delete("/posts/:id", async (c) => {
     const userId = c.get("userId");
-    run(db, "DELETE FROM blog_posts WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
+    await run(db, "DELETE FROM blog_posts WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
     return c.body(null, 204);
   });
 

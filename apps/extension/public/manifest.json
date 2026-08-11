@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Foliyo",
+  "description": "Paste a JD or pick skills to tailor and download your Foliyo resume.",
+  "version": "0.4.1",
+  "action": {
+    "default_title": "Foliyo",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "extension@foliyo.dev",
+      "strict_min_version": "121.0"
+    }
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://localhost:8080/*",
+    "http://127.0.0.1:8080/*",
+    "https://*.foliyo.dev/*",
+    "https://foliyo.dev/*"
+  ]
+}

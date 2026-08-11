@@ -8,7 +8,7 @@
   --accent: #8b1e1e;
   --bg: #faf7f2;
   --surface: #ffffff;
-  --max: 42rem;
+  --max: 48rem;
 }
 
 * { box-sizing: border-box; }
@@ -22,25 +22,26 @@ body.theme-editorial {
   line-height: 1.65;
 }
 
-.theme-editorial .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.85rem 1.5rem;
+.theme-editorial .site-nav {
   border-bottom: 3px double var(--ink);
   background: var(--surface);
 }
 
-.theme-editorial .topbar a {
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.theme-editorial .site-nav .site-name {
+  font-family: "Newsreader", Georgia, serif;
+  letter-spacing: 0.02em;
 }
 
-.theme-editorial .topbar .handle { color: var(--accent); font-weight: 500; }
+.theme-editorial .site-nav-links a {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.theme-editorial .site-nav-links a:hover { color: var(--accent); }
+.theme-editorial .site-nav .handle { color: var(--accent); }
 
 .theme-editorial .page {
   max-width: var(--max);

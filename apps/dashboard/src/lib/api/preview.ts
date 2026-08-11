@@ -17,3 +17,69 @@ export async function fetchLibraryPreviewHtml(theme?: string): Promise<string> {
 	}
 	return res.text();
 }
+
+/** Fetch private portfolio preview HTML for a saved folio (owner, all plans). */
+export async function fetchPortfolioPreviewHtml(portfolioId: string): Promise<string> {
+	const token = get(accessToken);
+	const res = await fetch(`${API_BASE}/preview/portfolio/${encodeURIComponent(portfolioId)}`, {
+		headers: token ? { Authorization: `Bearer ${token}` } : {}
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new ApiError(text || res.statusText, res.status);
+	}
+	return res.text();
+}
+
+export type PortfolioDraftPreview = {
+	name?: string;
+	description?: string;
+	headline?: string;
+	bio?: string;
+	theme_slug?: string;
+	show_skills?: number;
+	show_projects?: number;
+	show_experience?: number;
+	show_education?: number;
+	show_certifications?: number;
+	show_languages?: number;
+	skill_ids?: string[];
+	project_ids?: string[];
+	experience_ids?: string[];
+	education_ids?: string[];
+	certification_ids?: string[];
+	language_ids?: string[];
+};
+
+/** Render unsaved portfolio form state as HTML (owner, all plans). */
+export async function fetchPortfolioDraftPreviewHtml(
+	draft: PortfolioDraftPreview
+): Promise<string> {
+	const token = get(accessToken);
+	const res = await fetch(`${API_BASE}/preview/portfolio/draft`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {})
+		},
+		body: JSON.stringify(draft)
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new ApiError(text || res.statusText, res.status);
+	}
+	return res.text();
+}
+
+/** Fetch private resume preview HTML for the logged-in owner (all plans). */
+export async function fetchResumePreviewHtml(resumeId: string): Promise<string> {
+	const token = get(accessToken);
+	const res = await fetch(`${API_BASE}/preview/resume/${encodeURIComponent(resumeId)}`, {
+		headers: token ? { Authorization: `Bearer ${token}` } : {}
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new ApiError(text || res.statusText, res.status);
+	}
+	return res.text();
+}

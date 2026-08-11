@@ -10,7 +10,7 @@
   --bg: #f3ebe1;
   --surface: #fffaf4;
   --hero: #2a1f17;
-  --max: 48rem;
+  --max: 52rem;
 }
 
 * { box-sizing: border-box; }
@@ -25,24 +25,20 @@ body.theme-creative {
   line-height: 1.55;
 }
 
-.theme-creative .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.9rem 1.5rem;
+.theme-creative .site-nav {
   background: var(--hero);
+  border-bottom: 0;
   color: #f5ebe0;
 }
 
-.theme-creative .topbar a {
+.theme-creative .site-nav .site-name {
   color: #f5ebe0;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-family: "Fraunces", Georgia, serif;
 }
 
-.theme-creative .topbar .brand { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.72rem; }
-.theme-creative .topbar .handle { opacity: 0.85; }
+.theme-creative .site-nav .handle { color: rgba(245, 235, 224, 0.85); }
+.theme-creative .site-nav-links a { color: rgba(245, 235, 224, 0.78); }
+.theme-creative .site-nav-links a:hover { color: #f0a06a; }
 
 .theme-creative .page {
   max-width: var(--max);

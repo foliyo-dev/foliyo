@@ -9,6 +9,7 @@ export type Experience = {
 	end_date: string | null;
 	description: string;
 	article_url: string;
+	skills_developed: string;
 	sort_order: number;
 };
 

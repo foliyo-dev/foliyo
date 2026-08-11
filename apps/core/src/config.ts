@@ -82,12 +82,22 @@ export function loadConfig(): Config {
   const y = (key: string, fallback: string) =>
     (yaml[key] as string | undefined) ?? fallback;
 
+  const dbDriverRaw = env("FOLIYO_DB_DRIVER", y("db_driver", "sqlite")).toLowerCase();
+  if (dbDriverRaw !== "sqlite" && dbDriverRaw !== "postgres") {
+    throw new Error(`Invalid FOLIYO_DB_DRIVER=${dbDriverRaw}. Use sqlite or postgres.`);
+  }
+  const dbDriver = dbDriverRaw as Config["dbDriver"];
+  const dbUrl = env("FOLIYO_DB_URL", y("db_url", ""));
+  if (dbDriver === "postgres" && !dbUrl) {
+    throw new Error("FOLIYO_DB_URL is required when FOLIYO_DB_DRIVER=postgres");
+  }
+
   return {
     port: envInt("FOLIYO_PORT", Number.parseInt(y("port", "8080"), 10)),
     host: env("FOLIYO_HOST", y("host", "0.0.0.0")),
-    dbDriver: (env("FOLIYO_DB_DRIVER", y("db_driver", "sqlite")) as Config["dbDriver"]),
+    dbDriver,
     dbPath: env("FOLIYO_DB_PATH", y("db_path", "./data/foliyo.db")),
-    dbUrl: env("FOLIYO_DB_URL", y("db_url", "")),
+    dbUrl,
     dataDir: env("FOLIYO_DATA_DIR", y("data_dir", "./data")),
     adminEmail: env("FOLIYO_ADMIN_EMAIL", y("admin_email", "")),
     adminPassword: env("FOLIYO_ADMIN_PASSWORD", y("admin_password", "")),

@@ -68,7 +68,7 @@
 			{/if}
 		</div>
 	</div>
-	<p class="hint">Full library as a folio — no portfolio required. Updates after you save.</p>
+	<p class="hint">Full library as a folio — uses your default portfolio theme. Updates after you save.</p>
 	<div class="frame-wrap">
 		{#if error}
 			<p class="err">{error}</p>
@@ -98,7 +98,7 @@
 				<button type="button" class="ghost" on:click={closeDrawer}>Close</button>
 			</div>
 		</div>
-		<p class="hint">Full library as a folio — updates after you save.</p>
+		<p class="hint">Full library as a folio — uses your default portfolio theme. Updates after you save.</p>
 		<div class="frame-wrap drawer-frame">
 			{#if error}
 				<p class="err">{error}</p>

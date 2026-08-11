@@ -22,6 +22,7 @@ import { previewRoutes } from "./routes/preview.js";
 import { publicRoutes } from "./routes/public.js";
 import { specRoutes } from "./routes/spec.js";
 import { statusNotifyRoutes } from "./routes/status-notify.js";
+import { fioImportRoutes } from "./routes/fio-import.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 export type CreateFoliyoAppOptions = {
@@ -46,15 +47,36 @@ export function createFoliyoApp(
   app.use(
     "*",
     cors({
-      origin: config.corsOrigins.includes("*") ? "*" : config.corsOrigins,
+      origin: (origin) => {
+        // No Origin (curl, same-origin server tools)
+        if (!origin) return "*";
+        if (config.corsOrigins.includes("*")) return origin;
+        if (config.corsOrigins.includes(origin)) return origin;
+        // Browser extensions (popup / SW) — auth still required on API routes
+        if (
+          origin.startsWith("chrome-extension://") ||
+          origin.startsWith("moz-extension://")
+        ) {
+          return origin;
+        }
+        return null;
+      },
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization", "X-Mesh-Query", "X-Mesh-Format"],
-      exposeHeaders: ["Content-Length"],
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Mesh-Query",
+        "X-Mesh-Format",
+        "X-Mesh-Token",
+        "X-Mesh-Signature",
+        "X-Mesh-Version",
+      ],
+      exposeHeaders: ["Content-Length", "Content-Disposition", "X-Foliyo-Export", "X-Foliyo-Content-Hash"],
       maxAge: 86400,
     }),
   );
 
-  app.route("/", createMeshRouter(db));
+  app.route("/", createMeshRouter(db, config));
   app.route("/", publicRoutes(db, config));
   // Foliyo Resume Spec — public verify + ATS status notify (HMAC + API key)
   app.route("/v1", specRoutes(db, config));
@@ -82,6 +104,7 @@ export function createFoliyoApp(
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));
   api.route("/settings", settingsRoutes(db));
+  api.route("/import", fioImportRoutes(db, config));
   api.route("/preview", previewRoutes(db, config));
   // Cloud (and other hosts) must register here — not after createFoliyoApp returns.
   options.extendApi?.(api);

@@ -29,6 +29,7 @@
 	let endDate = '';
 	let description = '';
 	let articleUrl = '';
+	let skillsInput = '';
 	let sortOrder = '0';
 
 	onMount(load);
@@ -45,6 +46,23 @@
 		}
 	}
 
+	function skillsToJson(input: string): string {
+		const skills = input
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
+		return JSON.stringify(skills);
+	}
+
+	function skillsFromJson(json: string): string {
+		try {
+			const arr = JSON.parse(json || '[]') as string[];
+			return Array.isArray(arr) ? arr.join(', ') : '';
+		} catch {
+			return '';
+		}
+	}
+
 	function resetForm() {
 		company = '';
 		role = '';
@@ -53,6 +71,7 @@
 		endDate = '';
 		description = '';
 		articleUrl = '';
+		skillsInput = '';
 		present = false;
 		sortOrder = String(items.length);
 		editingId = null;
@@ -67,6 +86,7 @@
 			end_date: present ? null : endDate || null,
 			description,
 			article_url: articleUrl,
+			skills_developed: skillsToJson(skillsInput),
 			sort_order: Number(sortOrder) || 0
 		};
 	}
@@ -99,6 +119,7 @@
 		present = !item.end_date;
 		description = item.description;
 		articleUrl = item.article_url ?? '';
+		skillsInput = skillsFromJson(item.skills_developed ?? '[]');
 		sortOrder = String(item.sort_order);
 		shell?.scrollToForm();
 	}
@@ -135,7 +156,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={editingId ? 'Edit role' : 'Experience'}
-		description="Work history — optional case-study / write-up links for resume deep dives."
+		description="Work history — add skills developed so Foliyo can suggest skills for your library. Optional write-up links for resume deep dives."
 	/>
 
 	<Card>
@@ -155,6 +176,7 @@
 			Currently working here
 		</label>
 		<Textarea label="Description" bind:value={description} rows={4} />
+		<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Node.js, PostgreSQL" />
 		<Input
 			label="Case study / write-up URL"
 			bind:value={articleUrl}
@@ -195,6 +217,9 @@
 								<p class="meta">
 									<a href={item.article_url} target="_blank" rel="noreferrer">View write-up →</a>
 								</p>
+							{/if}
+							{#if skillsFromJson(item.skills_developed ?? '[]')}
+								<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
 							{/if}
 						</div>
 						<div class="row-actions">

@@ -8,6 +8,7 @@ export type Education = {
 	start_date: string;
 	end_date: string | null;
 	description: string;
+	skills_developed: string;
 	sort_order: number;
 };
 

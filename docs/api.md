@@ -25,10 +25,16 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | CRUD | `/api/resumes`, `/api/resumes/:id` |
 | GET | `/api/resumes/:id/export` — Pro: printable HTML; Free: **402** + upgrade payload |
 | GET | `/api/resumes/:id/export.fio` — Foliyo Resume Spec `.fio` ZIP (all plans) |
+| POST | `/api/resumes/tailor` — JD/skills tailor → resume content snapshot (portfolio unchanged) `{ resume, content, matched_skill_ids, analysis }` |
+| GET, PUT | `/api/resumes/:id/content` — resume content snapshot IDs |
+| GET | `/api/preview/library` — auth HTML preview of full content library as a portfolio |
+| GET | `/api/preview/resume/:id` — auth private resume HTML preview (all plans) |
 | CRUD | `/api/applications` — manual application tracker |
 | POST | `/api/import/resume` — **hosted Pro**: PDF/text → Foliyo Resume Spec draft (OpenRouter; no DB write) |
-| GET | `/api/plan` — plan, pricing, entitlements |
+| POST | `/api/import/fio` — unzip + verify `.fio` → library draft (no identity / email_verified restore) |
+| GET | `/api/plan` — plan, pricing, entitlements (`resume_limit`, `portfolio_limit`, …) |
 | GET, PUT | `/api/settings` |
+| POST | `/api/settings/clear-content` — wipe library/resumes/portfolios; keep account + `email_verified` |
 
 ## Public (no auth)
 

@@ -15,6 +15,7 @@ import { openDatabase, queryAll, queryOne, run, type FoliyoDb } from "./db.js";
 import { runMigrations } from "./migrate.js";
 import { hashPassword } from "./auth/password.js";
 import { ensureHandles } from "./public/pages.js";
+import { copyPortfolioContentToResume } from "./resume/content.js";
 
 const DEMO_PASSWORD = process.env.FOLIYO_DEMO_PASSWORD || "changeme";
 const force = process.argv.includes("--force");
@@ -28,28 +29,28 @@ function gravatar(email: string, size = 200): string {
   return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 }
 
-function clearUserLibrary(db: FoliyoDb, userId: string): void {
-  const portfolios = queryAll<{ id: string }>(db, "SELECT id FROM portfolios WHERE user_id = ?", [userId]);
+async function clearUserLibrary(db: FoliyoDb, userId: string): Promise<void> {
+  const portfolios = await queryAll<{ id: string }>(db, "SELECT id FROM portfolios WHERE user_id = ?", [userId]);
   for (const p of portfolios) {
-    run(db, "DELETE FROM portfolio_skills WHERE portfolio_id = ?", [p.id]);
-    run(db, "DELETE FROM portfolio_projects WHERE portfolio_id = ?", [p.id]);
-    run(db, "DELETE FROM portfolio_experience WHERE portfolio_id = ?", [p.id]);
-    run(db, "DELETE FROM portfolio_education WHERE portfolio_id = ?", [p.id]);
-    run(db, "DELETE FROM portfolio_certifications WHERE portfolio_id = ?", [p.id]);
-    run(db, "DELETE FROM portfolio_languages WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_skills WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_projects WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_experience WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_education WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_certifications WHERE portfolio_id = ?", [p.id]);
+    await run(db, "DELETE FROM portfolio_languages WHERE portfolio_id = ?", [p.id]);
   }
-  run(db, "DELETE FROM resumes WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM portfolios WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM skills WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM projects WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM experience WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM education WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM certifications WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM languages WHERE user_id = ?", [userId]);
-  run(db, "DELETE FROM social_links WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM resumes WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM portfolios WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM skills WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM projects WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM experience WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM education WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM certifications WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM languages WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM social_links WHERE user_id = ?", [userId]);
 }
 
-function ensureUser(
+async function ensureUser(
   db: FoliyoDb,
   opts: {
     email: string;
@@ -58,18 +59,18 @@ function ensureUser(
     name: string;
     password?: string;
   },
-): string {
-  let user = queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
+): Promise<string> {
+  let user = await queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
   if (!user) {
-    run(
+    await run(
       db,
       `INSERT INTO users (email, password, handle, plan, onboarding_complete, email_verified)
        VALUES (?,?,?,?,1,1)`,
       [opts.email, hashPassword(opts.password ?? DEMO_PASSWORD), opts.handle, opts.plan],
     );
-    user = queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
+    user = await queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
   } else {
-    run(
+    await run(
       db,
       `UPDATE users SET handle=?, plan=?, onboarding_complete=1, email_verified=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
       [opts.handle, opts.plan, user.id],
@@ -77,13 +78,13 @@ function ensureUser(
   }
   if (!user) throw new Error(`user ${opts.email} missing`);
 
-  const profile = queryOne(db, "SELECT id FROM profile WHERE user_id = ?", [user.id]);
+  const profile = await queryOne(db, "SELECT id FROM profile WHERE user_id = ?", [user.id]);
   if (!profile) {
-    run(db, "INSERT INTO profile (user_id, name) VALUES (?, ?)", [user.id, opts.name]);
+    await run(db, "INSERT INTO profile (user_id, name) VALUES (?, ?)", [user.id, opts.name]);
   }
-  const settings = queryOne(db, "SELECT id FROM settings WHERE user_id = ?", [user.id]);
+  const settings = await queryOne(db, "SELECT id FROM settings WHERE user_id = ?", [user.id]);
   if (!settings) {
-    run(db, "INSERT INTO settings (user_id) VALUES (?)", [user.id]);
+    await run(db, "INSERT INTO settings (user_id) VALUES (?)", [user.id]);
   }
   return user.id;
 }
@@ -107,7 +108,7 @@ type SeedBundle = {
     url: string;
     repo_url: string;
     article_url?: string;
-    tags: string;
+    skills_developed: string;
     featured: number;
   }[];
   experience: {
@@ -147,20 +148,20 @@ type SeedBundle = {
   resume?: { name: string; theme_slug: string; portfolioIndex: number };
 };
 
-function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBundle): void {
-  const hasSkills = queryOne<{ c: number }>(
+async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBundle): Promise<void> {
+  const hasSkills = await queryOne<{ c: number | string }>(
     db,
     "SELECT COUNT(*) as c FROM skills WHERE user_id = ?",
     [userId],
   );
-  if (!force && (hasSkills?.c ?? 0) > 0) {
+  if (!force && Number(hasSkills?.c ?? 0) > 0) {
     console.log(`  skip library (already has data) — use --force to replace`);
     return;
   }
-  if (force) clearUserLibrary(db, userId);
+  if (force) await clearUserLibrary(db, userId);
 
   const p = data.profile;
-  run(
+  await run(
     db,
     `UPDATE profile SET name=?, headline=?, bio=?, avatar_url=?, location=?,
      email=?, website=?, github=?, linkedin=?, twitter=?, updated_at=CURRENT_TIMESTAMP
@@ -188,7 +189,7 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
   ];
   for (const s of socialSeed) {
     if (!s.value?.trim()) continue;
-    run(
+    await run(
       db,
       `INSERT INTO social_links (id, user_id, provider, label, value, sort_order) VALUES (?,?,?,?,?,?)`,
       [id(), userId, s.provider, "", s.value.trim(), s.sort],
@@ -196,22 +197,24 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
   }
 
   const skillIds: string[] = [];
-  data.skills.forEach((s, i) => {
+  for (let i = 0; i < data.skills.length; i++) {
+    const s = data.skills[i]!;
     const sid = id();
-    run(
+    await run(
       db,
       `INSERT INTO skills (id, user_id, name, level, category, sort_order) VALUES (?,?,?,?,?,?)`,
       [sid, userId, s.name, s.level, s.category, i],
     );
     skillIds.push(sid);
-  });
+  }
 
   const projectIds: string[] = [];
-  data.projects.forEach((pr, i) => {
+  for (let i = 0; i < data.projects.length; i++) {
+    const pr = data.projects[i]!;
     const pid = id();
-    run(
+    await run(
       db,
-      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, tags, featured, sort_order)
+      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, skills_developed, featured, sort_order)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
       [
         pid,
@@ -221,18 +224,19 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
         pr.url,
         pr.repo_url,
         pr.article_url ?? "",
-        pr.tags,
+        pr.skills_developed,
         pr.featured,
         i,
       ],
     );
     projectIds.push(pid);
-  });
+  }
 
   const experienceIds: string[] = [];
-  data.experience.forEach((e, i) => {
+  for (let i = 0; i < data.experience.length; i++) {
+    const e = data.experience[i]!;
     const eid = id();
-    run(
+    await run(
       db,
       `INSERT INTO experience (id, user_id, company, role, location, start_date, end_date, description, article_url, sort_order)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
@@ -250,50 +254,53 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
       ],
     );
     experienceIds.push(eid);
-  });
+  }
 
   const educationIds: string[] = [];
-  data.education.forEach((e, i) => {
+  for (let i = 0; i < data.education.length; i++) {
+    const e = data.education[i]!;
     const eid = id();
-    run(
+    await run(
       db,
       `INSERT INTO education (id, user_id, institution, degree, field, start_date, end_date, sort_order)
        VALUES (?,?,?,?,?,?,?,?)`,
       [eid, userId, e.institution, e.degree, e.field, e.start_date, e.end_date, i],
     );
     educationIds.push(eid);
-  });
+  }
 
   const certificationIds: string[] = [];
-  data.certifications.forEach((c, i) => {
+  for (let i = 0; i < data.certifications.length; i++) {
+    const c = data.certifications[i]!;
     const cid = id();
-    run(
+    await run(
       db,
       `INSERT INTO certifications (id, user_id, name, issuer, credential_url, issued_at, sort_order)
        VALUES (?,?,?,?,?,?,?)`,
       [cid, userId, c.name, c.issuer, c.credential_url, c.issued_at, i],
     );
     certificationIds.push(cid);
-  });
+  }
 
   const languageIds: string[] = [];
-  data.languages.forEach((l, i) => {
+  for (let i = 0; i < data.languages.length; i++) {
+    const l = data.languages[i]!;
     const lid = id();
-    run(
+    await run(
       db,
       `INSERT INTO languages (id, user_id, name, proficiency, sort_order) VALUES (?,?,?,?,?)`,
       [lid, userId, l.name, l.proficiency, i],
     );
     languageIds.push(lid);
-  });
+  }
 
   const portfolioIds: string[] = [];
   for (const fol of data.portfolios) {
     if (fol.is_default) {
-      run(db, "UPDATE portfolios SET is_default=0 WHERE user_id=?", [userId]);
+      await run(db, "UPDATE portfolios SET is_default=0 WHERE user_id=?", [userId]);
     }
     const pid = id();
-    run(
+    await run(
       db,
       `INSERT INTO portfolios (
          id, user_id, name, slug, description, headline, bio, theme_slug,
@@ -317,37 +324,37 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
     portfolioIds.push(pid);
 
     for (const i of fol.skillIndexes) {
-      run(db, "INSERT INTO portfolio_skills (portfolio_id, skill_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_skills (portfolio_id, skill_id) VALUES (?,?)", [
         pid,
         skillIds[i],
       ]);
     }
     for (const i of fol.projectIndexes) {
-      run(db, "INSERT INTO portfolio_projects (portfolio_id, project_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_projects (portfolio_id, project_id) VALUES (?,?)", [
         pid,
         projectIds[i],
       ]);
     }
     for (const i of fol.experienceIndexes) {
-      run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id) VALUES (?,?)", [
         pid,
         experienceIds[i],
       ]);
     }
     for (const i of fol.educationIndexes) {
-      run(db, "INSERT INTO portfolio_education (portfolio_id, education_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_education (portfolio_id, education_id) VALUES (?,?)", [
         pid,
         educationIds[i],
       ]);
     }
     for (const i of fol.certificationIndexes) {
-      run(db, "INSERT INTO portfolio_certifications (portfolio_id, certification_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_certifications (portfolio_id, certification_id) VALUES (?,?)", [
         pid,
         certificationIds[i],
       ]);
     }
     for (const i of fol.languageIndexes) {
-      run(db, "INSERT INTO portfolio_languages (portfolio_id, language_id) VALUES (?,?)", [
+      await run(db, "INSERT INTO portfolio_languages (portfolio_id, language_id) VALUES (?,?)", [
         pid,
         languageIds[i],
       ]);
@@ -355,23 +362,26 @@ function seedLibrary(db: FoliyoDb, userId: string, email: string, data: SeedBund
   }
 
   if (data.resume && portfolioIds[data.resume.portfolioIndex]) {
-    const existing = queryOne(db, "SELECT id FROM resumes WHERE user_id = ?", [userId]);
+    const existing = await queryOne(db, "SELECT id FROM resumes WHERE user_id = ?", [userId]);
     if (!existing || force) {
-      if (existing) run(db, "DELETE FROM resumes WHERE user_id = ?", [userId]);
+      if (existing) await run(db, "DELETE FROM resumes WHERE user_id = ?", [userId]);
       const token = createHash("sha256").update(`${userId}-resume`).digest("hex").slice(0, 16);
-      run(
+      const resumeId = id();
+      const portfolioId = portfolioIds[data.resume.portfolioIndex]!;
+      await run(
         db,
         `INSERT INTO resumes (id, portfolio_id, user_id, name, theme_slug, is_public, share_token)
          VALUES (?,?,?,?,?,1,?)`,
         [
-          id(),
-          portfolioIds[data.resume.portfolioIndex],
+          resumeId,
+          portfolioId,
           userId,
           data.resume.name,
           data.resume.theme_slug,
           token,
         ],
       );
+      await copyPortfolioContentToResume(db, resumeId, portfolioId);
     }
   }
 }
@@ -403,7 +413,7 @@ const adminBundle: SeedBundle = {
       url: "https://foliyo.dev",
       repo_url: "https://github.com/foliyo-dev/foliyo",
       article_url: "https://dev.to/foliyo/why-we-built-a-content-library-for-portfolios",
-      tags: '["typescript","svelte","hono"]',
+      skills_developed: '["typescript","svelte","hono"]',
       featured: 1,
     },
     {
@@ -411,7 +421,7 @@ const adminBundle: SeedBundle = {
       description: "Process manager experiments for self-hosted Node apps.",
       url: "",
       repo_url: "https://github.com/example/pqpm",
-      tags: '["go","ops"]',
+      skills_developed: '["go","ops"]',
       featured: 0,
     },
   ],
@@ -503,7 +513,7 @@ const priyaBundle: SeedBundle = {
       url: "https://example.com/ledger",
       repo_url: "https://github.com/example/ledger-lite",
       article_url: "https://dev.to/priya/building-ledger-lite-in-go",
-      tags: '["go","postgres"]',
+      skills_developed: '["go","postgres"]',
       featured: 1,
     },
     {
@@ -512,7 +522,7 @@ const priyaBundle: SeedBundle = {
       url: "",
       repo_url: "https://github.com/example/mesh-queue",
       article_url: "https://medium.com/@priya/sqlite-job-queues-that-dont-hurt",
-      tags: '["typescript","sqlite"]',
+      skills_developed: '["typescript","sqlite"]',
       featured: 1,
     },
     {
@@ -520,7 +530,7 @@ const priyaBundle: SeedBundle = {
       description: "Volunteer college clubs directory (archived).",
       url: "",
       repo_url: "",
-      tags: '["php"]',
+      skills_developed: '["php"]',
       featured: 0,
     },
   ],
@@ -626,7 +636,7 @@ const arjunBundle: SeedBundle = {
       description: "Logo and landing explorations for Foliyo.",
       url: "https://foliyo.dev",
       repo_url: "",
-      tags: '["brand","figma"]',
+      skills_developed: '["brand","figma"]',
       featured: 1,
     },
     {
@@ -635,7 +645,7 @@ const arjunBundle: SeedBundle = {
       url: "",
       repo_url: "",
       article_url: "https://medium.com/@arjun/checkout-redesign-case-study",
-      tags: '["ux","conversion"]',
+      skills_developed: '["ux","conversion"]',
       featured: 1,
     },
   ],
@@ -685,15 +695,15 @@ const arjunBundle: SeedBundle = {
   resume: { name: "Arjun Mehta — Designer", theme_slug: "classic", portfolioIndex: 0 },
 };
 
-function main(): void {
+async function main(): Promise<void> {
   const config = loadConfig();
-  const db = openDatabase(config);
-  runMigrations(db);
+  const db = await openDatabase(config);
+  await runMigrations(db);
 
   console.log(`Seeding demo data (force=${force}) into ${config.dbPath}`);
 
   const adminEmail = config.adminEmail || "admin@localhost";
-  const adminId = ensureUser(db, {
+  const adminId = await ensureUser(db, {
     email: adminEmail,
     handle: "admin",
     plan: "free",
@@ -701,27 +711,27 @@ function main(): void {
     password: config.adminPassword || DEMO_PASSWORD,
   });
   console.log(`→ ${adminEmail} / handle=admin`);
-  seedLibrary(db, adminId, adminEmail, adminBundle);
+  await seedLibrary(db, adminId, adminEmail, adminBundle);
 
-  const priyaId = ensureUser(db, {
+  const priyaId = await ensureUser(db, {
     email: "priya@demo.foliyo",
     handle: "priya",
     plan: "pro",
     name: "Priya Sharma",
   });
   console.log(`→ priya@demo.foliyo / handle=priya (pro, 2 portfolios)`);
-  seedLibrary(db, priyaId, "priya@demo.foliyo", priyaBundle);
+  await seedLibrary(db, priyaId, "priya@demo.foliyo", priyaBundle);
 
-  const arjunId = ensureUser(db, {
+  const arjunId = await ensureUser(db, {
     email: "arjun@demo.foliyo",
     handle: "arjun",
     plan: "free",
     name: "Arjun Mehta",
   });
   console.log(`→ arjun@demo.foliyo / handle=arjun (free, design folio)`);
-  seedLibrary(db, arjunId, "arjun@demo.foliyo", arjunBundle);
+  await seedLibrary(db, arjunId, "arjun@demo.foliyo", arjunBundle);
 
-  ensureHandles(db);
+  await ensureHandles(db);
 
   console.log(`
 Done. Log in at the dashboard (password: ${DEMO_PASSWORD}):
@@ -734,4 +744,4 @@ Re-run with --force to wipe & recreate library data for these users.
 `);
 }
 
-main();
+await main();

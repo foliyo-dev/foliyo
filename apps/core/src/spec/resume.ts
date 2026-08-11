@@ -27,7 +27,12 @@ export type FoliyoResumeDocument = {
     avatar_url?: string | null;
     links: Record<string, string>;
   };
-  skills: Array<{ name: string; level?: string | null; category?: string | null }>;
+  skills: Array<{
+    name: string;
+    level?: string | null;
+    category?: string | null;
+    recency?: "current" | "past" | null;
+  }>;
   experience: Array<{
     company: string;
     role: string;
@@ -37,6 +42,7 @@ export type FoliyoResumeDocument = {
     current: boolean;
     description?: string | null;
     url?: string | null;
+    skills_developed?: string[];
   }>;
   education: Array<{
     institution: string;
@@ -45,13 +51,14 @@ export type FoliyoResumeDocument = {
     start?: string | null;
     end?: string | null;
     description?: string | null;
+    skills_developed?: string[];
   }>;
   projects: Array<{
     title: string;
     description?: string | null;
     url?: string | null;
     repo_url?: string | null;
-    tags: string[];
+    skills_developed: string[];
     featured: boolean;
   }>;
   certifications: Array<{
@@ -62,6 +69,7 @@ export type FoliyoResumeDocument = {
     issued_at?: string | null;
     expires_at?: string | null;
     description?: string | null;
+    skills_developed?: string[];
   }>;
   languages: Array<{ language: string; proficiency?: string | null }>;
 };
@@ -237,11 +245,17 @@ export function buildFoliyoResumeDocument(input: BuildInput): {
       avatar_url: str(profile.avatar_url),
       links: linksFrom(profile, input.social_links),
     },
-    skills: input.skills.map((s) => ({
-      name: str(s.name) ?? "",
-      level: str(s.level),
-      category: str(s.category),
-    })),
+    skills: input.skills.map((s) => {
+      const recencyRaw = str(s.recency);
+      const recency =
+        recencyRaw === "current" || recencyRaw === "past" ? recencyRaw : null;
+      return {
+        name: str(s.name) ?? "",
+        level: str(s.level),
+        category: str(s.category),
+        recency,
+      };
+    }),
     experience: input.experience.map((e) => {
       const end = str(e.end_date);
       return {
@@ -253,6 +267,7 @@ export function buildFoliyoResumeDocument(input: BuildInput): {
         current: !end,
         description: str(e.description),
         url: str(e.article_url),
+        skills_developed: parseTags(e.skills_developed),
       };
     }),
     education: input.education.map((e) => ({
@@ -262,13 +277,14 @@ export function buildFoliyoResumeDocument(input: BuildInput): {
       start: str(e.start_date),
       end: str(e.end_date),
       description: str(e.description),
+      skills_developed: parseTags(e.skills_developed),
     })),
     projects: input.projects.map((p) => ({
       title: str(p.title) ?? "",
       description: str(p.description),
       url: str(p.url),
       repo_url: str(p.repo_url),
-      tags: parseTags(p.tags),
+      skills_developed: parseTags(p.skills_developed ?? p.tags),
       featured: Number(p.featured) === 1,
     })),
     certifications: input.certifications.map((c) => ({
@@ -279,6 +295,7 @@ export function buildFoliyoResumeDocument(input: BuildInput): {
       issued_at: str(c.issued_at),
       expires_at: str(c.expires_at),
       description: str(c.description),
+      skills_developed: parseTags(c.skills_developed),
     })),
     languages: input.languages.map((l) => ({
       language: str(l.name) ?? "",

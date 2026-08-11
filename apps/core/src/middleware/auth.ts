@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { bearerToken, getTokenUserId } from "../auth/tokens.js";
-import type { FoliyoDb } from "../db.js";
+import { queryOne, type FoliyoDb } from "../db.js";
 
 export type AuthUser = { id: string; email: string; plan: string };
 
@@ -18,13 +18,15 @@ export function authMiddleware(db: FoliyoDb) {
     if (!token) {
       throw new HTTPException(401, { message: JSON.stringify({ error: "unauthorized" }) });
     }
-    const userId = getTokenUserId(db, token);
+    const userId = await getTokenUserId(db, token);
     if (!userId) {
       throw new HTTPException(401, { message: JSON.stringify({ error: "unauthorized" }) });
     }
-    const user = db
-      .prepare("SELECT id, email, plan FROM users WHERE id = ?")
-      .get(userId) as AuthUser | undefined;
+    const user = await queryOne<AuthUser>(
+      db,
+      "SELECT id, email, plan FROM users WHERE id = ?",
+      [userId],
+    );
     if (!user) {
       throw new HTTPException(401, { message: JSON.stringify({ error: "unauthorized" }) });
     }

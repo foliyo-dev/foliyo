@@ -9,18 +9,17 @@
 import { randomBytes } from "node:crypto";
 import { nanoid } from "nanoid";
 import { loadConfig } from "./config.js";
-import { openDatabase } from "./db.js";
+import { openDatabase, queryOne, run } from "./db.js";
 import { runMigrations } from "./migrate.js";
-import { queryOne, run } from "./db.js";
 import { hashAtsApiKey } from "./routes/status-notify.js";
 
 const config = loadConfig();
-const db = openDatabase(config);
-runMigrations(db);
+const db = await openDatabase(config);
+await runMigrations(db);
 
 const slug = process.argv[2] || "dev-ats";
 const name = process.argv[3] || "Dev ATS";
-const existing = queryOne(db, "SELECT id, slug FROM ats_partners WHERE slug = ?", [slug]);
+const existing = await queryOne(db, "SELECT id, slug FROM ats_partners WHERE slug = ?", [slug]);
 if (existing) {
   console.log(`Partner "${slug}" already exists. Delete the row to re-seed.`);
   process.exit(0);
@@ -29,7 +28,7 @@ if (existing) {
 const apiKey = `fio_ats_${nanoid(32)}`;
 const hmacSecret = randomBytes(32).toString("hex");
 
-run(
+await run(
   db,
   "INSERT INTO ats_partners (id, slug, name, api_key_hash, hmac_secret, active) VALUES (?,?,?,?,?,1)",
   [nanoid(16), slug, name, hashAtsApiKey(apiKey), hmacSecret],

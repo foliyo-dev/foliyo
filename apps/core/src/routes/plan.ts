@@ -13,9 +13,9 @@ import {
 export function planRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
 
-  r.get("/", (c) => {
+  r.get("/", async (c) => {
     const userId = c.get("userId");
-    const user = queryOne<{ plan: string; plan_expires: string | null }>(
+    const user = await queryOne<{ plan: string; plan_expires: string | null }>(
       db,
       "SELECT plan, plan_expires FROM users WHERE id = ?",
       [userId],
@@ -23,7 +23,7 @@ export function planRoutes(db: FoliyoDb, config: Config) {
     if (!user) return c.json({ error: "not found" }, 404);
 
     const plan: PlanSlug = effectivePlan(user.plan, config, user.plan_expires);
-    reconcileExpiredPlan(db, userId, user.plan, user.plan_expires);
+    await reconcileExpiredPlan(db, userId, user.plan, user.plan_expires);
     return c.json({
       plan,
       stored_plan: user.plan,

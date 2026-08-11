@@ -10,29 +10,39 @@
 		createSkill,
 		updateSkill,
 		deleteSkill,
+		suggestSkillsFromLibrary,
+		confirmSkill,
+		dismissSkill,
 		type Skill
 	} from '$lib/api/skills';
 	import { showToast } from '$lib/stores/toast';
 
 	const levels = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
+	const recencies = ['current', 'past'] as const;
 
 	let shell: EditorWithPreview;
 	let items: Skill[] = [];
 	let loading = true;
 	let adding = false;
+	let suggesting = false;
 	let editingId: string | null = null;
 
 	let name = '';
 	let level: (typeof levels)[number] = 'intermediate';
+	let recency: (typeof recencies)[number] = 'current';
 	let category = 'general';
 	let sortOrder = '0';
+
+	$: pending = items.filter((s) => s.status === 'pending');
+	$: confirmed = items.filter((s) => s.status !== 'pending' && s.status !== 'dismissed');
+	$: dismissed = items.filter((s) => s.status === 'dismissed');
 
 	onMount(load);
 
 	async function load() {
 		loading = true;
 		try {
-			items = await listSkills();
+			items = await listSkills('all');
 		} catch {
 			items = [];
 			showToast('Failed to load skills', 'error');
@@ -44,9 +54,23 @@
 	function resetForm() {
 		name = '';
 		level = 'intermediate';
+		recency = 'current';
 		category = 'general';
-		sortOrder = String(items.length);
+		sortOrder = String(confirmed.length);
 		editingId = null;
+	}
+
+	function seenOn(skill: Skill): string {
+		if (skill.evidence?.length) return `Seen on ${skill.evidence.join(', ')}`;
+		return '';
+	}
+
+	function suggestHint(skill: Skill): string {
+		const bits: string[] = [];
+		if (skill.suggested_level) bits.push(`suggested ${skill.suggested_level}`);
+		if (skill.suggested_recency) bits.push(skill.suggested_recency);
+		if (skill.suggested_years != null) bits.push(`~${skill.suggested_years}y`);
+		return bits.length ? bits.join(' · ') : '';
 	}
 
 	async function addSkill() {
@@ -59,6 +83,7 @@
 			items = await createSkill({
 				name: name.trim(),
 				level,
+				recency,
 				category: category.trim() || 'general',
 				sort_order: Number(sortOrder) || 0
 			});
@@ -76,6 +101,7 @@
 		editingId = skill.id;
 		name = skill.name;
 		level = skill.level as (typeof levels)[number];
+		recency = (skill.recency as (typeof recencies)[number]) || 'current';
 		category = skill.category;
 		sortOrder = String(skill.sort_order);
 		shell?.scrollToForm();
@@ -87,6 +113,7 @@
 			await updateSkill(editingId, {
 				name: name.trim(),
 				level,
+				recency,
 				category: category.trim() || 'general',
 				sort_order: Number(sortOrder) || 0
 			});
@@ -110,13 +137,62 @@
 			showToast('Failed to delete skill', 'error');
 		}
 	}
+
+	async function refreshSuggestions() {
+		suggesting = true;
+		try {
+			const result = await suggestSkillsFromLibrary();
+			await load();
+			showToast(
+				result.pending
+					? `${result.pending} skill(s) awaiting review`
+					: 'No new suggestions from library',
+				'success'
+			);
+		} catch {
+			showToast('Failed to suggest skills', 'error');
+		} finally {
+			suggesting = false;
+		}
+	}
+
+	async function confirm(skill: Skill) {
+		try {
+			await confirmSkill(skill.id, {
+				level: skill.suggested_level || skill.level,
+				recency: skill.suggested_recency || skill.recency || 'current',
+				category: skill.category
+			});
+			await load();
+			showToast(`Confirmed ${skill.name}`, 'success');
+			await shell?.refreshPreview();
+		} catch {
+			showToast('Failed to confirm skill', 'error');
+		}
+	}
+
+	async function dismiss(skill: Skill) {
+		try {
+			await dismissSkill(skill.id);
+			await load();
+			showToast(`Dismissed ${skill.name}`, 'success');
+		} catch {
+			showToast('Failed to dismiss skill', 'error');
+		}
+	}
 </script>
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={editingId ? 'Edit skill' : 'Skills'}
-		description="Master list of skills — attach them to portfolios later."
+		description="Add manually anytime, or confirm suggestions from skills developed on experience, projects, education, and certifications."
 	/>
+
+	<div class="toolbar">
+		<Button variant="ghost" disabled={suggesting} on:click={refreshSuggestions}>
+			{suggesting ? 'Refreshing…' : 'Suggest from library'}
+		</Button>
+	</div>
 
 	<Card>
 		<h2 class="section-title">{editingId ? 'Edit skill' : 'Add skill'}</h2>
@@ -127,6 +203,14 @@
 				<select bind:value={level}>
 					{#each levels as l}
 						<option value={l}>{l}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="field">
+				<span class="label">Recency</span>
+				<select bind:value={recency}>
+					{#each recencies as r}
+						<option value={r}>{r}</option>
 					{/each}
 				</select>
 			</label>
@@ -145,31 +229,95 @@
 
 	{#if loading}
 		<p class="muted">Loading…</p>
-	{:else if items.length === 0}
-		<p class="muted empty">No skills yet — add your first one above.</p>
 	{:else}
-		<ul class="list">
-			{#each items as skill (skill.id)}
-				<li>
-					<Card>
-						<div class="row">
-							<div>
-								<strong>{skill.name}</strong>
-								<span class="meta">{skill.level} · {skill.category} · order {skill.sort_order}</span>
-							</div>
-							<div class="row-actions">
-								<Button variant="ghost" on:click={() => startEdit(skill)}>Edit</Button>
-								<Button variant="ghost" on:click={() => remove(skill.id)}>Delete</Button>
-							</div>
-						</div>
-					</Card>
-				</li>
-			{/each}
-		</ul>
+		{#if pending.length > 0}
+			<section class="block">
+				<h2 class="section-title">Suggested</h2>
+				<ul class="list">
+					{#each pending as skill (skill.id)}
+						<li>
+							<Card>
+								<div class="row">
+									<div>
+										<strong>{skill.name}</strong>
+										<span class="meta">
+											{#if suggestHint(skill)}{suggestHint(skill)}{:else}{skill.level}{/if}
+											{#if seenOn(skill)} · {seenOn(skill)}{/if}
+										</span>
+									</div>
+									<div class="row-actions">
+										<Button on:click={() => confirm(skill)}>Confirm</Button>
+										<Button variant="ghost" on:click={() => dismiss(skill)}>Dismiss</Button>
+									</div>
+								</div>
+							</Card>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		{#if confirmed.length === 0 && pending.length === 0}
+			<p class="muted empty">No skills yet — add one above, or list skills developed on library items and suggest.</p>
+		{:else if confirmed.length > 0}
+			<section class="block">
+				<h2 class="section-title">Your skills</h2>
+				<ul class="list">
+					{#each confirmed as skill (skill.id)}
+						<li>
+							<Card>
+								<div class="row">
+									<div>
+										<strong>{skill.name}</strong>
+										<span class="meta"
+											>{skill.level} · {skill.recency ?? 'current'} · {skill.category}</span
+										>
+									</div>
+									<div class="row-actions">
+										<Button variant="ghost" on:click={() => startEdit(skill)}>Edit</Button>
+										<Button variant="ghost" on:click={() => remove(skill.id)}>Delete</Button>
+									</div>
+								</div>
+							</Card>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		{#if dismissed.length > 0}
+			<details class="block muted">
+				<summary>Dismissed ({dismissed.length})</summary>
+				<ul class="list">
+					{#each dismissed as skill (skill.id)}
+						<li>
+							<Card>
+								<div class="row">
+									<div>
+										<strong>{skill.name}</strong>
+										<span class="meta">Won't re-suggest from library</span>
+									</div>
+									<div class="row-actions">
+										<Button variant="ghost" on:click={() => confirm(skill)}>Restore</Button>
+										<Button variant="ghost" on:click={() => remove(skill.id)}>Delete</Button>
+									</div>
+								</div>
+							</Card>
+						</li>
+					{/each}
+				</ul>
+			</details>
+		{/if}
 	{/if}
 </EditorWithPreview>
 
 <style>
+	.toolbar {
+		margin-bottom: 1rem;
+	}
+	.block {
+		margin-top: 1.25rem;
+	}
 	.section-title {
 		margin: 0 0 1rem;
 		font-size: 1rem;
@@ -208,7 +356,7 @@
 	}
 	.list {
 		list-style: none;
-		margin: 1rem 0 0;
+		margin: 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
@@ -230,5 +378,9 @@
 	.row-actions {
 		display: flex;
 		gap: 0.25rem;
+	}
+	details summary {
+		cursor: pointer;
+		margin-bottom: 0.75rem;
 	}
 </style>

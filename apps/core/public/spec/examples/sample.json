@@ -25,8 +25,18 @@
     }
   },
   "skills": [
-    { "name": "Node.js", "level": "expert", "category": "languages" },
-    { "name": "PostgreSQL", "level": "advanced", "category": "databases" }
+    {
+      "name": "Node.js",
+      "level": "expert",
+      "category": "languages",
+      "recency": "current"
+    },
+    {
+      "name": "PostgreSQL",
+      "level": "advanced",
+      "category": "databases",
+      "recency": "current"
+    }
   ],
   "experience": [
     {
@@ -37,7 +47,11 @@
       "end": null,
       "current": true,
       "description": "Built internal platform APIs.",
-      "url": null
+      "url": null,
+      "skills_developed": [
+        "Node.js",
+        "PostgreSQL"
+      ]
     }
   ],
   "education": [
@@ -47,7 +61,10 @@
       "field": "Computer Science",
       "start": "2016-08",
       "end": "2020-05",
-      "description": null
+      "description": null,
+      "skills_developed": [
+        "algorithms"
+      ]
     }
   ],
   "projects": [
@@ -56,8 +73,11 @@
       "description": "Developer tooling for local workflows.",
       "url": "https://example.com",
       "repo_url": "https://github.com/john/open-cli",
-      "tags": ["typescript", "cli"],
-      "featured": true
+      "featured": true,
+      "skills_developed": [
+        "typescript",
+        "cli"
+      ]
     }
   ],
   "certifications": [
@@ -68,11 +88,20 @@
       "credential_url": null,
       "issued_at": "2024-01",
       "expires_at": null,
-      "description": null
+      "description": null,
+      "skills_developed": [
+        "AWS"
+      ]
     }
   ],
   "languages": [
-    { "language": "English", "proficiency": "fluent" },
-    { "language": "Hindi", "proficiency": "native" }
+    {
+      "language": "English",
+      "proficiency": "fluent"
+    },
+    {
+      "language": "Hindi",
+      "proficiency": "native"
+    }
   ]
 }

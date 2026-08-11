@@ -23,29 +23,23 @@ body.theme-atelier {
   line-height: 1.55;
 }
 
-.theme-atelier .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.1rem 1.75rem;
+.theme-atelier .site-nav {
   background: transparent;
+  border-bottom: 1px solid transparent;
+  padding-top: 1.1rem;
+  padding-bottom: 1.1rem;
 }
 
-.theme-atelier .topbar a {
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.theme-atelier .topbar .brand {
-  letter-spacing: 0.18em;
+.theme-atelier .site-nav .site-name {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.68rem;
-  color: var(--muted);
 }
 
-.theme-atelier .topbar .handle { color: var(--muted); }
+.theme-atelier .site-nav .handle { color: var(--muted); }
+.theme-atelier .site-nav-links a { color: var(--muted); letter-spacing: 0.04em; }
+.theme-atelier .site-nav-links a:hover { color: var(--accent); }
 
 .theme-atelier .page {
   max-width: var(--max);

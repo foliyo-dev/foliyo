@@ -5,6 +5,8 @@ import type { Config } from "./config.js";
 export type PlanSlug = "free" | "pro" | "lifetime" | "selfhost";
 
 export const FREE_PORTFOLIO_LIMIT = 1;
+/** Free accounts may keep one resume row (private or public). Pro / selfhost: unlimited. */
+export const FREE_RESUME_LIMIT = 1;
 
 /** Hosted India pricing (execution plan). */
 export const PRICING = {
@@ -17,9 +19,11 @@ export type PlanEntitlements = {
   portfolios_unlimited: boolean;
   pdf_export: boolean;
   remove_branding: boolean;
-  /** Hosted Pro: AI resume → Foliyo Resume Spec draft (OpenRouter in cloud). */
+  /** Hosted Pro: AI resume → Foliyo Resume Spec draft (OpenRouter in cloud). Never on OSS. */
   ai_resume_import: boolean;
   portfolio_limit: number | null;
+  /** null = unlimited; Free = FREE_RESUME_LIMIT. */
+  resume_limit: number | null;
 };
 
 export type UpgradePayload = {
@@ -75,48 +79,48 @@ export function effectivePlan(
 }
 
 /** Persist free when monthly Pro has lapsed so exports/admin see truthful plan. */
-export function reconcileExpiredPlan(
+export async function reconcileExpiredPlan(
   db: FoliyoDb,
   userId: string,
   storedPlan: string | null | undefined,
   planExpires: string | null | undefined,
-): void {
+): Promise<void> {
   if (!isPlanExpired(storedPlan, planExpires)) return;
   const raw = storedPlan ?? "pro";
   if (normalizePlan(raw) === "free") return;
-  run(
+  await run(
     db,
     `UPDATE users SET plan = 'free', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND plan = ?`,
     [userId, raw],
   );
 }
 
-export function getUserPlan(db: FoliyoDb, userId: string): PlanSlug {
-  const user = queryOne<{ plan: string; plan_expires: string | null }>(
+export async function getUserPlan(db: FoliyoDb, userId: string): Promise<PlanSlug> {
+  const user = await queryOne<{ plan: string; plan_expires: string | null }>(
     db,
     "SELECT plan, plan_expires FROM users WHERE id = ?",
     [userId],
   );
   if (isPlanExpired(user?.plan, user?.plan_expires)) {
-    reconcileExpiredPlan(db, userId, user?.plan, user?.plan_expires);
+    await reconcileExpiredPlan(db, userId, user?.plan, user?.plan_expires);
     return "free";
   }
   return normalizePlan(user?.plan);
 }
 
-export function getEffectiveUserPlan(
+export async function getEffectiveUserPlan(
   db: FoliyoDb,
   userId: string,
   config?: Pick<Config, "mode">,
-): PlanSlug {
-  const user = queryOne<{ plan: string; plan_expires: string | null }>(
+): Promise<PlanSlug> {
+  const user = await queryOne<{ plan: string; plan_expires: string | null }>(
     db,
     "SELECT plan, plan_expires FROM users WHERE id = ?",
     [userId],
   );
   const plan = effectivePlan(user?.plan, config, user?.plan_expires);
   if (plan === "free" && isPlanExpired(user?.plan, user?.plan_expires)) {
-    reconcileExpiredPlan(db, userId, user?.plan, user?.plan_expires);
+    await reconcileExpiredPlan(db, userId, user?.plan, user?.plan_expires);
   }
   return plan;
 }
@@ -129,6 +133,7 @@ export function entitlementsFor(plan: string | null | undefined): PlanEntitlemen
     remove_branding: paid,
     ai_resume_import: paid,
     portfolio_limit: paid ? null : FREE_PORTFOLIO_LIMIT,
+    resume_limit: paid ? null : FREE_RESUME_LIMIT,
   };
 }
 

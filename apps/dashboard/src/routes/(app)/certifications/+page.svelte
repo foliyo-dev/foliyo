@@ -29,6 +29,7 @@
 	let expiresAt = '';
 	let noExpiry = true;
 	let description = '';
+	let skillsInput = '';
 	let sortOrder = '0';
 
 	onMount(load);
@@ -45,6 +46,23 @@
 		}
 	}
 
+	function skillsToJson(input: string): string {
+		const skills = input
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
+		return JSON.stringify(skills);
+	}
+
+	function skillsFromJson(json: string): string {
+		try {
+			const arr = JSON.parse(json || '[]') as string[];
+			return Array.isArray(arr) ? arr.join(', ') : '';
+		} catch {
+			return '';
+		}
+	}
+
 	function resetForm() {
 		name = '';
 		issuer = '';
@@ -54,6 +72,7 @@
 		expiresAt = '';
 		noExpiry = true;
 		description = '';
+		skillsInput = '';
 		sortOrder = String(items.length);
 		editingId = null;
 	}
@@ -67,6 +86,7 @@
 			issued_at: issuedAt || null,
 			expires_at: noExpiry ? null : expiresAt || null,
 			description,
+			skills_developed: skillsToJson(skillsInput),
 			sort_order: Number(sortOrder) || 0
 		};
 	}
@@ -99,6 +119,7 @@
 		expiresAt = item.expires_at ?? '';
 		noExpiry = !item.expires_at;
 		description = item.description;
+		skillsInput = skillsFromJson(item.skills_developed ?? '[]');
 		sortOrder = String(item.sort_order);
 		shell?.scrollToForm();
 	}
@@ -135,7 +156,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={editingId ? 'Edit certification' : 'Certifications'}
-		description="Credentials and licenses — select which ones appear on your public profile and resume."
+		description="Credentials and licenses — add skills covered to feed your skill library."
 	/>
 
 	<Card>
@@ -156,6 +177,7 @@
 			Does not expire
 		</label>
 		<Textarea label="Description" bind:value={description} rows={3} />
+		<Input label="Skills covered (comma-separated)" bind:value={skillsInput} placeholder="AWS, Cloud architecture" />
 		<Input label="Sort order" bind:value={sortOrder} />
 	</div>
 	<div class="form-actions">
@@ -193,6 +215,9 @@
 							</span>
 							{#if item.description}
 								<p class="desc">{item.description}</p>
+							{/if}
+							{#if skillsFromJson(item.skills_developed ?? '[]')}
+								<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
 							{/if}
 						</div>
 						<div class="row-actions">

@@ -37,7 +37,8 @@ export type ResumeImportDraft = {
 		description: string | null;
 		url: string | null;
 		repo_url: string | null;
-		tags: string[];
+		tags?: string[];
+		skills_developed?: string[];
 		featured: boolean;
 	}>;
 	certifications: Array<{
@@ -124,6 +125,41 @@ export async function importResumeFromPdf(file: File): Promise<ResumeImportRespo
 	});
 	if (!res.ok) await parseImportError(res);
 	return res.json() as Promise<ResumeImportResponse>;
+}
+
+/** OSS / self-host: parse + verify a signed `.fio` package into a library draft. */
+export async function importResumeFromFio(file: File): Promise<{
+	draft: ResumeImportDraft;
+	meta: {
+		schema: string;
+		version: string;
+		content_hash: string;
+		signature_valid: boolean;
+		resume_name: string | null;
+		identity_restored: boolean;
+	};
+}> {
+	const token = get(accessToken);
+	const form = new FormData();
+	form.append('file', file);
+	const res = await fetch(`${API_BASE}/import/fio`, {
+		method: 'POST',
+		headers: {
+			...(token ? { Authorization: `Bearer ${token}` } : {})
+		},
+		body: form
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		try {
+			const body = JSON.parse(text) as { message?: string };
+			throw new ApiError(body.message || text || res.statusText, res.status);
+		} catch (err) {
+			if (err instanceof ApiError) throw err;
+			throw new ApiError(text || res.statusText, res.status);
+		}
+	}
+	return res.json();
 }
 
 export function getImportUpgrade(err: unknown): UpgradeError | null {

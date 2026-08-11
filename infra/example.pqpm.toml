@@ -8,6 +8,10 @@ max_memory = "1GB"
 cpu_limit = "40%"
 working_dir = "/home/foliyo"
 log_file = "/home/foliyo/logs/foliyo.log"
+# Default: sqlite. For Postgres, replace DB env with:
+#   FOLIYO_DB_DRIVER = "postgres"
+#   FOLIYO_DB_URL = "postgres://foliyo:foliyo@localhost:5432/foliyo"
+# and remove FOLIYO_DB_PATH.
 env = {
   FOLIYO_PORT = "8080",
   FOLIYO_DB_DRIVER = "sqlite",

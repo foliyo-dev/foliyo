@@ -13,14 +13,16 @@ export const foliyoSchema: MeshSchema = {
     },
     skill: {
       type: {},
-      fields: ["id", "user_id", "name", "level", "category", "sort_order"],
+      fields: [
+        "id", "user_id", "name", "level", "category", "source", "status", "recency", "sort_order",
+      ],
       table: "skills",
     },
     project: {
       type: {},
       fields: [
         "id", "user_id", "title", "description", "url",
-        "repo_url", "article_url", "image_url", "tags", "featured", "sort_order",
+        "repo_url", "article_url", "image_url", "skills_developed", "featured", "sort_order",
       ],
       table: "projects",
     },
@@ -28,7 +30,7 @@ export const foliyoSchema: MeshSchema = {
       type: {},
       fields: [
         "id", "user_id", "company", "role", "location",
-        "start_date", "end_date", "description", "article_url", "sort_order",
+        "start_date", "end_date", "description", "article_url", "skills_developed", "sort_order",
       ],
       table: "experience",
     },
@@ -36,7 +38,7 @@ export const foliyoSchema: MeshSchema = {
       type: {},
       fields: [
         "id", "user_id", "institution", "degree",
-        "field", "start_date", "end_date", "description", "sort_order",
+        "field", "start_date", "end_date", "description", "skills_developed", "sort_order",
       ],
       table: "education",
     },
@@ -44,7 +46,7 @@ export const foliyoSchema: MeshSchema = {
       type: {},
       fields: [
         "id", "user_id", "name", "issuer", "credential_id", "credential_url",
-        "issued_at", "expires_at", "description", "sort_order",
+        "issued_at", "expires_at", "description", "skills_developed", "sort_order",
       ],
       table: "certifications",
     },
