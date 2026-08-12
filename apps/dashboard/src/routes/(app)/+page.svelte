@@ -14,7 +14,7 @@
 	import { listSocialLinks } from '$lib/api/social';
 	import { listPortfolios, FREE_PORTFOLIO_LIMIT, portfolioPublicUrl, type Portfolio } from '$lib/api/portfolios';
 	import { listResumes, resumeShareUrl, type Resume } from '$lib/api/resumes';
-	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { formatPlanLabel, getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { isSaas, publicHost, publicPortfolioPath } from '$lib/config';
 
@@ -41,8 +41,9 @@
 
 	$: handle = $user?.handle ?? null;
 	$: displayName = profile?.name?.trim() || handle || $user?.email?.split('@')[0] || 'there';
-	$: planLabel = planInfo?.plan ?? $user?.plan ?? (isSaas ? 'free' : 'selfhost');
-	$: pro = isProPlan(planLabel);
+	$: planSlug = planInfo?.plan ?? $user?.plan ?? (isSaas ? 'free' : 'selfhost');
+	$: planLabel = formatPlanLabel(planSlug);
+	$: pro = isProPlan(planSlug);
 	$: overPortfolioLimit = !pro && portfolios.length > FREE_PORTFOLIO_LIMIT;
 	$: publicUrl = handle ? publicPortfolioPath(handle) : null;
 	$: publicPortfolios = portfolios.filter((p) => p.is_public);
@@ -240,7 +241,7 @@
 		<div class="welcome-meta">
 			<div class="meta-chip">
 				<span class="meta-label">Plan</span>
-				<strong>{planLabel}{pro ? ' · Pro features' : ''}</strong>
+				<strong class:plan-pro={planSlug === 'pro' || planSlug === 'lifetime'}>{planLabel}</strong>
 			</div>
 			<div class="meta-chip">
 				<span class="meta-label">Library</span>
@@ -494,6 +495,9 @@
 	.meta-chip strong {
 		font-size: 0.875rem;
 		font-weight: 600;
+	}
+	.meta-chip strong.plan-pro {
+		color: var(--color-primary);
 	}
 	.upgrade {
 		font-size: 0.8125rem;

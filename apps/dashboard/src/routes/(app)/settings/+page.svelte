@@ -6,7 +6,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
-	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { formatPlanLabel, getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
 	import { isSaas, privacyUrl } from '$lib/config';
 	import {
 		downloadExport,
@@ -24,7 +24,9 @@
 	let accountPrivacy = false;
 	let deleteConfirm = '';
 
-	$: pro = isProPlan(planInfo?.plan ?? $user?.plan);
+	$: planSlug = planInfo?.plan ?? $user?.plan ?? (isSaas ? 'free' : 'selfhost');
+	$: planLabel = formatPlanLabel(planSlug);
+	$: pro = isProPlan(planSlug);
 	/** Hosted account APIs available (cloud), or explicit SaaS build. */
 	$: showDpdp =
 		isSaas || accountPrivacy || Boolean(planInfo && planInfo.plan !== 'selfhost');
@@ -99,7 +101,8 @@
 	<Card>
 		<h2 class="section-title">Plan</h2>
 		<p class="muted">
-			Current plan: <strong>{planInfo?.plan ?? $user?.plan ?? 'free'}</strong>
+			Current plan:
+			<strong class:plan-pro={planSlug === 'pro' || planSlug === 'lifetime'}>{planLabel}</strong>
 			{#if planInfo?.entitlements}
 				· PDF {planInfo.entitlements.pdf_export ? 'on' : 'off'}
 				· Branding {planInfo.entitlements.remove_branding ? 'removed' : 'shown'}
@@ -118,6 +121,11 @@
 					planInfo = e.detail;
 				}}
 			/>
+		{:else if planSlug === 'lifetime' && showDpdp}
+			<p class="ok">
+				Lifetime active — unlimited publish slots, PDF export, branding removed, AI resume &amp;
+				rewrite unlocked.
+			</p>
 		{:else if pro && showDpdp}
 			<p class="ok">
 				Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
@@ -173,6 +181,9 @@
 		margin: 0.75rem 0 0;
 		font-size: 0.875rem;
 		color: #166534;
+	}
+	.plan-pro {
+		color: var(--color-primary);
 	}
 	.actions {
 		margin-top: 1.5rem;

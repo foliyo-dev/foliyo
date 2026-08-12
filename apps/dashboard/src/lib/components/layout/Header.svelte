@@ -1,9 +1,15 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { logout } from '$lib/stores/auth';
+	import { logout, user } from '$lib/stores/auth';
+	import { formatPlanLabel, isPaidHostedPlan } from '$lib/api/plan';
+	import { isSaas } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	const dispatch = createEventDispatcher<{ menu: void }>();
+
+	$: planSlug = $user?.plan ?? (isSaas ? 'free' : 'selfhost');
+	$: planLabel = formatPlanLabel(planSlug);
+	$: paid = isPaidHostedPlan(planSlug);
 
 	async function handleLogout() {
 		await logout();
@@ -22,7 +28,20 @@
 			<slot />
 		</div>
 	</div>
-	<Button variant="ghost" on:click={handleLogout}>Log out</Button>
+	<div class="right">
+		{#if $user}
+			<a
+				href="/settings"
+				class="plan-badge"
+				class:paid
+				class:free={planSlug === 'free'}
+				title="Account plan — open Settings"
+			>
+				{planLabel}
+			</a>
+		{/if}
+		<Button variant="ghost" on:click={handleLogout}>Log out</Button>
+	</div>
 </header>
 
 <style>
@@ -48,6 +67,41 @@
 	.slot {
 		min-width: 0;
 		flex: 1;
+	}
+	.right {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+	.plan-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.2rem 0.55rem;
+		border-radius: 4px;
+		font-size: 0.6875rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		text-decoration: none;
+		line-height: 1.2;
+		border: 1px solid var(--color-border);
+		background: var(--color-bg);
+		color: var(--color-muted);
+	}
+	.plan-badge.paid {
+		border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+		background: var(--color-primary);
+		color: #fff;
+	}
+	.plan-badge.free:hover,
+	.plan-badge:not(.paid):hover {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+	}
+	.plan-badge.paid:hover {
+		filter: brightness(1.05);
 	}
 	.menu-btn {
 		display: none;

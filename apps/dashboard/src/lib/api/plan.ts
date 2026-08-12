@@ -136,3 +136,23 @@ declare global {
 }
 
 export { isProPlan };
+
+/** Human label for chrome / settings (not the raw slug). */
+export function formatPlanLabel(plan: string | null | undefined): string {
+	switch ((plan ?? 'free').toLowerCase()) {
+		case 'pro':
+			return 'Pro';
+		case 'lifetime':
+			return 'Lifetime';
+		case 'selfhost':
+			return 'Self-host';
+		default:
+			return 'Free';
+	}
+}
+
+/** Accent treatment for paid hosted plans. */
+export function isPaidHostedPlan(plan: string | null | undefined): boolean {
+	const p = (plan ?? 'free').toLowerCase();
+	return p === 'pro' || p === 'lifetime';
+}
