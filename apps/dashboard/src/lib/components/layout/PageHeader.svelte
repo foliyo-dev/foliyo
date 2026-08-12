@@ -28,4 +28,13 @@
 		color: var(--color-muted);
 		font-size: 0.9375rem;
 	}
+
+	@media (max-width: 900px) {
+		.page-header {
+			margin-bottom: 1rem;
+		}
+		h1 {
+			font-size: 1.25rem;
+		}
+	}
 </style>

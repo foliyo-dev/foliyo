@@ -636,4 +636,22 @@
 		cursor: pointer;
 		text-decoration: underline;
 	}
+
+	@media (max-width: 640px) {
+		.welcome-banner {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
+		}
+		.welcome-dismiss {
+			align-self: flex-end;
+		}
+		.actions {
+			width: 100%;
+		}
+		.actions :global(button),
+		.actions :global(a) {
+			flex: 1 1 auto;
+		}
+	}
 </style>

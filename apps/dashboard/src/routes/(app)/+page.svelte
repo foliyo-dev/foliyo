@@ -124,12 +124,12 @@
 		if (!p?.name?.trim() || !p?.headline?.trim()) {
 			if (isSaas) {
 				steps.push({
-					title: pro ? 'Import your resume' : 'Import resume (Pro)',
+					title: pro ? 'Try AI resume' : 'AI resume (Pro)',
 					detail: pro
 						? 'Upload a PDF or paste text — AI fills your library.'
 						: 'Upgrade to Pro to fill your library from a PDF or pasted CV.',
 					href: '/import',
-					cta: pro ? 'Import resume' : 'See Pro import'
+					cta: pro ? 'Open AI resume' : 'See Pro AI resume'
 				});
 			}
 			steps.push({
@@ -372,10 +372,10 @@
 				<Card>
 					{#if pro}
 						<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
-						<a href="/import">AI resume import →</a>
+						<a href="/import">AI resume →</a>
 					{:else}
-						<p class="muted">AI resume import is a Pro feature — upgrade to extract a CV into Foliyo.</p>
-						<a href="/import">Import resume (Pro) →</a>
+						<p class="muted">AI resume is a Pro feature — upgrade to extract a CV into Foliyo.</p>
+						<a href="/import">AI resume (Pro) →</a>
 					{/if}
 				</Card>
 			{/if}
@@ -655,6 +655,18 @@
 		.welcome,
 		.publish {
 			grid-template-columns: 1fr;
+		}
+		.grid {
+			grid-template-columns: 1fr;
+		}
+		.list-link {
+			white-space: normal;
+		}
+		.welcome {
+			padding: 1rem 1.1rem;
+		}
+		.welcome-name {
+			font-size: 1.25rem;
 		}
 	}
 </style>

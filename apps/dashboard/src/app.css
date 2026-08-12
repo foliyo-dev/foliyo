@@ -2,6 +2,7 @@
 
 :root {
   --sidebar-width: 240px;
+  --bp-nav: 900px;
 }
 
 *,

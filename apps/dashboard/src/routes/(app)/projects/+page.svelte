@@ -6,6 +6,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
+	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import {
 		listProjects,
 		createProject,
@@ -161,6 +162,7 @@
 		<div class="fields">
 			<Input label="Title" bind:value={title} placeholder="My awesome app" />
 			<Textarea label="Description" bind:value={description} rows={4} />
+			<AiRewriteAssist bind:value={description} disabled={saving} />
 			<div class="row">
 				<Input label="Live URL" bind:value={url} placeholder="https://…" />
 				<Input label="Repo URL" bind:value={repoUrl} placeholder="https://github.com/…" />

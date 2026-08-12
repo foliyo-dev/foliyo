@@ -6,6 +6,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
+	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import {
 		listExperience,
 		createExperience,
@@ -176,6 +177,7 @@
 			Currently working here
 		</label>
 		<Textarea label="Description" bind:value={description} rows={4} />
+		<AiRewriteAssist bind:value={description} disabled={saving} />
 		<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Node.js, PostgreSQL" />
 		<Input
 			label="Case study / write-up URL"

@@ -74,7 +74,7 @@
 			<Card>
 				<p class="import-cta">
 					Skip the blank form —
-					<a href="/import">import a resume with AI</a>
+					<a href="/import">AI resume</a>
 					(Pro) to fill basics and your library from a PDF or pasted text.
 				</p>
 			</Card>

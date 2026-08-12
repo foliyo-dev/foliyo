@@ -66,7 +66,7 @@
 	};
 	let showUpgrade = false;
 	let upgradeMessage =
-		'AI resume import is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
+		'AI resume is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
 
 	$: pro = isProPlan(planInfo?.plan ?? 'free');
 
@@ -368,7 +368,7 @@
 </script>
 
 <PageHeader
-	title="Import resume"
+	title="AI resume"
 	description={isSaas
 		? 'Upload a text-based PDF or paste your CV. AI extracts a Foliyo Resume Spec draft — you review, then save into your library.'
 		: 'Import a signed .fio package exported from Foliyo. Review the draft, then save into your library. Does not change login email or verification.'}
@@ -554,7 +554,7 @@
 {:else if !pro}
 	<Card>
 		<p class="muted">
-			AI resume import is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
+			AI resume is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
 			cannot use this feature.
 		</p>
 	</Card>

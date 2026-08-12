@@ -35,7 +35,7 @@
 		resending = true;
 		try {
 			await resendVerification();
-			showToast('Verification email resent — check MailHog or your inbox', 'success');
+			showToast('Verification email resent — check your inbox (and spam)', 'success');
 		} catch {
 			showToast('Could not resend email', 'error');
 		} finally {

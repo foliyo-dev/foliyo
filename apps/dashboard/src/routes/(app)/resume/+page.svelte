@@ -29,6 +29,7 @@
 	import { listLanguages, type Language } from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
 	import { ApiError } from '$lib/api/client';
+	import { gapCheck, type GapCheckResult } from '$lib/api/ai';
 
 	type TargetMode = 'portfolio' | 'jd' | 'custom';
 
@@ -48,6 +49,8 @@
 	let previewingId: string | null = null;
 	let analysis: TailorAnalysis | null = null;
 	let lastCreatedId: string | null = null;
+	let gapBusy = false;
+	let gapResult: GapCheckResult | null = null;
 
 	let name = '';
 	let nameTouched = false;
@@ -207,6 +210,29 @@
 
 	async function onPortfolioChange() {
 		if (targetMode === 'custom') await seedCustomFromPortfolio(portfolioId);
+	}
+
+	async function runGapCheck() {
+		if (!jdText.trim()) {
+			showToast('Paste a job description first', 'error');
+			return;
+		}
+		gapBusy = true;
+		gapResult = null;
+		try {
+			gapResult = await gapCheck(jdText.trim());
+			showToast('Gap check ready (no AI tokens used)', 'success');
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Gap check failed';
+			try {
+				const parsed = JSON.parse(msg) as { error?: string; message?: string };
+				showToast(parsed.message || parsed.error || msg, 'error');
+			} catch {
+				showToast(msg, 'error');
+			}
+		} finally {
+			gapBusy = false;
+		}
 	}
 
 	async function createNew() {
@@ -578,6 +604,31 @@
 							<input type="checkbox" bind:checked={includeMatching} />
 							Include matching experience &amp; projects
 						</label>
+						<div class="gap-actions">
+							<Button variant="ghost" disabled={gapBusy || saving} on:click={runGapCheck}>
+								{gapBusy ? 'Checking…' : 'Check gaps (free)'}
+							</Button>
+						</div>
+						{#if gapResult}
+							<div class="gap-panel" role="status">
+								<strong>Gap check</strong>
+								<ul class="gap-list">
+									{#each gapResult.findings as f}
+										<li class="gap-{f.severity}">
+											<span class="gap-title">{f.title}</span>
+											{#if f.detail}
+												<span class="gap-detail">{f.detail}</span>
+											{/if}
+										</li>
+									{/each}
+								</ul>
+								{#if gapResult.missing_skill_hints.length}
+									<p class="hint">
+										Consider adding: {gapResult.missing_skill_hints.join(', ')}
+									</p>
+								{/if}
+							</div>
+						{/if}
 					{/if}
 
 					{#if targetMode === 'custom'}
@@ -922,6 +973,50 @@
 	}
 	:global(.card + .card) {
 		margin-top: 1rem;
+	}
+	.gap-actions {
+		margin-top: 0.5rem;
+	}
+	.gap-panel {
+		margin-top: 0.85rem;
+		padding: 0.75rem 0.9rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.gap-panel strong {
+		display: block;
+		font-size: 0.875rem;
+		margin-bottom: 0.5rem;
+	}
+	.gap-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.gap-list li {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		font-size: 0.8125rem;
+	}
+	.gap-title {
+		font-weight: 600;
+	}
+	.gap-detail {
+		color: var(--color-muted);
+	}
+	.gap-ok .gap-title {
+		color: #166534;
+	}
+	.gap-warn .gap-title {
+		color: #b45309;
+	}
+	.gap-info .gap-title {
+		color: var(--color-primary);
 	}
 	@media (max-width: 640px) {
 		.mode {

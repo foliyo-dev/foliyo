@@ -1,12 +1,14 @@
 <script lang="ts">
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import Header from '$lib/components/layout/Header.svelte';
+
+  let navOpen = false;
 </script>
 
-<div class="app-shell">
-  <Sidebar />
+<div class="app-shell" class:nav-open={navOpen}>
+  <Sidebar open={navOpen} on:close={() => (navOpen = false)} />
   <div class="main">
-    <Header>
+    <Header on:menu={() => (navOpen = true)}>
       <span></span>
     </Header>
     <div class="content">
@@ -33,7 +35,14 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+    overflow-x: clip;
     container-type: size;
     container-name: app-content;
+  }
+
+  @media (max-width: 900px) {
+    .content {
+      padding: 1rem 0.85rem 1.25rem;
+    }
   }
 </style>

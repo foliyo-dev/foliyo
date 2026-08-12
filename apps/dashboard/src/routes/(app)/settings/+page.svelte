@@ -104,12 +104,14 @@
 				· PDF {planInfo.entitlements.pdf_export ? 'on' : 'off'}
 				· Branding {planInfo.entitlements.remove_branding ? 'removed' : 'shown'}
 				· Portfolios {planInfo.entitlements.portfolios_unlimited ? 'unlimited' : `max ${planInfo.entitlements.portfolio_limit}`}
+				· Resumes {planInfo.entitlements.resume_limit == null ? 'unlimited' : `max ${planInfo.entitlements.resume_limit}`}
+				· AI resume {planInfo.entitlements.ai_resume_import ? 'on' : 'off'}
+				· AI assist {(planInfo.entitlements.ai_assist ?? planInfo.entitlements.ai_resume_import) ? 'on' : 'off'}
 			{/if}
 		</p>
 		{#if !pro && showDpdp}
 			<UpgradePrompt
 				title="Upgrade to Pro"
-				message="Unlimited portfolios and remove “Made with Foliyo” branding from public pages."
 				pricing={planInfo?.pricing ?? null}
 				billingAvailable={planInfo?.billing_available ?? false}
 				on:upgraded={(e) => {
@@ -117,7 +119,10 @@
 				}}
 			/>
 		{:else if pro && showDpdp}
-			<p class="ok">Pro active — branding removed on public pages; unlimited portfolios.</p>
+			<p class="ok">
+				Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
+				unlocked.
+			</p>
 		{:else}
 			<p class="ok">Self-host — all features unlocked.</p>
 		{/if}

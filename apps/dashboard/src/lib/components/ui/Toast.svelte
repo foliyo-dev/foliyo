@@ -13,10 +13,13 @@
 		position: fixed;
 		bottom: 1rem;
 		right: 1rem;
+		left: auto;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 		z-index: 100;
+		max-width: min(22rem, calc(100vw - 1.5rem));
+		pointer-events: none;
 	}
 	.toast {
 		padding: 0.75rem 1rem;
@@ -26,6 +29,15 @@
 		box-shadow: 0 4px 16px rgba(26, 26, 46, 0.12);
 		color: var(--color-text);
 		font-size: 0.875rem;
+		pointer-events: auto;
+	}
+	@media (max-width: 1099px) {
+		/* Clear preview FAB (bottom-right) on editor pages */
+		.toasts {
+			right: auto;
+			left: 1rem;
+			bottom: 5.25rem;
+		}
 	}
 	.error {
 		border-color: #fecaca;
