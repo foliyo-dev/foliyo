@@ -18,6 +18,7 @@
 	} from '$lib/api/applications';
 	import { listResumes, type Resume } from '$lib/api/resumes';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let items: Application[] = [];
 	let resumes: Resume[] = [];
@@ -115,6 +116,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((a) => a.id === id);
+		if (!(await confirmDelete(item?.company?.trim() || 'this application'))) return;
 		try {
 			await deleteApplication(id);
 			items = items.filter((a) => a.id !== id);

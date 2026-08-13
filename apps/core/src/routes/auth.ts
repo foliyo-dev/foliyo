@@ -1,15 +1,37 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { checkPassword } from "../auth/password.js";
-import { bearerToken, createToken, deleteToken, getTokenUserId } from "../auth/tokens.js";
-import { queryOne, type FoliyoDb } from "../db.js";
+import type { Config } from "../config.js";
+import { checkPassword, hashPassword } from "../auth/password.js";
+import {
+  bearerToken,
+  createToken,
+  deleteToken,
+  deleteTokensForUser,
+  getTokenUserId,
+} from "../auth/tokens.js";
+import { queryOne, run, type FoliyoDb } from "../db.js";
+import {
+  clearPasswordResetToken,
+  createPasswordResetToken,
+  findUserByResetToken,
+  sendPasswordResetEmail,
+} from "../email/password-reset.js";
 
 const loginSchema = z.object({
   email: z.string().min(1),
   password: z.string().min(1),
 });
 
-export function authRoutes(db: FoliyoDb) {
+const forgotSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetSchema = z.object({
+  token: z.string().min(16),
+  password: z.string().min(8),
+});
+
+export function authRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
   r.post("/login", async (c) => {
@@ -88,6 +110,43 @@ export function authRoutes(db: FoliyoDb) {
         email_verified: user.email_verified ?? 1,
       },
     });
+  });
+
+  r.post("/forgot", async (c) => {
+    const body = forgotSchema.safeParse(await c.req.json());
+    if (!body.success) {
+      return c.json({ error: "invalid body" }, 400);
+    }
+    const email = body.data.email.trim().toLowerCase();
+    const user = await queryOne<{ id: string; email: string }>(
+      db,
+      "SELECT id, email FROM users WHERE lower(email) = ?",
+      [email],
+    );
+    if (user) {
+      const token = await createPasswordResetToken(db, user.id);
+      const resetUrl = `${config.dashboardUrl.replace(/\/$/, "")}/reset?token=${encodeURIComponent(token)}`;
+      await sendPasswordResetEmail(config, { to: user.email, resetUrl });
+    }
+    return c.json({ ok: true });
+  });
+
+  r.post("/reset", async (c) => {
+    const body = resetSchema.safeParse(await c.req.json());
+    if (!body.success) {
+      return c.json({ error: "invalid body" }, 400);
+    }
+    const user = await findUserByResetToken(db, body.data.token);
+    if (!user) {
+      return c.json({ error: "invalid or expired token" }, 400);
+    }
+    await run(db, "UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+      hashPassword(body.data.password),
+      user.id,
+    ]);
+    await clearPasswordResetToken(db, user.id);
+    await deleteTokensForUser(db, user.id);
+    return c.json({ ok: true });
   });
 
   return r;

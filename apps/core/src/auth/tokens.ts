@@ -28,6 +28,10 @@ export async function deleteToken(db: FoliyoDb, token: string): Promise<void> {
   await run(db, "DELETE FROM tokens WHERE id = ?", [token]);
 }
 
+export async function deleteTokensForUser(db: FoliyoDb, userId: string): Promise<void> {
+  await run(db, "DELETE FROM tokens WHERE user_id = ?", [userId]);
+}
+
 export function bearerToken(authHeader: string | undefined): string | null {
   if (!authHeader?.startsWith("Bearer ")) return null;
   return authHeader.slice(7).trim() || null;

@@ -15,6 +15,7 @@
 		type Project
 	} from '$lib/api/projects';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: Project[] = [];
@@ -139,6 +140,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((p) => p.id === id);
+		if (!(await confirmDelete(item?.title?.trim() || 'this project'))) return;
 		try {
 			await deleteProject(id);
 			items = items.filter((p) => p.id !== id);

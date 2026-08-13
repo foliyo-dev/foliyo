@@ -17,6 +17,7 @@
 		type SocialProvider
 	} from '$lib/api/social';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: SocialLink[] = [];
@@ -107,6 +108,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((l) => l.id === id);
+		if (!(await confirmDelete(item?.label?.trim() || item?.value?.trim() || 'this link'))) return;
 		try {
 			await deleteSocialLink(id);
 			items = items.filter((l) => l.id !== id);

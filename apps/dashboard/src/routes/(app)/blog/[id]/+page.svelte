@@ -17,6 +17,7 @@
 		type BlogPost
 	} from '$lib/api/blog';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let loading = true;
 	let saving = false;
@@ -107,6 +108,7 @@
 
 	async function remove() {
 		if (!post) return;
+		if (!(await confirmDelete(post.title?.trim() || 'this post'))) return;
 		try {
 			await deletePost(post.id);
 			showToast('Post deleted', 'success');

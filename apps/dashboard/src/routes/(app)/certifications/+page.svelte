@@ -14,6 +14,7 @@
 		type Certification
 	} from '$lib/api/certifications';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: Certification[] = [];
@@ -141,6 +142,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((c) => c.id === id);
+		if (!(await confirmDelete(item?.name?.trim() || 'this certification'))) return;
 		try {
 			await deleteCertification(id);
 			items = items.filter((c) => c.id !== id);

@@ -29,6 +29,7 @@
 	import { listCertifications, type Certification } from '$lib/api/certifications';
 	import { listLanguages, type Language } from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let loading = true;
 	let saving = false;
@@ -198,6 +199,7 @@
 
 	async function remove() {
 		if (!portfolio) return;
+		if (!(await confirmDelete(portfolio.name?.trim() || 'this portfolio'))) return;
 		try {
 			await deletePortfolio(portfolio.id);
 			showToast('Portfolio deleted', 'success');

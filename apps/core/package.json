@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/core",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "type": "module",
   "description": "Foliyo API + public pages (Hono + MeshQL). Released as foliyo-core-*.tgz on GitHub Releases; npm later.",
@@ -59,6 +59,7 @@
     "./auth/tokens": "./src/auth/tokens.ts",
     "./email/send": "./src/email/send.ts",
     "./email/verify": "./src/email/verify.ts",
+    "./email/password-reset": "./src/email/password-reset.ts",
     "./email/layout": "./src/email/layout.ts",
     "./public/pages": "./src/public/pages.ts",
     "./public/themes": "./src/public/themes.ts",

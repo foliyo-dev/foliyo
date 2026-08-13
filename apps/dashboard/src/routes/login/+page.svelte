@@ -47,14 +47,23 @@
 		/>
 		<p class="muted intro">Sign in to manage your portfolio</p>
 		<form on:submit={handleSubmit}>
-			<Input label="Email" type="email" name="email" bind:value={email} />
-			<Input label="Password" type="password" name="password" bind:value={password} />
+			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
+			<Input
+				label="Password"
+				type="password"
+				name="password"
+				autocomplete="current-password"
+				bind:value={password}
+			/>
 			<Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
 		</form>
+		<p class="forgot"><a href="/forgot">Forgot password?</a></p>
 		{#if isSaas}
 			<p class="footer muted">
 				New here? <a href="/signup">Create an account</a>
-				· <a href="/cancel-delete">Cancel deletion</a>
+			</p>
+			<p class="footer quiet muted">
+				<a href="/cancel-delete">Cancel account deletion</a>
 			</p>
 		{:else}
 			<p class="footer muted">Self-host · {siteUrl}</p>
@@ -95,5 +104,14 @@
 		text-align: center;
 		font-size: 0.875rem;
 		color: var(--color-muted);
+	}
+	.forgot {
+		margin: 0.75rem 0 0;
+		text-align: center;
+		font-size: 0.875rem;
+	}
+	.quiet {
+		margin-top: 0.5rem;
+		font-size: 0.8125rem;
 	}
 </style>

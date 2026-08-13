@@ -15,6 +15,7 @@
 		type LanguageProficiency
 	} from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: Language[] = [];
@@ -98,6 +99,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((l) => l.id === id);
+		if (!(await confirmDelete(item?.name?.trim() || 'this language'))) return;
 		try {
 			await deleteLanguage(id);
 			items = items.filter((l) => l.id !== id);

@@ -28,6 +28,7 @@
 	import { listCertifications, type Certification } from '$lib/api/certifications';
 	import { listLanguages, type Language } from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 	import { ApiError } from '$lib/api/client';
 	import { gapCheck, type GapCheckResult } from '$lib/api/ai';
 
@@ -364,6 +365,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((r) => r.id === id);
+		if (!(await confirmDelete(item?.name?.trim() || 'this resume'))) return;
 		try {
 			await deleteResume(id);
 			items = items.filter((r) => r.id !== id);

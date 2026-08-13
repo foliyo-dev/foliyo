@@ -86,7 +86,7 @@ export function createFoliyoApp(
   // so hosted signup is not shadowed by OSS auth routes.
   options.beforeProtectedApi?.(app);
 
-  app.route("/api/auth", authRoutes(db));
+  app.route("/api/auth", authRoutes(db, config));
 
   const api = new Hono();
   api.use("*", authMiddleware(db));

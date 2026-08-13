@@ -15,6 +15,7 @@
 		type Experience
 	} from '$lib/api/experience';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: Experience[] = [];
@@ -142,6 +143,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((e) => e.id === id);
+		if (!(await confirmDelete(item?.role?.trim() || item?.company?.trim() || 'this role'))) return;
 		try {
 			await deleteExperience(id);
 			items = items.filter((e) => e.id !== id);

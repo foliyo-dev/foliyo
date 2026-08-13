@@ -16,6 +16,7 @@
 		type Skill
 	} from '$lib/api/skills';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	const levels = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
 	const recencies = ['current', 'past'] as const;
@@ -127,6 +128,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((s) => s.id === id);
+		if (!(await confirmDelete(item?.name?.trim() || 'this skill'))) return;
 		try {
 			await deleteSkill(id);
 			items = items.filter((s) => s.id !== id);

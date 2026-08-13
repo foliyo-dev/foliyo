@@ -34,6 +34,7 @@
 	import { listLanguages, type Language } from '$lib/api/languages';
 	import { user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let items: Portfolio[] = [];
 	let loading = true;
@@ -270,6 +271,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((p) => p.id === id);
+		if (!(await confirmDelete(item?.name?.trim() || 'this portfolio'))) return;
 		try {
 			await deletePortfolio(id);
 			items = items.filter((p) => p.id !== id);

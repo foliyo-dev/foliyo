@@ -9,6 +9,8 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/auth/login` | Returns `{ "token": "...", "user": { ... } }` |
+| POST | `/api/auth/forgot` | `{ email }` — always `{ ok: true }`; sends reset mail if the account exists |
+| POST | `/api/auth/reset` | `{ token, password }` — set new password (min 8); revokes sessions |
 | POST | `/api/auth/logout` | `Authorization: Bearer <token>` — deletes token |
 | GET | `/api/auth/me` | `Authorization: Bearer <token>` — current user |
 

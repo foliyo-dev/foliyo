@@ -9,7 +9,7 @@ const BRAND = {
   bg: "#f8f7fc",
   surface: "#ffffff",
   text: "#1a1a2e",
-  muted: "#6b6a76",
+  muted: "#5c5b66",
   border: "#e4e2ef",
   danger: "#b91c1c",
 } as const;

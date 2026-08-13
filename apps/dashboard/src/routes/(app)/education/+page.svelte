@@ -14,6 +14,7 @@
 		type Education
 	} from '$lib/api/education';
 	import { showToast } from '$lib/stores/toast';
+	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
 	let items: Education[] = [];
@@ -137,6 +138,8 @@
 	}
 
 	async function remove(id: string) {
+		const item = items.find((e) => e.id === id);
+		if (!(await confirmDelete(item?.institution?.trim() || 'this school'))) return;
 		try {
 			await deleteEducation(id);
 			items = items.filter((e) => e.id !== id);

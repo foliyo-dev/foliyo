@@ -13,6 +13,9 @@ export function init() {
 	if (url.pathname === '/verify' || url.pathname.startsWith('/verify/')) {
 		return;
 	}
+	if (url.pathname === '/reset' || url.pathname.startsWith('/reset/')) {
+		return;
+	}
 
 	const session =
 		url.searchParams.get('access_token') ?? url.searchParams.get('token');

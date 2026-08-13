@@ -69,9 +69,22 @@
 		<h1>Create your account</h1>
 		<p class="muted">Start building your portfolio at {publicHost()}</p>
 		<form on:submit={handleSubmit}>
-			<Input label="Email" type="email" bind:value={email} />
-			<Input label="Password" type="password" bind:value={password} />
-			<Input label="Confirm password" type="password" bind:value={confirm} />
+			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
+			<Input
+				label="Password"
+				type="password"
+				name="password"
+				autocomplete="new-password"
+				bind:value={password}
+			/>
+			<Input
+				label="Confirm password"
+				type="password"
+				name="confirm"
+				autocomplete="new-password"
+				bind:value={confirm}
+			/>
+			<p class="hint">At least 8 characters.</p>
 			<label class="consent">
 				<input type="checkbox" bind:checked={consent} />
 				I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
@@ -112,6 +125,11 @@
 		gap: 0.5rem;
 		align-items: flex-start;
 		font-size: 0.875rem;
+	}
+	.hint {
+		margin: -0.35rem 0 0;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
 	}
 	.footer {
 		margin-top: 1.25rem;

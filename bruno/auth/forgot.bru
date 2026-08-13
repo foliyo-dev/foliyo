@@ -1,0 +1,28 @@
+meta {
+  name: Forgot password
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/forgot
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}"
+  }
+}
+
+tests {
+  test("should always return ok", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().ok).to.equal(true);
+  });
+}
