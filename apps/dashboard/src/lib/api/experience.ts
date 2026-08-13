@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type BulkResult } from './client';
 
 export type Experience = {
 	id: string;
@@ -17,6 +17,8 @@ export type Experience = {
 export const listExperience = () => api<Experience[]>('/experience');
 export const createExperience = (data: Partial<Experience>) =>
 	api<Experience[]>('/experience', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateExperience = (items: Partial<Experience>[]) =>
+	api<BulkResult<Experience>>('/experience/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateExperience = (id: string, data: Partial<Experience>) =>
 	api<{ ok: boolean }>(`/experience/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteExperience = (id: string) =>

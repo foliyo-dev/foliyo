@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type BulkResult } from './client';
 
 export type SocialProvider =
 	| 'github'
@@ -52,6 +52,8 @@ export function providerMeta(id: SocialProvider): SocialProviderOption {
 export const listSocialLinks = () => api<SocialLink[]>('/social-links');
 export const createSocialLink = (data: Partial<SocialLink>) =>
 	api<SocialLink[]>('/social-links', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateSocialLinks = (items: Partial<SocialLink>[]) =>
+	api<BulkResult<SocialLink>>('/social-links/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateSocialLink = (id: string, data: Partial<SocialLink>) =>
 	api<{ ok: boolean }>(`/social-links/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteSocialLink = (id: string) =>

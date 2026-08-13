@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type BulkResult } from './client';
 
 export type Certification = {
 	id: string;
@@ -16,6 +16,11 @@ export type Certification = {
 export const listCertifications = () => api<Certification[]>('/certifications');
 export const createCertification = (data: Partial<Certification>) =>
 	api<Certification[]>('/certifications', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateCertifications = (items: Partial<Certification>[]) =>
+	api<BulkResult<Certification>>('/certifications/bulk', {
+		method: 'POST',
+		body: JSON.stringify({ items })
+	});
 export const updateCertification = (id: string, data: Partial<Certification>) =>
 	api<{ ok: boolean }>(`/certifications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteCertification = (id: string) =>

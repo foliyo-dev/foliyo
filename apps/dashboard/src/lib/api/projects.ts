@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import { accessToken } from '$lib/stores/token';
-import { api, ApiError } from './client';
+import { api, ApiError, type BulkResult } from './client';
 
 export type Project = {
   id: string;
@@ -21,6 +21,8 @@ export type Project = {
 export const listProjects = () => api<Project[]>('/projects');
 export const createProject = (data: Partial<Project>) =>
   api<Project[]>('/projects', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateProjects = (items: Partial<Project>[]) =>
+  api<BulkResult<Project>>('/projects/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateProject = (id: string, data: Partial<Project>) =>
   api<{ ok: boolean }>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProject = (id: string) =>

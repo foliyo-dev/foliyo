@@ -17,15 +17,15 @@
 		ImportLimitError,
 		type ResumeImportDraft
 	} from '$lib/api/import';
-	import { ApiError } from '$lib/api/client';
+	import { ApiError, type BulkResult } from '$lib/api/client';
 	import { updateProfile } from '$lib/api/profile';
-	import { createSkill } from '$lib/api/skills';
-	import { createExperience } from '$lib/api/experience';
-	import { createEducation } from '$lib/api/education';
-	import { createProject } from '$lib/api/projects';
-	import { createCertification } from '$lib/api/certifications';
-	import { createLanguage } from '$lib/api/languages';
-	import { createSocialLink, type SocialProvider } from '$lib/api/social';
+	import { bulkCreateSkills, type Skill } from '$lib/api/skills';
+	import { bulkCreateExperience, type Experience } from '$lib/api/experience';
+	import { bulkCreateEducation, type Education } from '$lib/api/education';
+	import { bulkCreateProjects, type Project } from '$lib/api/projects';
+	import { bulkCreateCertifications, type Certification } from '$lib/api/certifications';
+	import { bulkCreateLanguages, type Language } from '$lib/api/languages';
+	import { bulkCreateSocialLinks, type SocialLink, type SocialProvider } from '$lib/api/social';
 
 	type SectionKey =
 		| 'candidate'
@@ -228,139 +228,213 @@
 		return (allowed.includes(k as SocialProvider) ? k : 'other') as SocialProvider;
 	}
 
+	// Every section is saved with a single bulk request (one INSERT loop + one skill-
+	// suggestion recompute server-side, instead of N HTTP round trips). A bad row inside
+	// a batch is reported in `failed` rather than aborting the rest of that batch — and
+	// batches are independent, so one section failing entirely can't drop the others.
+	type Labeled<T> = { label: string; data: Partial<T>; originalIndex: number };
+
+	async function bulkSave<T>(
+		fallbackLabel: string,
+		payloads: Labeled<T>[],
+		bulkFn: (items: Partial<T>[]) => Promise<BulkResult<T>>,
+		onSuccess: (originalIndex: number) => void
+	): Promise<{ saved: number; failures: string[] }> {
+		if (payloads.length === 0) return { saved: 0, failures: [] };
+		try {
+			const res = await bulkFn(payloads.map((p) => p.data));
+			const failedIndexes = new Set(res.failed.map((f) => f.index));
+			payloads.forEach((p, i) => {
+				if (!failedIndexes.has(i)) onSuccess(p.originalIndex);
+			});
+			const failures = res.failed.map((f) => `${payloads[f.index]?.label ?? fallbackLabel} (${f.error.slice(0, 100)})`);
+			return { saved: payloads.length - res.failed.length, failures };
+		} catch (err) {
+			const detail = err instanceof ApiError ? err.message.slice(0, 120) : 'failed to save';
+			return { saved: 0, failures: [`${fallbackLabel} (${detail})`] };
+		}
+	}
+
 	async function saveDraft() {
 		if (!draft) return;
 		saving = true;
 		let saved = 0;
+		const failures: string[] = [];
 		try {
 			if (include.candidate) {
-				await updateProfile({
-					name: draft.candidate.name || undefined,
-					headline: draft.candidate.headline ?? undefined,
-					bio: draft.candidate.bio ?? undefined,
-					email: draft.candidate.email ?? undefined,
-					location: draft.candidate.location ?? undefined
-				});
-				saved += 1;
+				try {
+					await updateProfile({
+						name: draft.candidate.name || undefined,
+						headline: draft.candidate.headline ?? undefined,
+						bio: draft.candidate.bio ?? undefined,
+						email: draft.candidate.email ?? undefined,
+						location: draft.candidate.location ?? undefined
+					});
+					saved += 1;
+				} catch (err) {
+					const detail = err instanceof ApiError ? err.message.slice(0, 120) : 'failed to save';
+					failures.push(`Profile (${detail})`);
+				}
 			}
 
 			if (include.links) {
-				for (const [provider, value] of Object.entries(draft.candidate.links || {})) {
-					if (!value?.trim()) continue;
-					await createSocialLink({
+				const links = Object.entries(draft.candidate.links || {}).filter(([, v]) => v?.trim());
+				const payloads: Labeled<SocialLink>[] = links.map(([provider, value], i) => ({
+					label: `Link (${provider})`,
+					originalIndex: i,
+					data: {
 						provider: knownProvider(provider),
 						label: provider,
 						value: value.trim(),
 						sort_order: 0
-					});
-					saved += 1;
-				}
+					}
+				}));
+				const res = await bulkSave('Social links', payloads, bulkCreateSocialLinks, () => {});
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.skills) {
-				for (let i = 0; i < draft.skills.length; i++) {
-					if (!selected.skills[i]) continue;
-					const s = draft.skills[i]!;
-					await createSkill({
-						name: s.name,
-						level: s.level ?? 'intermediate',
-						category: s.category ?? '',
-						sort_order: i
+				const payloads: Labeled<Skill>[] = [];
+				draft.skills.forEach((s, i) => {
+					if (!selected.skills[i]) return;
+					payloads.push({
+						label: `Skill: ${s.name}`,
+						originalIndex: i,
+						data: { name: s.name, level: s.level ?? 'intermediate', category: s.category ?? '', sort_order: i }
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave('Skills', payloads, bulkCreateSkills, (i) => (selected.skills[i] = false));
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.experience) {
-				for (let i = 0; i < draft.experience.length; i++) {
-					if (!selected.experience[i]) continue;
-					const e = draft.experience[i]!;
-					await createExperience({
-						company: e.company,
-						role: e.role,
-						location: e.location ?? '',
-						start_date: e.start ?? '',
-						end_date: e.current ? null : e.end,
-						description: e.description ?? '',
-						article_url: '',
-						sort_order: i
+				const payloads: Labeled<Experience>[] = [];
+				draft.experience.forEach((e, i) => {
+					if (!selected.experience[i]) return;
+					payloads.push({
+						label: `Experience: ${e.role} @ ${e.company}`,
+						originalIndex: i,
+						data: {
+							company: e.company,
+							role: e.role,
+							location: e.location ?? '',
+							start_date: e.start ?? '',
+							end_date: e.current ? null : e.end,
+							description: e.description ?? '',
+							article_url: '',
+							sort_order: i
+						}
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave('Experience', payloads, bulkCreateExperience, (i) => (selected.experience[i] = false));
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.education) {
-				for (let i = 0; i < draft.education.length; i++) {
-					if (!selected.education[i]) continue;
-					const e = draft.education[i]!;
-					await createEducation({
-						institution: e.institution,
-						degree: e.degree ?? '',
-						field: e.field ?? '',
-						start_date: e.start ?? '',
-						end_date: e.end,
-						description: e.description ?? '',
-						sort_order: i
+				const payloads: Labeled<Education>[] = [];
+				draft.education.forEach((e, i) => {
+					if (!selected.education[i]) return;
+					payloads.push({
+						label: `Education: ${e.institution}`,
+						originalIndex: i,
+						data: {
+							institution: e.institution,
+							degree: e.degree ?? '',
+							field: e.field ?? '',
+							start_date: e.start ?? '',
+							end_date: e.end,
+							description: e.description ?? '',
+							sort_order: i
+						}
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave('Education', payloads, bulkCreateEducation, (i) => (selected.education[i] = false));
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.projects) {
-				for (let i = 0; i < draft.projects.length; i++) {
-					if (!selected.projects[i]) continue;
-					const p = draft.projects[i]!;
-					await createProject({
-						title: p.title,
-						description: p.description ?? '',
-						url: p.url ?? '',
-						repo_url: p.repo_url ?? '',
-						article_url: '',
-						image_url: '',
-						skills_developed: JSON.stringify(p.tags ?? p.skills_developed ?? []),
-						featured: p.featured ? 1 : 0,
-						sort_order: i
+				const payloads: Labeled<Project>[] = [];
+				draft.projects.forEach((p, i) => {
+					if (!selected.projects[i]) return;
+					payloads.push({
+						label: `Project: ${p.title}`,
+						originalIndex: i,
+						data: {
+							title: p.title,
+							description: p.description ?? '',
+							url: p.url ?? '',
+							repo_url: p.repo_url ?? '',
+							article_url: '',
+							image_url: '',
+							skills_developed: JSON.stringify(p.tags ?? p.skills_developed ?? []),
+							featured: p.featured ? 1 : 0,
+							sort_order: i
+						}
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave('Projects', payloads, bulkCreateProjects, (i) => (selected.projects[i] = false));
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.certifications) {
-				for (let i = 0; i < draft.certifications.length; i++) {
-					if (!selected.certifications[i]) continue;
-					const c = draft.certifications[i]!;
-					await createCertification({
-						name: c.name,
-						issuer: c.issuer ?? '',
-						credential_id: c.credential_id ?? '',
-						credential_url: c.credential_url ?? '',
-						issued_at: c.issued_at,
-						expires_at: c.expires_at,
-						description: c.description ?? '',
-						sort_order: i
+				const payloads: Labeled<Certification>[] = [];
+				draft.certifications.forEach((c, i) => {
+					if (!selected.certifications[i]) return;
+					payloads.push({
+						label: `Certification: ${c.name}`,
+						originalIndex: i,
+						data: {
+							name: c.name,
+							issuer: c.issuer ?? '',
+							credential_id: c.credential_id ?? '',
+							credential_url: c.credential_url ?? '',
+							issued_at: c.issued_at,
+							expires_at: c.expires_at,
+							description: c.description ?? '',
+							sort_order: i
+						}
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave(
+					'Certifications',
+					payloads,
+					bulkCreateCertifications,
+					(i) => (selected.certifications[i] = false)
+				);
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
 			if (include.languages) {
-				for (let i = 0; i < draft.languages.length; i++) {
-					if (!selected.languages[i]) continue;
-					const l = draft.languages[i]!;
-					await createLanguage({
-						name: l.language,
-						proficiency: (l.proficiency as 'fluent') || 'fluent',
-						sort_order: i
+				const payloads: Labeled<Language>[] = [];
+				draft.languages.forEach((l, i) => {
+					if (!selected.languages[i]) return;
+					payloads.push({
+						label: `Language: ${l.language}`,
+						originalIndex: i,
+						data: { name: l.language, proficiency: (l.proficiency as 'fluent') || 'fluent', sort_order: i }
 					});
-					saved += 1;
-				}
+				});
+				const res = await bulkSave('Languages', payloads, bulkCreateLanguages, (i) => (selected.languages[i] = false));
+				saved += res.saved;
+				failures.push(...res.failures);
 			}
 
-			showToast(`Saved ${saved} item(s) to your library`, 'success');
-			draft = null;
-			pasteText = '';
-		} catch {
-			showToast('Some items failed to save — check your library', 'error');
+			if (failures.length === 0) {
+				showToast(`Saved ${saved} item(s) to your library`, 'success');
+				draft = null;
+				pasteText = '';
+			} else {
+				showToast(
+					`Saved ${saved} item(s), ${failures.length} failed: ${failures.slice(0, 3).join('; ')}${failures.length > 3 ? '…' : ''}`,
+					'error'
+				);
+			}
 		} finally {
 			saving = false;
 		}

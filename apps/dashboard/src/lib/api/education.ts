@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type BulkResult } from './client';
 
 export type Education = {
 	id: string;
@@ -15,6 +15,8 @@ export type Education = {
 export const listEducation = () => api<Education[]>('/education');
 export const createEducation = (data: Partial<Education>) =>
 	api<Education[]>('/education', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateEducation = (items: Partial<Education>[]) =>
+	api<BulkResult<Education>>('/education/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateEducation = (id: string, data: Partial<Education>) =>
 	api<{ ok: boolean }>(`/education/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteEducation = (id: string) =>

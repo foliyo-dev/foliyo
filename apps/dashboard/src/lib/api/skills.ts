@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type BulkResult } from './client';
 
 export type Skill = {
   id: string;
@@ -19,6 +19,8 @@ export const listSkills = (status?: string) =>
   api<Skill[]>(`/skills${status ? `?status=${encodeURIComponent(status)}` : ''}`);
 export const createSkill = (data: Partial<Skill>) =>
   api<Skill[]>('/skills', { method: 'POST', body: JSON.stringify(data) });
+export const bulkCreateSkills = (items: Partial<Skill>[]) =>
+  api<BulkResult<Skill>>('/skills/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateSkill = (id: string, data: Partial<Skill>) =>
   api<{ ok: boolean }>(`/skills/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteSkill = (id: string) =>
