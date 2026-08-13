@@ -122,14 +122,32 @@ export function skillsRoutes(db: FoliyoDb) {
     const body = createSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
     const d = body.data;
-    await run(
+
+    // One active (non-dismissed) skill name per user, case-insensitive (DB constraint).
+    // A name collision usually means this skill was already auto-suggested (status='pending')
+    // — confirm/update that row instead of a raw INSERT crashing on the unique index.
+    const existing = await queryOne<{ id: string }>(
       db,
-      `INSERT INTO skills (user_id, name, level, category, source, status, recency, sort_order)
-       VALUES (?, ?, ?, ?, 'manual', 'confirmed', ?, ?)`,
-      [userId, d.name, d.level, d.category, d.recency, d.sort_order],
+      "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND status != 'dismissed'",
+      [userId, d.name],
     );
+    if (existing) {
+      await run(
+        db,
+        `UPDATE skills SET name=?, level=?, category=?, status='confirmed', recency=?, sort_order=?, updated_at=CURRENT_TIMESTAMP
+         WHERE id=? AND user_id=?`,
+        [d.name, d.level, d.category, d.recency, d.sort_order, existing.id, userId],
+      );
+    } else {
+      await run(
+        db,
+        `INSERT INTO skills (user_id, name, level, category, source, status, recency, sort_order)
+         VALUES (?, ?, ?, ?, 'manual', 'confirmed', ?, ?)`,
+        [userId, d.name, d.level, d.category, d.recency, d.sort_order],
+      );
+    }
     const items = await queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [userId]);
-    return c.json(await enrichSkills(db, items), 201);
+    return c.json(await enrichSkills(db, items), existing ? 200 : 201);
   });
 
   r.put("/:id", async (c) => {

@@ -89,6 +89,24 @@ export function createFoliyoApp(
   app.route("/api/auth", authRoutes(db, config));
 
   const api = new Hono();
+  // Last-resort net: a route-level bug that lets a DB unique-constraint violation
+  // bubble up should surface as a clean 409, not an unhandled 500 + leaked stack trace.
+  api.onError((err, c) => {
+    const pgCode = (err as { code?: string }).code;
+    const isDuplicate = pgCode === "23505" || /UNIQUE constraint failed/i.test(err.message);
+    if (isDuplicate) {
+      console.warn(`[foliyo] duplicate on ${c.req.method} ${c.req.path}: ${err.message}`);
+      return c.json(
+        { error: "duplicate", message: "That already exists. Refresh and try again." },
+        409,
+      );
+    }
+    console.error(`[foliyo] unhandled error on ${c.req.method} ${c.req.path}:`, err);
+    return c.json(
+      { error: "internal_error", message: "Something went wrong. Please try again." },
+      500,
+    );
+  });
   api.use("*", authMiddleware(db));
   api.route("/profile", profileRoutes(db));
   api.route("/skills", skillsRoutes(db));
