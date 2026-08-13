@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -7,14 +7,17 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { formatPlanLabel, getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
-	import { isSaas, privacyUrl } from '$lib/config';
+	import { isSaas, privacyUrl, publicHost, publicPortfolioPath } from '$lib/config';
 	import {
+		checkHandle,
+		claimHandle,
 		downloadExport,
 		getConsents,
 		requestDelete,
 		type ConsentRow
 	} from '$lib/api/cloud';
-	import { logout, user } from '$lib/stores/auth';
+	import { ApiError } from '$lib/api/client';
+	import { changePassword, logout, user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
 	let loading = true;
@@ -24,12 +27,200 @@
 	let accountPrivacy = false;
 	let deleteConfirm = '';
 
+	/** Same rules as cloud `/api/handle`. */
+	const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/;
+	/** Matches `HANDLE_CHANGE_COOLDOWN_DAYS` in foliyo-cloud's handle route. */
+	const HANDLE_COOLDOWN_DAYS = 30;
+
+	let editingHandle = false;
+	let handleInput = '';
+	let handleChecking = false;
+	let handleAvailable: boolean | null = null;
+	let handleFormatError: string | null = null;
+	let handleSaving = false;
+	let handleCheckTimer: ReturnType<typeof setTimeout> | undefined;
+	let handleCheckSeq = 0;
+
+	$: host = publicHost();
+	$: handleCooldownUntil = (() => {
+		const changedAt = $user?.handle_changed_at;
+		if (!changedAt) return null;
+		const until = new Date(new Date(changedAt).getTime() + HANDLE_COOLDOWN_DAYS * 86_400_000);
+		return until > new Date() ? until : null;
+	})();
+
+	function startEditHandle() {
+		handleInput = $user?.handle ?? '';
+		handleAvailable = null;
+		handleFormatError = null;
+		editingHandle = true;
+	}
+
+	function cancelEditHandle() {
+		editingHandle = false;
+		clearTimeout(handleCheckTimer);
+	}
+
+	function scheduleHandleCheck(raw: string) {
+		const h = raw.toLowerCase().trim();
+		clearTimeout(handleCheckTimer);
+		if (!h || h === ($user?.handle ?? '')) {
+			handleAvailable = null;
+			handleFormatError = null;
+			return;
+		}
+		if (!HANDLE_RE.test(h)) {
+			handleAvailable = false;
+			handleFormatError =
+				h.length < 3
+					? 'Handle must be at least 3 characters'
+					: 'Use lowercase letters, numbers, _ or - (start with a letter or number)';
+			return;
+		}
+		handleFormatError = null;
+		handleCheckTimer = setTimeout(() => void runHandleCheck(h), 300);
+	}
+
+	$: if (editingHandle) scheduleHandleCheck(handleInput);
+
+	async function runHandleCheck(h: string) {
+		const seq = ++handleCheckSeq;
+		handleChecking = true;
+		try {
+			const res = await checkHandle(h);
+			if (seq !== handleCheckSeq) return;
+			handleAvailable = res.available;
+			if (!res.available && res.reason) {
+				handleFormatError =
+					res.reason === 'reserved' || res.reason === 'temp_prefix_reserved'
+						? 'That handle is reserved'
+						: 'Unavailable (taken or reserved)';
+			}
+		} catch {
+			if (seq !== handleCheckSeq) return;
+			handleAvailable = null;
+			handleFormatError = 'Could not check availability — try again';
+		} finally {
+			if (seq === handleCheckSeq) handleChecking = false;
+		}
+	}
+
+	function apiErrorMessage(err: unknown, fallback: string): string {
+		if (!(err instanceof ApiError)) return fallback;
+		try {
+			const body = JSON.parse(err.message) as { error?: string; retry_at?: string };
+			if (body.error === 'handle taken') return 'That handle was just taken';
+			if (body.error === 'handle reserved') return 'That handle is reserved';
+			if (body.error === 'invalid handle') return 'Invalid handle format';
+			if (body.error === 'handle cooldown') {
+				const when = body.retry_at ? new Date(body.retry_at).toLocaleDateString() : 'later';
+				return `You can change your handle again on ${when}`;
+			}
+			if (body.error) return body.error;
+		} catch {
+			/* plain text */
+		}
+		return fallback;
+	}
+
+	async function saveHandle() {
+		const h = handleInput.toLowerCase().trim();
+		if (h === ($user?.handle ?? '')) {
+			editingHandle = false;
+			return;
+		}
+		if (!HANDLE_RE.test(h) || handleAvailable !== true) {
+			showToast(handleFormatError || 'Choose an available handle', 'error');
+			return;
+		}
+		handleSaving = true;
+		try {
+			const res = await claimHandle(h);
+			user.update((u) =>
+				u ? { ...u, handle: res.handle, handle_changed_at: new Date().toISOString() } : u
+			);
+			showToast(`Your link is now /u/${res.handle}`, 'success');
+			editingHandle = false;
+		} catch (err) {
+			showToast(apiErrorMessage(err, 'Could not save handle'), 'error');
+		} finally {
+			handleSaving = false;
+		}
+	}
+
+	async function copyPublicLink() {
+		const h = $user?.handle;
+		if (!h) return;
+		try {
+			await navigator.clipboard.writeText(publicPortfolioPath(h));
+			showToast('Link copied', 'success');
+		} catch {
+			showToast('Could not copy link', 'error');
+		}
+	}
+
+	onDestroy(() => clearTimeout(handleCheckTimer));
+
+	let currentPassword = '';
+	let newPassword = '';
+	let confirmPassword = '';
+	let passwordSaving = false;
+
+	$: canChangePassword =
+		currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
+
+	async function submitChangePassword() {
+		if (newPassword.length < 8) {
+			showToast('New password must be at least 8 characters', 'error');
+			return;
+		}
+		if (newPassword !== confirmPassword) {
+			showToast('New passwords do not match', 'error');
+			return;
+		}
+		passwordSaving = true;
+		try {
+			await changePassword(currentPassword, newPassword);
+			showToast('Password changed', 'success');
+			currentPassword = '';
+			newPassword = '';
+			confirmPassword = '';
+		} catch (err) {
+			const message =
+				err instanceof ApiError && err.status === 401
+					? 'Current password is incorrect'
+					: 'Could not change password';
+			showToast(message, 'error');
+		} finally {
+			passwordSaving = false;
+		}
+	}
+
 	$: planSlug = planInfo?.plan ?? $user?.plan ?? (isSaas ? 'free' : 'selfhost');
 	$: planLabel = formatPlanLabel(planSlug);
 	$: pro = isProPlan(planSlug);
 	/** Hosted account APIs available (cloud), or explicit SaaS build. */
 	$: showDpdp =
 		isSaas || accountPrivacy || Boolean(planInfo && planInfo.plan !== 'selfhost');
+
+	/** `plan_expires` is `YYYY-MM-DD HH:MM:SS` UTC (no timezone suffix). */
+	function formatExpiry(stamp: string): string {
+		return new Date(`${stamp.replace(' ', 'T')}Z`).toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric'
+		});
+	}
+	$: planExpiresLabel = planInfo?.plan_expires ? formatExpiry(planInfo.plan_expires) : '';
+	$: daysUntilExpiry = planInfo?.plan_expires
+		? Math.ceil(
+				(new Date(`${planInfo.plan_expires.replace(' ', 'T')}Z`).getTime() - Date.now()) /
+					86_400_000
+			)
+		: null;
+	// Only monthly Pro carries an expiry; surface a renew action once it's close (or past) to
+	// avoid tempting an early renewal that would reset — rather than extend — the 30-day clock.
+	$: renewalDueSoon = pro && planSlug === 'pro' && daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
 	onMount(async () => {
 		try {
@@ -93,11 +284,62 @@
 	}
 </script>
 
-<PageHeader title="Settings" description="Plan, billing, and account privacy." />
+<PageHeader title="Settings" description="Account, plan, billing, and privacy." />
 
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else}
+	<Card>
+		<h2 class="section-title">Account</h2>
+		<p class="muted">
+			Email: <strong>{$user?.email ?? '—'}</strong>
+		</p>
+		{#if $user?.handle}
+			{#if editingHandle}
+				<div class="handle-edit">
+					<div class="handle-field">
+						<span class="prefix">{host}/u/</span>
+						<Input label="" bind:value={handleInput} placeholder="yourname" autocomplete="username" />
+					</div>
+					{#if handleFormatError && handleInput.trim()}
+						<p class="taken status">{handleFormatError}</p>
+					{:else if handleChecking}
+						<p class="muted status">Checking…</p>
+					{:else if handleAvailable === true}
+						<p class="ok status">
+							Available — {host}/u/{handleInput.toLowerCase().trim()}
+						</p>
+					{:else if handleAvailable === false}
+						<p class="taken status">Unavailable (taken or reserved)</p>
+					{/if}
+					<div class="actions account-actions">
+						<Button
+							disabled={handleSaving || (handleInput.toLowerCase().trim() !== $user.handle && handleAvailable !== true)}
+							on:click={saveHandle}
+						>
+							{handleSaving ? 'Saving…' : 'Save'}
+						</Button>
+						<Button variant="ghost" disabled={handleSaving} on:click={cancelEditHandle}>Cancel</Button>
+					</div>
+				</div>
+			{:else}
+				<p class="muted">
+					Public link: <strong>{host}/u/{$user.handle}</strong>
+					<button type="button" class="link-btn" on:click={copyPublicLink}>Copy</button>
+					{#if isSaas}
+						{#if handleCooldownUntil}
+							<span class="cooldown-hint"
+								>Can change again on {handleCooldownUntil.toLocaleDateString()}</span
+							>
+						{:else}
+							<button type="button" class="link-btn" on:click={startEditHandle}>Change</button>
+						{/if}
+					{/if}
+				</p>
+			{/if}
+		{/if}
+	</Card>
+
 	<Card>
 		<h2 class="section-title">Plan</h2>
 		<p class="muted">
@@ -131,9 +373,61 @@
 				Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
 				unlocked.
 			</p>
+			{#if planExpiresLabel}
+				<p class="muted">
+					Valid through <strong>{planExpiresLabel}</strong>. We don't auto-charge your card — renew
+					manually anytime before then to keep Pro
+					{#if daysUntilExpiry !== null && daysUntilExpiry >= 0}(we'll also email a reminder {daysUntilExpiry >
+						7
+						? 'a week before it expires'
+						: `— ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} left`}){/if}.
+				</p>
+			{/if}
+			{#if renewalDueSoon}
+				<UpgradePrompt
+					title={daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'Pro expired — renew' : 'Renew Pro'}
+					message="Renewing sets a fresh 30 days from today (it doesn't stack with time left), so renew close to your expiry date."
+					showFeatures={false}
+					pricing={planInfo?.pricing ?? null}
+					billingAvailable={planInfo?.billing_available ?? false}
+					on:upgraded={(e) => {
+						planInfo = e.detail;
+					}}
+				/>
+			{/if}
 		{:else}
 			<p class="ok">Self-host — all features unlocked.</p>
 		{/if}
+	</Card>
+
+	<Card>
+		<h2 class="section-title">Password</h2>
+		<p class="muted">Change your password. This signs you out of other devices.</p>
+		<div class="fields">
+			<Input
+				label="Current password"
+				type="password"
+				bind:value={currentPassword}
+				autocomplete="current-password"
+			/>
+			<Input
+				label="New password"
+				type="password"
+				bind:value={newPassword}
+				autocomplete="new-password"
+			/>
+			<Input
+				label="Confirm new password"
+				type="password"
+				bind:value={confirmPassword}
+				autocomplete="new-password"
+			/>
+		</div>
+		<div class="actions account-actions">
+			<Button disabled={!canChangePassword || passwordSaving} on:click={submitChangePassword}>
+				{passwordSaving ? 'Saving…' : 'Change password'}
+			</Button>
+		</div>
 	</Card>
 
 	{#if showDpdp}
@@ -206,5 +500,50 @@
 		margin-top: 1.5rem;
 		padding-top: 1rem;
 		border-top: 1px solid var(--color-border);
+	}
+	.fields {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+	.link-btn {
+		margin-left: 0.5rem;
+		border: none;
+		background: transparent;
+		color: var(--color-primary);
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0;
+		text-decoration: underline;
+	}
+	.link-btn:hover {
+		color: var(--color-primary-hover);
+	}
+	.cooldown-hint {
+		margin-left: 0.5rem;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+	}
+	.handle-edit {
+		margin-top: 0.75rem;
+	}
+	.handle-field {
+		margin-bottom: 0.5rem;
+	}
+	.prefix {
+		display: block;
+		font-size: 0.875rem;
+		color: var(--color-muted);
+		margin-bottom: 0.35rem;
+	}
+	.status {
+		font-size: 0.875rem;
+		margin: 0 0 0.75rem;
+	}
+	.taken {
+		color: var(--color-error);
 	}
 </style>

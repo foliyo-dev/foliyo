@@ -8,6 +8,8 @@ export type User = {
 	email: string;
 	plan?: string;
 	handle?: string | null;
+	/** ISO timestamp of the last handle change/claim — used to enforce a change cooldown. */
+	handle_changed_at?: string | null;
 	onboarding_complete?: number;
 	email_verified?: number;
 };
@@ -45,6 +47,14 @@ export async function login(email: string, password: string): Promise<User> {
 		}
 		throw err;
 	}
+}
+
+/** Changes the current user's password, verifying `currentPassword` server-side. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+	await api('/auth/change-password', {
+		method: 'POST',
+		body: JSON.stringify({ currentPassword, newPassword })
+	});
 }
 
 export async function logout(): Promise<void> {

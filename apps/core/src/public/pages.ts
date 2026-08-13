@@ -19,6 +19,8 @@ export type PublicPortfolio = {
   /** Stored user plan (`free` | `pro` | …). Branding uses effective plan + expiry + config.mode. */
   plan: string;
   plan_expires?: string | null;
+  /** share_token of the linked resume, only set when that resume is public (renders a "Download resume" button). */
+  download_resume_token?: string | null;
 };
 
 function handleFromEmail(email: string): string {
@@ -97,9 +99,21 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
       (s.status as string | undefined) !== "dismissed",
   );
 
+  let downloadResumeToken: string | null = null;
+  const resumeId = portfolio.resume_id as string | null | undefined;
+  if (resumeId) {
+    const linked = await queryOne<{ share_token: string; is_public: number }>(
+      db,
+      "SELECT share_token, is_public FROM resumes WHERE id = ? AND user_id = ?",
+      [resumeId, userId],
+    );
+    if (linked && linked.is_public === 1) downloadResumeToken = linked.share_token;
+  }
+
   return {
     portfolio,
     profile: profile ?? { name: "", headline: "", bio: "" },
+    download_resume_token: downloadResumeToken,
     skills,
     projects: portfolio.show_projects === 1 ? await fetchByIds("projects", projectIds) : [],
     experience: portfolio.show_experience === 1 ? await fetchByIds("experience", experienceIds) : [],
@@ -269,6 +283,20 @@ export async function getPublicPortfolioBySlug(
 }
 
 /**
+ * Private-link access: the unguessable token alone is the access control, so this
+ * intentionally does not require is_public — it's how a portfolio can be shared with
+ * a specific person without being discoverable at /u/{handle} or /u/{handle}/{slug}.
+ */
+export async function getPublicPortfolioByToken(
+  db: FoliyoDb,
+  token: string,
+): Promise<PublicPortfolio | null> {
+  const portfolio = await queryOne(db, "SELECT * FROM portfolios WHERE access_token = ?", [token]);
+  if (!portfolio) return null;
+  return loadPortfolioContent(db, portfolio.id as string);
+}
+
+/**
  * Synthetic portfolio from the user's full content library (no portfolio required).
  * Used by the dashboard live preview pane.
  * Theme matches the default portfolio when present so content preview shares
@@ -364,6 +392,12 @@ export type PortfolioDraftPreviewInput = {
   show_education?: number;
   show_certifications?: number;
   show_languages?: number;
+  skills_title?: string;
+  projects_title?: string;
+  experience_title?: string;
+  education_title?: string;
+  certifications_title?: string;
+  languages_title?: string;
   skill_ids?: string[];
   project_ids?: string[];
   experience_ids?: string[];
@@ -428,6 +462,12 @@ export async function loadPortfolioDraftPreview(
       show_education: show(input.show_education),
       show_certifications: show(input.show_certifications),
       show_languages: show(input.show_languages),
+      skills_title: String(input.skills_title ?? ""),
+      projects_title: String(input.projects_title ?? ""),
+      experience_title: String(input.experience_title ?? ""),
+      education_title: String(input.education_title ?? ""),
+      certifications_title: String(input.certifications_title ?? ""),
+      languages_title: String(input.languages_title ?? ""),
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
     skills,

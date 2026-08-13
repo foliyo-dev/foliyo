@@ -31,6 +31,11 @@ const resetSchema = z.object({
   password: z.string().min(8),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
 export function authRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
@@ -45,12 +50,13 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       password: string;
       plan: string;
       handle: string | null;
+      handle_changed_at: string | null;
       onboarding_complete: number;
       email_verified: number;
       mode: string;
     }>(
       db,
-      "SELECT id, email, password, plan, handle, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
+      "SELECT id, email, password, plan, handle, handle_changed_at, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
       [body.data.email],
     );
     if (!user || !checkPassword(user.password, body.data.password)) {
@@ -74,6 +80,7 @@ export function authRoutes(db: FoliyoDb, config: Config) {
         email: user.email,
         plan: user.plan,
         handle: user.handle,
+        handle_changed_at: user.handle_changed_at,
         onboarding_complete: user.onboarding_complete,
         email_verified: user.email_verified ?? 1,
       },
@@ -96,11 +103,12 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       email: string;
       plan: string;
       handle: string | null;
+      handle_changed_at: string | null;
       onboarding_complete: number;
       email_verified: number;
     }>(
       db,
-      "SELECT id, email, plan, handle, onboarding_complete, email_verified FROM users WHERE id = ?",
+      "SELECT id, email, plan, handle, handle_changed_at, onboarding_complete, email_verified FROM users WHERE id = ?",
       [userId],
     );
     if (!user) return c.json({ error: "not found" }, 404);
@@ -128,6 +136,36 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       const resetUrl = `${config.dashboardUrl.replace(/\/$/, "")}/reset?token=${encodeURIComponent(token)}`;
       await sendPasswordResetEmail(config, { to: user.email, resetUrl });
     }
+    return c.json({ ok: true });
+  });
+
+  r.post("/change-password", async (c) => {
+    const token = bearerToken(c.req.header("Authorization"));
+    if (!token) return c.json({ error: "unauthorized" }, 401);
+    const userId = await getTokenUserId(db, token);
+    if (!userId) return c.json({ error: "unauthorized" }, 401);
+
+    const body = changePasswordSchema.safeParse(await c.req.json());
+    if (!body.success) {
+      return c.json({ error: "invalid body" }, 400);
+    }
+
+    const user = await queryOne<{ id: string; password: string }>(
+      db,
+      "SELECT id, password FROM users WHERE id = ?",
+      [userId],
+    );
+    if (!user || !checkPassword(user.password, body.data.currentPassword)) {
+      return c.json({ error: "incorrect current password" }, 401);
+    }
+
+    await run(db, "UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+      hashPassword(body.data.newPassword),
+      userId,
+    ]);
+    // Sign out other sessions/devices, but keep this one active.
+    await deleteTokensForUser(db, userId, token);
+
     return c.json({ ok: true });
   });
 

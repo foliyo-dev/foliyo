@@ -27,6 +27,13 @@
 	export let showCertifications = true;
 	export let showLanguages = true;
 
+	export let skillsTitle = '';
+	export let projectsTitle = '';
+	export let experienceTitle = '';
+	export let educationTitle = '';
+	export let certificationsTitle = '';
+	export let languagesTitle = '';
+
 	/** When false, hide per-section “Show on folio” toggles (e.g. resume Custom). */
 	export let showSectionVisibility = true;
 
@@ -150,14 +157,25 @@
 		<section class="section" class:open={openSection === 'skills'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('skills')}>
 				<span class="chevron" aria-hidden="true">{openSection === 'skills' ? '▾' : '▸'}</span>
-				<span class="section-label">Skills</span>
+				<span class="section-label">{skillsTitle.trim() || 'Skills'}</span>
 				<span class="counts">{selectedSkills.size}/{skills.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showSkills} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showSkills} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Skills"
+						bind:value={skillsTitle}
+						on:click|stopPropagation
+						aria-label="Skills section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'skills'}
 				<div class="section-body">
@@ -223,14 +241,25 @@
 		<section class="section" class:open={openSection === 'projects'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('projects')}>
 				<span class="chevron" aria-hidden="true">{openSection === 'projects' ? '▾' : '▸'}</span>
-				<span class="section-label">Projects</span>
+				<span class="section-label">{projectsTitle.trim() || 'Projects'}</span>
 				<span class="counts">{selectedProjects.size}/{projects.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showProjects} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showProjects} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Projects"
+						bind:value={projectsTitle}
+						on:click|stopPropagation
+						aria-label="Projects section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'projects'}
 				<div class="section-body">
@@ -295,14 +324,25 @@
 		<section class="section" class:open={openSection === 'experience'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('experience')}>
 				<span class="chevron" aria-hidden="true">{openSection === 'experience' ? '▾' : '▸'}</span>
-				<span class="section-label">Experience</span>
+				<span class="section-label">{experienceTitle.trim() || 'Experience'}</span>
 				<span class="counts">{selectedExperience.size}/{experiences.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showExperience} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showExperience} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Experience"
+						bind:value={experienceTitle}
+						on:click|stopPropagation
+						aria-label="Experience section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'experience'}
 				<div class="section-body">
@@ -367,14 +407,25 @@
 		<section class="section" class:open={openSection === 'education'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('education')}>
 				<span class="chevron" aria-hidden="true">{openSection === 'education' ? '▾' : '▸'}</span>
-				<span class="section-label">Education</span>
+				<span class="section-label">{educationTitle.trim() || 'Education'}</span>
 				<span class="counts">{selectedEducation.size}/{educations.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showEducation} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showEducation} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Education"
+						bind:value={educationTitle}
+						on:click|stopPropagation
+						aria-label="Education section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'education'}
 				<div class="section-body">
@@ -441,14 +492,25 @@
 				<span class="chevron" aria-hidden="true"
 					>{openSection === 'certifications' ? '▾' : '▸'}</span
 				>
-				<span class="section-label">Certifications</span>
+				<span class="section-label">{certificationsTitle.trim() || 'Certifications'}</span>
 				<span class="counts">{selectedCertifications.size}/{certifications.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showCertifications} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showCertifications} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Certifications"
+						bind:value={certificationsTitle}
+						on:click|stopPropagation
+						aria-label="Certifications section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'certifications'}
 				<div class="section-body">
@@ -516,14 +578,25 @@
 		<section class="section" class:open={openSection === 'languages'} role="listitem">
 			<button type="button" class="section-head" on:click={() => toggleSection('languages')}>
 				<span class="chevron" aria-hidden="true">{openSection === 'languages' ? '▾' : '▸'}</span>
-				<span class="section-label">Languages</span>
+				<span class="section-label">{languagesTitle.trim() || 'Languages'}</span>
 				<span class="counts">{selectedLanguages.size}/{languages.length}</span>
 			</button>
 			{#if showSectionVisibility}
-				<label class="show-toggle" on:click|stopPropagation>
-					<input type="checkbox" bind:checked={showLanguages} />
-					Show on folio
-				</label>
+				<div class="section-aside">
+					<label class="show-toggle" on:click|stopPropagation>
+						<input type="checkbox" bind:checked={showLanguages} />
+						Show on folio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Languages"
+						bind:value={languagesTitle}
+						on:click|stopPropagation
+						aria-label="Languages section title"
+					/>
+				</div>
 			{/if}
 			{#if openSection === 'languages'}
 				<div class="section-body">
@@ -699,11 +772,27 @@
 		display: flex;
 		align-items: center;
 		gap: 0.35rem;
-		padding-right: 0.75rem;
 		font-size: 0.75rem;
 		color: var(--color-muted);
 		white-space: nowrap;
 		cursor: pointer;
+	}
+	.section-aside {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.25rem;
+		padding: 0.35rem 0.75rem 0.35rem 0;
+	}
+	.title-override {
+		width: 8.75rem;
+		padding: 0.2rem 0.4rem;
+		border: 1px solid var(--color-border);
+		border-radius: 4px;
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 0.75rem;
 	}
 	.section-body {
 		grid-column: 1 / -1;

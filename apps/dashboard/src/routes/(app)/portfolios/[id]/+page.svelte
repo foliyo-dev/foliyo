@@ -18,6 +18,9 @@
 		slugify,
 		portfolioThemes,
 		portfolioPublicUrl,
+		portfolioPrivateUrl,
+		generatePortfolioAccessToken,
+		revokePortfolioAccessToken,
 		type PortfolioDetail
 	} from '$lib/api/portfolios';
 	import type { PortfolioDraftPreview } from '$lib/api/preview';
@@ -28,6 +31,7 @@
 	import { listEducation, type Education } from '$lib/api/education';
 	import { listCertifications, type Certification } from '$lib/api/certifications';
 	import { listLanguages, type Language } from '$lib/api/languages';
+	import { listResumes, type Resume } from '$lib/api/resumes';
 	import { showToast } from '$lib/stores/toast';
 	import { confirmDelete } from '$lib/stores/confirm';
 
@@ -49,7 +53,16 @@
 	let showEducation = true;
 	let showCertifications = true;
 	let showLanguages = true;
+	let skillsTitle = '';
+	let projectsTitle = '';
+	let experienceTitle = '';
+	let educationTitle = '';
+	let certificationsTitle = '';
+	let languagesTitle = '';
 	let slugTouched = false;
+	let resumeId: string | null = null;
+	let accessToken: string | null = null;
+	let tokenBusy = false;
 
 	let skills: Skill[] = [];
 	let projects: Project[] = [];
@@ -57,6 +70,7 @@
 	let educations: Education[] = [];
 	let certifications: Certification[] = [];
 	let languages: Language[] = [];
+	let resumes: Resume[] = [];
 
 	let selectedSkills = new Set<string>();
 	let selectedProjects = new Set<string>();
@@ -81,6 +95,12 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				skills_title: skillsTitle,
+				projects_title: projectsTitle,
+				experience_title: experienceTitle,
+				education_title: educationTitle,
+				certifications_title: certificationsTitle,
+				languages_title: languagesTitle,
 				skill_ids: [...selectedSkills],
 				project_ids: [...selectedProjects],
 				experience_ids: [...selectedExperience],
@@ -107,14 +127,15 @@
 		}
 		loading = true;
 		try {
-			const [p, sk, pr, ex, ed, certs, langs] = await Promise.all([
+			const [p, sk, pr, ex, ed, certs, langs, res] = await Promise.all([
 				getPortfolio(portfolioId),
 				listSkills('confirmed'),
 				listProjects(),
 				listExperience(),
 				listEducation(),
 				listCertifications(),
-				listLanguages()
+				listLanguages(),
+				listResumes()
 			]);
 			portfolio = p;
 			skills = sk;
@@ -123,6 +144,7 @@
 			educations = ed;
 			certifications = certs;
 			languages = langs;
+			resumes = res;
 			fillForm(p);
 		} catch {
 			showToast('Portfolio not found', 'error');
@@ -147,6 +169,14 @@
 		showEducation = p.show_education === 1;
 		showCertifications = (p.show_certifications ?? 1) === 1;
 		showLanguages = (p.show_languages ?? 1) === 1;
+		skillsTitle = p.skills_title ?? '';
+		projectsTitle = p.projects_title ?? '';
+		experienceTitle = p.experience_title ?? '';
+		educationTitle = p.education_title ?? '';
+		certificationsTitle = p.certifications_title ?? '';
+		languagesTitle = p.languages_title ?? '';
+		resumeId = p.resume_id ?? null;
+		accessToken = p.access_token ?? null;
 		slugTouched = true;
 		selectedSkills = new Set(p.content.skill_ids);
 		selectedProjects = new Set(p.content.project_ids);
@@ -177,7 +207,14 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
-				sort_order: portfolio.sort_order ?? 0
+				skills_title: skillsTitle,
+				projects_title: projectsTitle,
+				experience_title: experienceTitle,
+				education_title: educationTitle,
+				certifications_title: certificationsTitle,
+				languages_title: languagesTitle,
+				sort_order: portfolio.sort_order ?? 0,
+				resume_id: resumeId
 			});
 			if (isDefault) await setDefaultPortfolio(portfolio.id);
 			await updatePortfolioContent(portfolio.id, {
@@ -206,6 +243,46 @@
 			goto('/portfolios');
 		} catch {
 			showToast('Failed to delete portfolio', 'error');
+		}
+	}
+
+	$: linkedResume = resumeId ? (resumes.find((r) => r.id === resumeId) ?? null) : null;
+	$: privateUrl = accessToken ? portfolioPrivateUrl(accessToken) : null;
+
+	async function generateLink() {
+		if (!portfolio) return;
+		tokenBusy = true;
+		try {
+			const res = await generatePortfolioAccessToken(portfolio.id);
+			accessToken = res.access_token;
+			showToast('Private link created', 'success');
+		} catch {
+			showToast('Failed to create private link', 'error');
+		} finally {
+			tokenBusy = false;
+		}
+	}
+
+	async function revokeLink() {
+		if (!portfolio) return;
+		tokenBusy = true;
+		try {
+			await revokePortfolioAccessToken(portfolio.id);
+			accessToken = null;
+			showToast('Private link revoked', 'success');
+		} catch {
+			showToast('Failed to revoke private link', 'error');
+		} finally {
+			tokenBusy = false;
+		}
+	}
+
+	async function copyLink(url: string) {
+		try {
+			await navigator.clipboard.writeText(url);
+			showToast('Link copied', 'success');
+		} catch {
+			showToast('Could not copy link', 'error');
 		}
 	}
 </script>
@@ -275,6 +352,61 @@
 
 		<Card>
 			<details class="block" open>
+				<summary>Sharing</summary>
+				<div class="fields">
+					<label class="field">
+						<span class="label">Download resume button</span>
+						<select bind:value={resumeId}>
+							<option value={null}>None</option>
+							{#each resumes as r (r.id)}
+								<option value={r.id}>{r.name}</option>
+							{/each}
+						</select>
+						<span class="hint">
+							{#if linkedResume && linkedResume.is_public !== 1}
+								“{linkedResume.name}” is private — mark it public on the Resumes page for the
+								button to appear on this portfolio.
+							{:else if resumeId}
+								Adds a “Download resume” button linking to this resume’s share page.
+							{:else}
+								Optional — visitors can download a linked, public resume as PDF.
+							{/if}
+						</span>
+					</label>
+
+					<div class="field">
+						<span class="label">Private link</span>
+						{#if privateUrl}
+							<div class="link-row">
+								<code class="link-code">{privateUrl}</code>
+								<Button variant="ghost" on:click={() => copyLink(privateUrl ?? '')}>Copy</Button>
+								<Button variant="ghost" disabled={tokenBusy} on:click={generateLink}
+									>Regenerate</Button
+								>
+								<Button variant="ghost" disabled={tokenBusy} on:click={revokeLink}
+									>Revoke</Button
+								>
+							</div>
+							<span class="hint"
+								>Anyone with this link can view the portfolio, even while private —
+								regenerating breaks the old link.</span
+							>
+						{:else}
+							<Button variant="ghost" disabled={tokenBusy} on:click={generateLink}
+								>{tokenBusy ? 'Creating…' : 'Create private link'}</Button
+							>
+							<span class="hint"
+								>Share this portfolio with one person (e.g. a client) without publishing it or
+								making it guessable at /u/{$user?.handle ?? 'you'}.</span
+							>
+						{/if}
+					</div>
+				</div>
+			</details>
+		</Card>
+
+		<Card>
+			<details class="block" open>
 				<summary>
 					Library content
 					<span class="step-meta"
@@ -305,6 +437,12 @@
 					bind:showEducation
 					bind:showCertifications
 					bind:showLanguages
+					bind:skillsTitle
+					bind:projectsTitle
+					bind:experienceTitle
+					bind:educationTitle
+					bind:certificationsTitle
+					bind:languagesTitle
 				/>
 			</details>
 		</Card>
@@ -364,6 +502,25 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
+	}
+	.hint {
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+	}
+	.link-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.link-code {
+		font-family: ui-monospace, monospace;
+		font-size: 0.8125rem;
+		padding: 0.35rem 0.6rem;
+		background: var(--color-bg, #f8fafc);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		word-break: break-all;
 	}
 	.toggles {
 		display: flex;

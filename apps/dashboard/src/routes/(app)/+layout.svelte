@@ -1,6 +1,7 @@
 <script lang="ts">
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import Header from '$lib/components/layout/Header.svelte';
+  import PlanExpiryBanner from '$lib/components/PlanExpiryBanner.svelte';
 
   let navOpen = false;
 </script>
@@ -12,6 +13,7 @@
       <span></span>
     </Header>
     <div class="content">
+      <PlanExpiryBanner />
       <slot />
     </div>
   </div>

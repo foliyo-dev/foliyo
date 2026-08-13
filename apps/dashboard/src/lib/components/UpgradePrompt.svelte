@@ -129,7 +129,11 @@
 				{busy === 'lifetime' ? 'Opening…' : `Lifetime ₹${lifetime}`}
 			</Button>
 		</div>
-		<p class="hint">Secure checkout via Razorpay. Monthly grants 30 days of Pro access.</p>
+		<p class="hint">
+			Secure checkout via Razorpay — a one-time charge, not a subscription. We never auto-charge
+			your card; Monthly grants 30 days of Pro and you renew manually whenever you like (we'll
+			email a reminder a week before it expires).
+		</p>
 	{:else}
 		<p class="hint">
 			Checkout is not configured on this server. Set Razorpay keys, or ask an admin to set your plan

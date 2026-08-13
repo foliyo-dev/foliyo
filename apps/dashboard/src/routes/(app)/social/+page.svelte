@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
+	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
+	import ContentList from '$lib/components/content/ContentList.svelte';
+	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
 	import SocialIcon from '$lib/components/social/SocialIcon.svelte';
+	import { createCrudList } from '$lib/utils/crudList';
 	import {
 		listSocialLinks,
 		createSocialLink,
@@ -16,14 +19,8 @@
 		type SocialLink,
 		type SocialProvider
 	} from '$lib/api/social';
-	import { showToast } from '$lib/stores/toast';
-	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
-	let items: SocialLink[] = [];
-	let loading = true;
-	let saving = false;
-	let editingId: string | null = null;
 
 	let provider: SocialProvider = 'github';
 	let label = '';
@@ -33,93 +30,38 @@
 	$: meta = providerMeta(provider);
 	$: valueLabel = meta.usernameBased ? 'Username / handle' : 'URL';
 
-	onMount(load);
+	const crud = createCrudList<SocialLink>(
+		{ list: listSocialLinks, create: createSocialLink, update: updateSocialLink, remove: deleteSocialLink },
+		{
+			getPayload: () => ({
+				provider,
+				label: label.trim(),
+				value: value.trim(),
+				sort_order: Number(sortOrder) || 0
+			}),
+			applyToForm: (item) => {
+				provider = item.provider;
+				label = item.label ?? '';
+				value = item.value;
+				sortOrder = String(item.sort_order);
+			},
+			resetFields: () => {
+				provider = 'github';
+				label = '';
+				value = '';
+				sortOrder = String($items.length);
+			},
+			getDeleteLabel: (item) => item.label?.trim() || item.value?.trim() || 'this link',
+			validate: () => (!value.trim() ? `${valueLabel} is required` : null),
+			canSave: () => value.trim().length > 0,
+			onChange: () => shell?.refreshPreview(),
+			onOpen: () => shell?.scrollToForm()
+		},
+		{ loadName: 'social links', entity: 'Link' }
+	);
+	const { items, loading, saving, editingId, formOpen } = crud;
 
-	async function load() {
-		loading = true;
-		try {
-			items = await listSocialLinks();
-		} catch {
-			items = [];
-			showToast('Failed to load social links', 'error');
-		} finally {
-			loading = false;
-		}
-	}
-
-	function resetForm() {
-		provider = 'github';
-		label = '';
-		value = '';
-		sortOrder = String(items.length);
-		editingId = null;
-	}
-
-	function payload(): Partial<SocialLink> {
-		return {
-			provider,
-			label: label.trim(),
-			value: value.trim(),
-			sort_order: Number(sortOrder) || 0
-		};
-	}
-
-	async function add() {
-		if (!value.trim()) {
-			showToast(`${valueLabel} is required`, 'error');
-			return;
-		}
-		saving = true;
-		try {
-			items = await createSocialLink(payload());
-			showToast('Link added', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to add link', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	function startEdit(item: SocialLink) {
-		editingId = item.id;
-		provider = item.provider;
-		label = item.label ?? '';
-		value = item.value;
-		sortOrder = String(item.sort_order);
-		shell?.scrollToForm();
-	}
-
-	async function saveEdit() {
-		if (!editingId || !value.trim()) return;
-		saving = true;
-		try {
-			await updateSocialLink(editingId, payload());
-			await load();
-			showToast('Link updated', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to update link', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	async function remove(id: string) {
-		const item = items.find((l) => l.id === id);
-		if (!(await confirmDelete(item?.label?.trim() || item?.value?.trim() || 'this link'))) return;
-		try {
-			await deleteSocialLink(id);
-			items = items.filter((l) => l.id !== id);
-			if (editingId === id) resetForm();
-			showToast('Link deleted', 'success');
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to delete link', 'error');
-		}
-	}
+	onMount(crud.load);
 
 	function itemTitle(item: SocialLink): string {
 		if (item.label?.trim()) return item.label.trim();
@@ -129,80 +71,72 @@
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title={editingId ? 'Edit link' : 'Social'}
+		title={$editingId ? 'Edit link' : 'Social'}
 		description="Profiles and sites shown on your public folio — pick a common network or add any URL."
 	/>
 
-	<Card>
-		<h2 class="section-title">{editingId ? 'Edit link' : 'Add link'}</h2>
-		<div class="fields">
-			<label class="field">
-				<span class="label">Site</span>
-				<div class="site-row">
-					<span class="site-icon" aria-hidden="true">
-						<SocialIcon provider={provider} size={18} />
-					</span>
-					<select bind:value={provider}>
-						{#each socialProviders as p}
-							<option value={p.id}>{p.label}</option>
-						{/each}
-					</select>
-				</div>
-			</label>
-			<Input label={valueLabel} bind:value placeholder={meta.placeholder} />
-			{#if provider === 'other'}
-				<Input label="Display label" bind:value={label} placeholder="Portfolio, Discord, …" />
-			{/if}
-			<Input label="Sort order" bind:value={sortOrder} />
+	{#if !$formOpen}
+		<div class="toolbar">
+			<Button on:click={crud.openAdd}>+ Add link</Button>
 		</div>
-		<div class="form-actions">
-			{#if editingId}
-				<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
-				<Button variant="ghost" on:click={resetForm}>Cancel</Button>
-			{:else}
-				<Button disabled={saving} on:click={add}>{saving ? 'Adding…' : 'Add link'}</Button>
-			{/if}
-		</div>
-	</Card>
-
-	{#if loading}
-		<p class="muted">Loading…</p>
-	{:else if items.length === 0}
-		<p class="muted empty">No social links yet — add GitHub, LinkedIn, or a website.</p>
-	{:else}
-		<ul class="list">
-			{#each items as item (item.id)}
-				<li>
-					<Card>
-						<div class="item-row">
-							<div class="item-main">
-								<span class="social-chip">
-									<SocialIcon provider={item.provider} size={16} />
-									<span>{itemTitle(item)}</span>
-								</span>
-								<span class="meta">{item.value}</span>
-							</div>
-							<div class="row-actions">
-								<Button variant="ghost" on:click={() => startEdit(item)}>Edit</Button>
-								<Button variant="ghost" on:click={() => remove(item.id)}>Delete</Button>
-							</div>
-						</div>
-					</Card>
-				</li>
-			{/each}
-		</ul>
 	{/if}
+
+	{#if $formOpen}
+		<ContentFormCard title={$editingId ? 'Edit link' : 'Add link'}>
+			<svelte:fragment slot="fields">
+				<label class="field">
+					<span class="label">Site</span>
+					<div class="site-row">
+						<span class="site-icon" aria-hidden="true">
+							<SocialIcon provider={provider} size={18} />
+						</span>
+						<select bind:value={provider}>
+							{#each socialProviders as p}
+								<option value={p.id}>{p.label}</option>
+							{/each}
+						</select>
+					</div>
+				</label>
+				<Input label={valueLabel} bind:value placeholder={meta.placeholder} />
+				{#if provider === 'other'}
+					<Input label="Display label" bind:value={label} placeholder="Portfolio, Discord, …" />
+				{/if}
+				<Input label="Sort order" bind:value={sortOrder} />
+			</svelte:fragment>
+			<svelte:fragment slot="actions">
+				{#if $editingId}
+					<Button disabled={$saving} on:click={crud.saveEdit}>{$saving ? 'Saving…' : 'Save changes'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{:else}
+					<Button disabled={$saving} on:click={crud.add}>{$saving ? 'Adding…' : 'Add link'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{/if}
+			</svelte:fragment>
+		</ContentFormCard>
+	{/if}
+
+	<ContentList
+		loading={$loading}
+		empty={$items.length === 0}
+		emptyMessage="No social links yet — add GitHub, LinkedIn, or a website."
+	>
+		{#each $items as item (item.id)}
+			<ContentListItem align="center" onEdit={() => crud.startEdit(item)} onRemove={() => crud.remove(item)}>
+				<div class="item-main">
+					<span class="social-chip">
+						<SocialIcon provider={item.provider} size={16} />
+						<span>{itemTitle(item)}</span>
+					</span>
+					<span class="meta">{item.value}</span>
+				</div>
+			</ContentListItem>
+		{/each}
+	</ContentList>
 </EditorWithPreview>
 
 <style>
-	.section-title {
-		margin: 0 0 1rem;
-		font-size: 1rem;
-	}
-	.fields {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+	.toolbar {
+		margin-bottom: 1rem;
 	}
 	.field {
 		display: flex;
@@ -213,7 +147,6 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 	}
-	.select,
 	select {
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-border);
@@ -242,32 +175,6 @@
 		flex: 1;
 		min-width: 0;
 	}
-	.form-actions {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-	.muted {
-		color: var(--color-muted);
-	}
-	.empty {
-		margin-top: 1rem;
-	}
-	.list {
-		list-style: none;
-		margin: 1rem 0 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-	.item-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
 	.item-main {
 		display: flex;
 		flex-direction: column;
@@ -291,13 +198,8 @@
 	.social-chip :global(.icon) {
 		color: var(--color-primary);
 	}
-	.meta {
-		font-size: 0.8125rem;
-		color: var(--color-muted);
+	.item-main .meta {
+		margin-top: 0;
 		word-break: break-all;
-	}
-	.row-actions {
-		display: flex;
-		gap: 0.25rem;
 	}
 </style>

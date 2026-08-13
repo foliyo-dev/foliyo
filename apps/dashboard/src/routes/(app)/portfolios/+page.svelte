@@ -71,6 +71,12 @@
 	let showEducation = true;
 	let showCertifications = true;
 	let showLanguages = true;
+	let skillsTitle = '';
+	let projectsTitle = '';
+	let experienceTitle = '';
+	let educationTitle = '';
+	let certificationsTitle = '';
+	let languagesTitle = '';
 
 	let showCreate = false;
 	let previewingId: string | null = null;
@@ -97,6 +103,12 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				skills_title: skillsTitle,
+				projects_title: projectsTitle,
+				experience_title: experienceTitle,
+				education_title: educationTitle,
+				certifications_title: certificationsTitle,
+				languages_title: languagesTitle,
 				skill_ids: [...selectedSkills],
 				project_ids: [...selectedProjects],
 				experience_ids: [...selectedExperience],
@@ -181,6 +193,12 @@
 		showEducation = true;
 		showCertifications = true;
 		showLanguages = true;
+		skillsTitle = '';
+		projectsTitle = '';
+		experienceTitle = '';
+		educationTitle = '';
+		certificationsTitle = '';
+		languagesTitle = '';
 		selectedSkills = new Set(skills.map((s) => s.id));
 		selectedProjects = new Set(projects.map((p) => p.id));
 		selectedExperience = new Set(experiences.map((e) => e.id));
@@ -215,6 +233,12 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				skills_title: skillsTitle,
+				projects_title: projectsTitle,
+				experience_title: experienceTitle,
+				education_title: educationTitle,
+				certifications_title: certificationsTitle,
+				languages_title: languagesTitle,
 				sort_order: items.length
 			});
 			const created = items.find((p) => p.slug === createdSlug);
@@ -300,6 +324,10 @@
 	function dismissWelcome() {
 		showWelcome = false;
 	}
+
+	$: publicDefault = items.find((p) => p.is_default === 1 && p.is_public === 1) ?? null;
+	$: hasOtherPublic = items.some((p) => p.is_public === 1 && p.is_default !== 1);
+	$: showExposureWarning = !!publicDefault && hasOtherPublic;
 </script>
 
 <PageHeader
@@ -326,6 +354,19 @@
 			</p>
 		</div>
 		<button type="button" class="welcome-dismiss" on:click={dismissWelcome}>Dismiss</button>
+	</div>
+{/if}
+
+{#if showExposureWarning}
+	<div class="exposure-banner" role="status">
+		<strong>Your default portfolio is public</strong>
+		<p>
+			Anyone who shortens one of your other portfolio links down to <code
+				>/u/{$user?.handle ?? 'you'}</code
+			> will land on “{publicDefault?.name}” instead. If a specific link (e.g. for a client) should
+			stay separate, either keep the default private or share a <em>private link</em> for that portfolio
+			from its edit page instead of its public URL.
+		</p>
 	</div>
 {/if}
 
@@ -379,7 +420,7 @@
 								<Button
 									variant="ghost"
 									on:click={() => togglePreview(p.id)}
-									aria-pressed={previewingId === p.id && !showCreateForm}
+									pressed={previewingId === p.id && !showCreateForm}
 								>
 									{previewingId === p.id && !showCreateForm ? 'Hide preview' : 'Preview'}
 								</Button>
@@ -461,7 +502,13 @@
 						bind:showEducation
 						bind:showCertifications
 						bind:showLanguages
-						hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim."
+						bind:skillsTitle
+						bind:projectsTitle
+						bind:experienceTitle
+						bind:educationTitle
+						bind:certificationsTitle
+						bind:languagesTitle
+						hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim. Optional titles rename the public headings (Projects → Papers, Gallery…)."
 					/>
 				</details>
 
@@ -619,6 +666,26 @@
 		border: 1px solid var(--color-primary, #0f766e);
 		border-radius: 8px;
 		background: var(--color-primary-light, #ecfdf5);
+	}
+	.exposure-banner {
+		margin: 0 0 1.25rem;
+		padding: 0.85rem 1.1rem;
+		border: 1px solid #f59e0b;
+		border-radius: 8px;
+		background: #fffbeb;
+	}
+	.exposure-banner strong {
+		display: block;
+		margin-bottom: 0.25rem;
+		font-size: 0.9rem;
+	}
+	.exposure-banner p {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+	}
+	.exposure-banner code {
+		font-family: ui-monospace, monospace;
 	}
 	.welcome-banner strong {
 		display: block;

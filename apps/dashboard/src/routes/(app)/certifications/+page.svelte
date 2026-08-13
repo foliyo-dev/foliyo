@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
+	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
+	import ContentList from '$lib/components/content/ContentList.svelte';
+	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import { createCrudList } from '$lib/utils/crudList';
+	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listCertifications,
 		createCertification,
@@ -13,14 +17,8 @@
 		deleteCertification,
 		type Certification
 	} from '$lib/api/certifications';
-	import { showToast } from '$lib/stores/toast';
-	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
-	let items: Certification[] = [];
-	let loading = true;
-	let saving = false;
-	let editingId: string | null = null;
 
 	let name = '';
 	let issuer = '';
@@ -33,217 +31,135 @@
 	let skillsInput = '';
 	let sortOrder = '0';
 
-	onMount(load);
+	const crud = createCrudList<Certification>(
+		{
+			list: listCertifications,
+			create: createCertification,
+			update: updateCertification,
+			remove: deleteCertification
+		},
+		{
+			getPayload: () => ({
+				name: name.trim(),
+				issuer,
+				credential_id: credentialId,
+				credential_url: credentialUrl,
+				issued_at: issuedAt || null,
+				expires_at: noExpiry ? null : expiresAt || null,
+				description,
+				skills_developed: skillsToJson(skillsInput),
+				sort_order: Number(sortOrder) || 0
+			}),
+			applyToForm: (item) => {
+				name = item.name;
+				issuer = item.issuer;
+				credentialId = item.credential_id;
+				credentialUrl = item.credential_url;
+				issuedAt = item.issued_at ?? '';
+				expiresAt = item.expires_at ?? '';
+				noExpiry = !item.expires_at;
+				description = item.description;
+				skillsInput = skillsFromJson(item.skills_developed ?? '[]');
+				sortOrder = String(item.sort_order);
+			},
+			resetFields: () => {
+				name = '';
+				issuer = '';
+				credentialId = '';
+				credentialUrl = '';
+				issuedAt = '';
+				expiresAt = '';
+				noExpiry = true;
+				description = '';
+				skillsInput = '';
+				sortOrder = String($items.length);
+			},
+			getDeleteLabel: (item) => item.name?.trim() || 'this certification',
+			validate: () => (!name.trim() ? 'Name is required' : null),
+			onChange: () => shell?.refreshPreview(),
+			onOpen: () => shell?.scrollToForm()
+		},
+		{ loadName: 'certifications', entity: 'Certification' }
+	);
+	const { items, loading, saving, editingId, formOpen } = crud;
 
-	async function load() {
-		loading = true;
-		try {
-			items = await listCertifications();
-		} catch {
-			items = [];
-			showToast('Failed to load certifications', 'error');
-		} finally {
-			loading = false;
-		}
-	}
-
-	function skillsToJson(input: string): string {
-		const skills = input
-			.split(',')
-			.map((t) => t.trim())
-			.filter(Boolean);
-		return JSON.stringify(skills);
-	}
-
-	function skillsFromJson(json: string): string {
-		try {
-			const arr = JSON.parse(json || '[]') as string[];
-			return Array.isArray(arr) ? arr.join(', ') : '';
-		} catch {
-			return '';
-		}
-	}
-
-	function resetForm() {
-		name = '';
-		issuer = '';
-		credentialId = '';
-		credentialUrl = '';
-		issuedAt = '';
-		expiresAt = '';
-		noExpiry = true;
-		description = '';
-		skillsInput = '';
-		sortOrder = String(items.length);
-		editingId = null;
-	}
-
-	function payload(): Partial<Certification> {
-		return {
-			name: name.trim(),
-			issuer,
-			credential_id: credentialId,
-			credential_url: credentialUrl,
-			issued_at: issuedAt || null,
-			expires_at: noExpiry ? null : expiresAt || null,
-			description,
-			skills_developed: skillsToJson(skillsInput),
-			sort_order: Number(sortOrder) || 0
-		};
-	}
-
-	async function add() {
-		if (!name.trim()) {
-			showToast('Name is required', 'error');
-			return;
-		}
-		saving = true;
-		try {
-			items = await createCertification(payload());
-			showToast('Certification added', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to add certification', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	function startEdit(item: Certification) {
-		editingId = item.id;
-		name = item.name;
-		issuer = item.issuer;
-		credentialId = item.credential_id;
-		credentialUrl = item.credential_url;
-		issuedAt = item.issued_at ?? '';
-		expiresAt = item.expires_at ?? '';
-		noExpiry = !item.expires_at;
-		description = item.description;
-		skillsInput = skillsFromJson(item.skills_developed ?? '[]');
-		sortOrder = String(item.sort_order);
-		shell?.scrollToForm();
-	}
-
-	async function saveEdit() {
-		if (!editingId) return;
-		saving = true;
-		try {
-			await updateCertification(editingId, payload());
-			await load();
-			showToast('Certification updated', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to update certification', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	async function remove(id: string) {
-		const item = items.find((c) => c.id === id);
-		if (!(await confirmDelete(item?.name?.trim() || 'this certification'))) return;
-		try {
-			await deleteCertification(id);
-			items = items.filter((c) => c.id !== id);
-			if (editingId === id) resetForm();
-			showToast('Certification deleted', 'success');
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to delete certification', 'error');
-		}
-	}
+	onMount(crud.load);
 </script>
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title={editingId ? 'Edit certification' : 'Certifications'}
+		title={$editingId ? 'Edit certification' : 'Certifications'}
 		description="Credentials and licenses — add skills covered to feed your skill library."
 	/>
 
-	<Card>
-	<h2 class="section-title">{editingId ? 'Edit certification' : 'Add certification'}</h2>
-	<div class="fields">
-		<Input label="Name" bind:value={name} placeholder="AWS Solutions Architect Associate" />
-		<Input label="Issuer" bind:value={issuer} placeholder="Amazon Web Services" />
-		<div class="row">
-			<Input label="Credential ID" bind:value={credentialId} placeholder="ABC-123" />
-			<Input label="Credential URL" bind:value={credentialUrl} placeholder="https://…" />
+	{#if !$formOpen}
+		<div class="toolbar">
+			<Button on:click={crud.openAdd}>+ Add certification</Button>
 		</div>
-		<div class="row">
-			<Input label="Issued" bind:value={issuedAt} placeholder="2024-06" />
-			<Input label="Expires" bind:value={expiresAt} placeholder="2027-06" disabled={noExpiry} />
-		</div>
-		<label class="checkbox">
-			<input type="checkbox" bind:checked={noExpiry} />
-			Does not expire
-		</label>
-		<Textarea label="Description" bind:value={description} rows={3} />
-		<Input label="Skills covered (comma-separated)" bind:value={skillsInput} placeholder="AWS, Cloud architecture" />
-		<Input label="Sort order" bind:value={sortOrder} />
-	</div>
-	<div class="form-actions">
-		{#if editingId}
-			<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
-			<Button variant="ghost" on:click={resetForm}>Cancel</Button>
-		{:else}
-			<Button disabled={saving} on:click={add}>{saving ? 'Adding…' : 'Add certification'}</Button>
-		{/if}
-	</div>
-</Card>
+	{/if}
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else if items.length === 0}
-	<p class="muted empty">No certifications yet.</p>
-{:else}
-	<ul class="list">
-		{#each items as item (item.id)}
-			<li>
-				<Card>
-					<div class="item-row">
-						<div>
-							<strong>{item.name}</strong>
-							{#if item.issuer}
-								<span class="meta">{item.issuer}</span>
-							{/if}
-							<span class="meta">
-								{#if item.issued_at}Issued {item.issued_at}{/if}
-								{#if item.expires_at}
-									{#if item.issued_at} · {/if}Expires {item.expires_at}
-								{:else if item.issued_at}
-									 · No expiry
-								{/if}
-							</span>
-							{#if item.description}
-								<p class="desc">{item.description}</p>
-							{/if}
-							{#if skillsFromJson(item.skills_developed ?? '[]')}
-								<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
-							{/if}
-						</div>
-						<div class="row-actions">
-							<Button variant="ghost" on:click={() => startEdit(item)}>Edit</Button>
-							<Button variant="ghost" on:click={() => remove(item.id)}>Delete</Button>
-						</div>
-					</div>
-				</Card>
-			</li>
+	{#if $formOpen}
+		<ContentFormCard title={$editingId ? 'Edit certification' : 'Add certification'}>
+			<svelte:fragment slot="fields">
+				<Input label="Name" bind:value={name} placeholder="AWS Solutions Architect Associate" />
+				<Input label="Issuer" bind:value={issuer} placeholder="Amazon Web Services" />
+				<div class="row">
+					<Input label="Credential ID" bind:value={credentialId} placeholder="ABC-123" />
+					<Input label="Credential URL" bind:value={credentialUrl} placeholder="https://…" />
+				</div>
+				<div class="row">
+					<Input label="Issued" bind:value={issuedAt} placeholder="2024-06" />
+					<Input label="Expires" bind:value={expiresAt} placeholder="2027-06" disabled={noExpiry} />
+				</div>
+				<label class="checkbox">
+					<input type="checkbox" bind:checked={noExpiry} />
+					Does not expire
+				</label>
+				<Textarea label="Description" bind:value={description} rows={3} />
+				<Input label="Skills covered (comma-separated)" bind:value={skillsInput} placeholder="AWS, Cloud architecture" />
+				<Input label="Sort order" bind:value={sortOrder} />
+			</svelte:fragment>
+			<svelte:fragment slot="actions">
+				{#if $editingId}
+					<Button disabled={$saving} on:click={crud.saveEdit}>{$saving ? 'Saving…' : 'Save changes'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{:else}
+					<Button disabled={$saving} on:click={crud.add}>{$saving ? 'Adding…' : 'Add certification'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{/if}
+			</svelte:fragment>
+		</ContentFormCard>
+	{/if}
+
+	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No certifications yet.">
+		{#each $items as item (item.id)}
+			<ContentListItem onEdit={() => crud.startEdit(item)} onRemove={() => crud.remove(item)}>
+				<strong>{item.name}</strong>
+				{#if item.issuer}
+					<span class="meta">{item.issuer}</span>
+				{/if}
+				<span class="meta">
+					{#if item.issued_at}Issued {item.issued_at}{/if}
+					{#if item.expires_at}
+						{#if item.issued_at} · {/if}Expires {item.expires_at}
+					{:else if item.issued_at}
+						 · No expiry
+					{/if}
+				</span>
+				{#if item.description}
+					<p class="desc">{item.description}</p>
+				{/if}
+				{#if skillsFromJson(item.skills_developed ?? '[]')}
+					<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
+				{/if}
+			</ContentListItem>
 		{/each}
-	</ul>
-{/if}
+	</ContentList>
 </EditorWithPreview>
 
 <style>
-	.section-title {
-		margin: 0 0 1rem;
-		font-size: 1rem;
-	}
-	.fields {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+	.toolbar {
+		margin-bottom: 1rem;
 	}
 	.row {
 		display: grid;
@@ -255,45 +171,5 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.875rem;
-	}
-	.form-actions {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-	.muted {
-		color: var(--color-muted);
-	}
-	.empty {
-		margin-top: 1rem;
-	}
-	.list {
-		list-style: none;
-		margin: 1rem 0 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-	.item-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-	.meta {
-		display: block;
-		font-size: 0.8125rem;
-		color: var(--color-muted);
-		margin-top: 0.25rem;
-	}
-	.desc {
-		margin: 0.35rem 0 0;
-		font-size: 0.875rem;
-	}
-	.row-actions {
-		display: flex;
-		gap: 0.25rem;
 	}
 </style>

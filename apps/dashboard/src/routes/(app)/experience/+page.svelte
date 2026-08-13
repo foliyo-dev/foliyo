@@ -1,12 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
+	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
+	import ContentList from '$lib/components/content/ContentList.svelte';
+	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
+	import { createCrudList } from '$lib/utils/crudList';
+	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listExperience,
 		createExperience,
@@ -14,14 +18,8 @@
 		deleteExperience,
 		type Experience
 	} from '$lib/api/experience';
-	import { showToast } from '$lib/stores/toast';
-	import { confirmDelete } from '$lib/stores/confirm';
 
 	let shell: EditorWithPreview;
-	let items: Experience[] = [];
-	let loading = true;
-	let saving = false;
-	let editingId: string | null = null;
 	let present = false;
 
 	let company = '';
@@ -31,223 +29,144 @@
 	let endDate = '';
 	let description = '';
 	let articleUrl = '';
+	let articleUrlLabel = '';
 	let skillsInput = '';
 	let sortOrder = '0';
 
-	onMount(load);
+	const crud = createCrudList<Experience>(
+		{ list: listExperience, create: createExperience, update: updateExperience, remove: deleteExperience },
+		{
+			getPayload: () => ({
+				company: company.trim(),
+				role: role.trim(),
+				location,
+				start_date: startDate,
+				end_date: present ? null : endDate || null,
+				description,
+				article_url: articleUrl,
+				article_url_label: articleUrlLabel,
+				skills_developed: skillsToJson(skillsInput),
+				sort_order: Number(sortOrder) || 0
+			}),
+			applyToForm: (item) => {
+				company = item.company;
+				role = item.role;
+				location = item.location;
+				startDate = item.start_date;
+				endDate = item.end_date ?? '';
+				present = !item.end_date;
+				description = item.description;
+				articleUrl = item.article_url ?? '';
+				articleUrlLabel = item.article_url_label ?? '';
+				skillsInput = skillsFromJson(item.skills_developed ?? '[]');
+				sortOrder = String(item.sort_order);
+			},
+			resetFields: () => {
+				company = '';
+				role = '';
+				location = '';
+				startDate = '';
+				endDate = '';
+				description = '';
+				articleUrl = '';
+				articleUrlLabel = '';
+				skillsInput = '';
+				present = false;
+				sortOrder = String($items.length);
+			},
+			getDeleteLabel: (item) => item.role?.trim() || item.company?.trim() || 'this role',
+			validate: () =>
+				!company.trim() || !role.trim() || !startDate
+					? 'Company, role, and start date are required'
+					: null,
+			onChange: () => shell?.refreshPreview(),
+			onOpen: () => shell?.scrollToForm()
+		},
+		{ loadName: 'experience', entity: 'Experience' }
+	);
+	const { items, loading, saving, editingId, formOpen } = crud;
 
-	async function load() {
-		loading = true;
-		try {
-			items = await listExperience();
-		} catch {
-			items = [];
-			showToast('Failed to load experience', 'error');
-		} finally {
-			loading = false;
-		}
-	}
-
-	function skillsToJson(input: string): string {
-		const skills = input
-			.split(',')
-			.map((t) => t.trim())
-			.filter(Boolean);
-		return JSON.stringify(skills);
-	}
-
-	function skillsFromJson(json: string): string {
-		try {
-			const arr = JSON.parse(json || '[]') as string[];
-			return Array.isArray(arr) ? arr.join(', ') : '';
-		} catch {
-			return '';
-		}
-	}
-
-	function resetForm() {
-		company = '';
-		role = '';
-		location = '';
-		startDate = '';
-		endDate = '';
-		description = '';
-		articleUrl = '';
-		skillsInput = '';
-		present = false;
-		sortOrder = String(items.length);
-		editingId = null;
-	}
-
-	function payload(): Partial<Experience> {
-		return {
-			company: company.trim(),
-			role: role.trim(),
-			location,
-			start_date: startDate,
-			end_date: present ? null : endDate || null,
-			description,
-			article_url: articleUrl,
-			skills_developed: skillsToJson(skillsInput),
-			sort_order: Number(sortOrder) || 0
-		};
-	}
-
-	async function add() {
-		if (!company.trim() || !role.trim() || !startDate) {
-			showToast('Company, role, and start date are required', 'error');
-			return;
-		}
-		saving = true;
-		try {
-			items = await createExperience(payload());
-			showToast('Experience added', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to add experience', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	function startEdit(item: Experience) {
-		editingId = item.id;
-		company = item.company;
-		role = item.role;
-		location = item.location;
-		startDate = item.start_date;
-		endDate = item.end_date ?? '';
-		present = !item.end_date;
-		description = item.description;
-		articleUrl = item.article_url ?? '';
-		skillsInput = skillsFromJson(item.skills_developed ?? '[]');
-		sortOrder = String(item.sort_order);
-		shell?.scrollToForm();
-	}
-
-	async function saveEdit() {
-		if (!editingId) return;
-		saving = true;
-		try {
-			await updateExperience(editingId, payload());
-			await load();
-			showToast('Experience updated', 'success');
-			resetForm();
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to update experience', 'error');
-		} finally {
-			saving = false;
-		}
-	}
-
-	async function remove(id: string) {
-		const item = items.find((e) => e.id === id);
-		if (!(await confirmDelete(item?.role?.trim() || item?.company?.trim() || 'this role'))) return;
-		try {
-			await deleteExperience(id);
-			items = items.filter((e) => e.id !== id);
-			if (editingId === id) resetForm();
-			showToast('Experience deleted', 'success');
-			await shell?.refreshPreview();
-		} catch {
-			showToast('Failed to delete experience', 'error');
-		}
-	}
+	onMount(crud.load);
 </script>
 
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
-		title={editingId ? 'Edit role' : 'Experience'}
+		title={$editingId ? 'Edit role' : 'Experience'}
 		description="Work history — add skills developed so Foliyo can suggest skills for your library. Optional write-up links for resume deep dives."
 	/>
 
-	<Card>
-	<h2 class="section-title">{editingId ? 'Edit role' : 'Add role'}</h2>
-	<div class="fields">
-		<div class="row">
-			<Input label="Company" bind:value={company} placeholder="Acme Inc." />
-			<Input label="Role" bind:value={role} placeholder="Software Engineer" />
+	{#if !$formOpen}
+		<div class="toolbar">
+			<Button on:click={crud.openAdd}>+ Add experience</Button>
 		</div>
-		<Input label="Location" bind:value={location} placeholder="Remote" />
-		<div class="row">
-			<Input label="Start date" bind:value={startDate} placeholder="2022-01" />
-			<Input label="End date" bind:value={endDate} placeholder="2024-06" disabled={present} />
-		</div>
-		<label class="checkbox">
-			<input type="checkbox" bind:checked={present} />
-			Currently working here
-		</label>
-		<Textarea label="Description" bind:value={description} rows={4} />
-		<AiRewriteAssist bind:value={description} disabled={saving} />
-		<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Node.js, PostgreSQL" />
-		<Input
-			label="Case study / write-up URL"
-			bind:value={articleUrl}
-			placeholder="https://… (external blog or future Foliyo post)"
-		/>
-		<Input label="Sort order" bind:value={sortOrder} />
-	</div>
-	<div class="form-actions">
-		{#if editingId}
-			<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
-			<Button variant="ghost" on:click={resetForm}>Cancel</Button>
-		{:else}
-			<Button disabled={saving} on:click={add}>{saving ? 'Adding…' : 'Add experience'}</Button>
-		{/if}
-	</div>
-</Card>
+	{/if}
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else if items.length === 0}
-	<p class="muted empty">No experience entries yet.</p>
-{:else}
-	<ul class="list">
-		{#each items as item (item.id)}
-			<li>
-				<Card>
-					<div class="item-row">
-						<div>
-							<strong>{item.role}</strong> at {item.company}
-							<span class="meta">
-								{item.start_date} – {item.end_date ?? 'Present'}
-								{#if item.location} · {item.location}{/if}
-							</span>
-							{#if item.description}
-								<p class="desc">{item.description}</p>
-							{/if}
-							{#if item.article_url}
-								<p class="meta">
-									<a href={item.article_url} target="_blank" rel="noreferrer">View write-up →</a>
-								</p>
-							{/if}
-							{#if skillsFromJson(item.skills_developed ?? '[]')}
-								<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
-							{/if}
-						</div>
-						<div class="row-actions">
-							<Button variant="ghost" on:click={() => startEdit(item)}>Edit</Button>
-							<Button variant="ghost" on:click={() => remove(item.id)}>Delete</Button>
-						</div>
-					</div>
-				</Card>
-			</li>
+	{#if $formOpen}
+		<ContentFormCard title={$editingId ? 'Edit role' : 'Add role'}>
+			<svelte:fragment slot="fields">
+				<div class="row">
+					<Input label="Company" bind:value={company} placeholder="Acme Inc." />
+					<Input label="Role" bind:value={role} placeholder="Software Engineer" />
+				</div>
+				<Input label="Location" bind:value={location} placeholder="Remote" />
+				<div class="row">
+					<Input label="Start date" bind:value={startDate} placeholder="2022-01" />
+					<Input label="End date" bind:value={endDate} placeholder="2024-06" disabled={present} />
+				</div>
+				<label class="checkbox">
+					<input type="checkbox" bind:checked={present} />
+					Currently working here
+				</label>
+				<Textarea label="Description" bind:value={description} rows={4} />
+				<AiRewriteAssist bind:value={description} disabled={$saving} />
+				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Node.js, PostgreSQL" />
+				<Input
+					label="Case study / write-up URL"
+					bind:value={articleUrl}
+					placeholder="https://… (external blog or future Foliyo post)"
+				/>
+				<Input label="Link label" bind:value={articleUrlLabel} placeholder="View write-up, Syllabus, Talk…" />
+				<Input label="Sort order" bind:value={sortOrder} />
+			</svelte:fragment>
+			<svelte:fragment slot="actions">
+				{#if $editingId}
+					<Button disabled={$saving} on:click={crud.saveEdit}>{$saving ? 'Saving…' : 'Save changes'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{:else}
+					<Button disabled={$saving} on:click={crud.add}>{$saving ? 'Adding…' : 'Add experience'}</Button>
+					<Button variant="ghost" on:click={crud.resetForm}>Cancel</Button>
+				{/if}
+			</svelte:fragment>
+		</ContentFormCard>
+	{/if}
+
+	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No experience entries yet.">
+		{#each $items as item (item.id)}
+			<ContentListItem onEdit={() => crud.startEdit(item)} onRemove={() => crud.remove(item)}>
+				<strong>{item.role}</strong> at {item.company}
+				<span class="meta">
+					{item.start_date} – {item.end_date ?? 'Present'}
+					{#if item.location} · {item.location}{/if}
+				</span>
+				{#if item.description}
+					<p class="desc">{item.description}</p>
+				{/if}
+				{#if item.article_url}
+					<p class="meta">
+						<a href={item.article_url} target="_blank" rel="noreferrer">View write-up →</a>
+					</p>
+				{/if}
+				{#if skillsFromJson(item.skills_developed ?? '[]')}
+					<p class="meta">Skills: {skillsFromJson(item.skills_developed ?? '[]')}</p>
+				{/if}
+			</ContentListItem>
 		{/each}
-	</ul>
-{/if}
+	</ContentList>
 </EditorWithPreview>
 
 <style>
-	.section-title {
-		margin: 0 0 1rem;
-		font-size: 1rem;
-	}
-	.fields {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+	.toolbar {
+		margin-bottom: 1rem;
 	}
 	.row {
 		display: grid;
@@ -259,45 +178,5 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.875rem;
-	}
-	.form-actions {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-	.muted {
-		color: var(--color-muted);
-	}
-	.empty {
-		margin-top: 1rem;
-	}
-	.list {
-		list-style: none;
-		margin: 1rem 0 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-	.item-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-	.meta {
-		display: block;
-		font-size: 0.8125rem;
-		color: var(--color-muted);
-		margin-top: 0.25rem;
-	}
-	.desc {
-		margin: 0.35rem 0 0;
-		font-size: 0.875rem;
-	}
-	.row-actions {
-		display: flex;
-		gap: 0.25rem;
 	}
 </style>

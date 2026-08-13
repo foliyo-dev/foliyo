@@ -2,9 +2,11 @@
 	export let type: 'button' | 'submit' = 'button';
 	export let variant: 'primary' | 'ghost' = 'primary';
 	export let disabled = false;
+	/** Sets `aria-pressed`, for toggle-style buttons. */
+	export let pressed: boolean | undefined = undefined;
 </script>
 
-<button {type} class={variant} {disabled} on:click>
+<button {type} class={variant} {disabled} aria-pressed={pressed} on:click>
 	<slot />
 </button>
 

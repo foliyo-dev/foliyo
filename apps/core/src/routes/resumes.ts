@@ -255,7 +255,10 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
 
   r.delete("/:id", async (c) => {
     const userId = c.get("userId");
-    await run(db, "DELETE FROM resumes WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
+    const id = c.req.param("id");
+    // Detach from any portfolio's "Download resume" button before the resume is gone.
+    await run(db, "UPDATE portfolios SET resume_id = NULL WHERE resume_id = ? AND user_id = ?", [id, userId]);
+    await run(db, "DELETE FROM resumes WHERE id=? AND user_id=?", [id, userId]);
     return c.body(null, 204);
   });
 

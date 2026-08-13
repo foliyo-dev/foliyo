@@ -138,7 +138,7 @@ body.theme-atelier {
   overflow: hidden;
 }
 
-.theme-atelier .cards li::before {
+.theme-atelier .cards li:not(.has-media)::before {
   content: "";
   display: block;
   height: 8.5rem;

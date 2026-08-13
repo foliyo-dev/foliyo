@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { resolveCorePublicDir } from "../assets.js";
@@ -6,6 +8,7 @@ import { queryOne, run, type FoliyoDb } from "../db.js";
 import {
   getDefaultPublicPortfolio,
   getPublicPortfolioBySlug,
+  getPublicPortfolioByToken,
   getUserByHandle,
   loadResumeContent,
   renderNotFound,
@@ -18,6 +21,27 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
   r.get("/static/*", serveStatic({ root: resolveCorePublicDir(import.meta.url) }));
+
+  r.get("/uploads/:file", (c) => {
+    const file = basename(c.req.param("file"));
+    const match = file.match(/^([a-f0-9]{32})\.(jpg|jpeg|png|webp)$/i);
+    if (!match) return c.notFound();
+    const id = match[1]!.toLowerCase();
+    const ext = match[2]!.toLowerCase() === "jpeg" ? "jpg" : match[2]!.toLowerCase();
+    const abs = join(config.dataDir, "uploads", `${id}.${ext}`);
+    if (!existsSync(abs)) return c.notFound();
+    const types: Record<string, string> = {
+      jpg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+    };
+    return new Response(readFileSync(abs), {
+      headers: {
+        "Content-Type": types[ext] ?? "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  });
 
   r.get("/spec", (c) => c.redirect("/static/spec/index.html"));
   r.get("/spec/", (c) => c.redirect("/static/spec/index.html"));
@@ -53,6 +77,12 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
     );
   });
 
+  r.get("/p/:token", async (c) => {
+    const data = await getPublicPortfolioByToken(db, c.req.param("token"));
+    if (!data) return c.html(renderNotFound("Portfolio not found.", config.dashboardUrl), 404);
+    return c.html(renderPortfolioPage(data, config));
+  });
+
   r.get("/u/:handle/:slug", async (c) => {
     const { handle, slug } = c.req.param();
     const user = await getUserByHandle(db, handle);
@@ -81,7 +111,7 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
     return c.html(renderPortfolioPage(data, config));
   });
 
-  const reserved = new Set(["welcome", "api", "mesh", "static", "u", "r"]);
+  const reserved = new Set(["welcome", "api", "mesh", "static", "u", "r", "p", "uploads"]);
   r.get("/:slug", async (c) => {
     const slug = c.req.param("slug");
     if (reserved.has(slug)) return c.notFound();

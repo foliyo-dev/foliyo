@@ -754,7 +754,7 @@
 									<Button
 										variant="ghost"
 										on:click={() => togglePreview(r.id)}
-										aria-pressed={previewingId === r.id}
+										pressed={previewingId === r.id}
 									>
 										{previewingId === r.id ? 'Hide preview' : 'Preview'}
 									</Button>
@@ -820,7 +820,6 @@
 	}
 	select,
 	input[type='text'],
-	input[type='search'],
 	.search {
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-border);

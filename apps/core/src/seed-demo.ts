@@ -108,6 +108,10 @@ type SeedBundle = {
     url: string;
     repo_url: string;
     article_url?: string;
+    image_url?: string;
+    url_label?: string;
+    repo_url_label?: string;
+    article_url_label?: string;
     skills_developed: string;
     featured: number;
   }[];
@@ -119,6 +123,7 @@ type SeedBundle = {
     end_date: string | null;
     description: string;
     article_url?: string;
+    article_url_label?: string;
   }[];
   education: {
     institution: string;
@@ -214,8 +219,8 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
     const pid = id();
     await run(
       db,
-      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, skills_developed, featured, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, image_url, url_label, repo_url_label, article_url_label, skills_developed, featured, sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         pid,
         userId,
@@ -224,6 +229,10 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
         pr.url,
         pr.repo_url,
         pr.article_url ?? "",
+        pr.image_url ?? "",
+        pr.url_label ?? "",
+        pr.repo_url_label ?? "",
+        pr.article_url_label ?? "",
         pr.skills_developed,
         pr.featured,
         i,
@@ -238,8 +247,8 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
     const eid = id();
     await run(
       db,
-      `INSERT INTO experience (id, user_id, company, role, location, start_date, end_date, description, article_url, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO experience (id, user_id, company, role, location, start_date, end_date, description, article_url, article_url_label, sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         eid,
         userId,
@@ -250,6 +259,7 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
         e.end_date,
         e.description,
         e.article_url ?? "",
+        e.article_url_label ?? "",
         i,
       ],
     );
@@ -513,6 +523,7 @@ const priyaBundle: SeedBundle = {
       url: "https://example.com/ledger",
       repo_url: "https://github.com/example/ledger-lite",
       article_url: "https://dev.to/priya/building-ledger-lite-in-go",
+      article_url_label: "Talk",
       skills_developed: '["go","postgres"]',
       featured: 1,
     },
@@ -636,6 +647,7 @@ const arjunBundle: SeedBundle = {
       description: "Logo and landing explorations for Foliyo.",
       url: "https://foliyo.dev",
       repo_url: "",
+      image_url: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80",
       skills_developed: '["brand","figma"]',
       featured: 1,
     },
@@ -645,6 +657,7 @@ const arjunBundle: SeedBundle = {
       url: "",
       repo_url: "",
       article_url: "https://medium.com/@arjun/checkout-redesign-case-study",
+      article_url_label: "Case study",
       skills_developed: '["ux","conversion"]',
       featured: 1,
     },

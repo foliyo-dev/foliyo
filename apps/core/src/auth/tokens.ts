@@ -28,8 +28,17 @@ export async function deleteToken(db: FoliyoDb, token: string): Promise<void> {
   await run(db, "DELETE FROM tokens WHERE id = ?", [token]);
 }
 
-export async function deleteTokensForUser(db: FoliyoDb, userId: string): Promise<void> {
-  await run(db, "DELETE FROM tokens WHERE user_id = ?", [userId]);
+/** Deletes all tokens for a user, optionally keeping one (e.g. the caller's current session). */
+export async function deleteTokensForUser(
+  db: FoliyoDb,
+  userId: string,
+  exceptToken?: string,
+): Promise<void> {
+  if (exceptToken) {
+    await run(db, "DELETE FROM tokens WHERE user_id = ? AND id != ?", [userId, exceptToken]);
+  } else {
+    await run(db, "DELETE FROM tokens WHERE user_id = ?", [userId]);
+  }
 }
 
 export function bearerToken(authHeader: string | undefined): string | null {

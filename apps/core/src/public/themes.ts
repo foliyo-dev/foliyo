@@ -104,12 +104,27 @@ function displayBio(data: PublicPortfolio): string {
 }
 
 /** Interactive project links for portfolio sites. */
+function linkLabel(raw: unknown, fallback: string): string {
+  const s = String(raw ?? "").trim();
+  return s || fallback;
+}
+
 function projectLinksSite(pr: Record<string, unknown>): string {
   const links: string[] = [];
-  if (pr.url) links.push(`<a href="${esc(pr.url)}" rel="noopener noreferrer">Live</a>`);
-  if (pr.repo_url) links.push(`<a href="${esc(pr.repo_url)}" rel="noopener noreferrer">Repo</a>`);
+  if (pr.url) {
+    links.push(
+      `<a href="${esc(pr.url)}" rel="noopener noreferrer">${esc(linkLabel(pr.url_label, "Live"))}</a>`,
+    );
+  }
+  if (pr.repo_url) {
+    links.push(
+      `<a href="${esc(pr.repo_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.repo_url_label, "Repo"))}</a>`,
+    );
+  }
   if (pr.article_url) {
-    links.push(`<a href="${esc(pr.article_url)}" rel="noopener noreferrer">View write-up</a>`);
+    links.push(
+      `<a href="${esc(pr.article_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.article_url_label, "View write-up"))}</a>`,
+    );
   }
   return links.length ? `<p class="links">${links.join(" · ")}</p>` : "";
 }
@@ -170,7 +185,57 @@ function skillsDevelopedHtml(raw: unknown): string {
   return `<ul class="tags skill-chips">${names.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
 }
 
-function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): SectionParts {
+const SECTION_DEFAULTS = {
+  skills: "Skills",
+  projects: "Projects",
+  experience: "Experience",
+  education: "Education",
+  certifications: "Certifications",
+  languages: "Languages",
+} as const;
+
+type SectionKey = keyof typeof SECTION_DEFAULTS;
+
+function sectionTitle(data: PublicPortfolio, key: SectionKey, mode: "portfolio" | "resume"): string {
+  if (mode === "resume") return SECTION_DEFAULTS[key];
+  const custom = String(data.portfolio[`${key}_title`] ?? "").trim();
+  return custom || SECTION_DEFAULTS[key];
+}
+
+function safeMediaUrl(raw: unknown): string | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) {
+    try {
+      const u = new URL(s);
+      if (u.protocol === "http:" || u.protocol === "https:") return s;
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  if (/^\/uploads\/[a-f0-9]{32}\.(jpe?g|png|webp)$/i.test(s)) return s;
+  return null;
+}
+
+function projectMediaHtml(
+  pr: Record<string, unknown>,
+  mode: "portfolio" | "resume",
+  siteUrl: string,
+): string {
+  if (mode === "resume") return "";
+  const src = safeMediaUrl(pr.image_url);
+  if (!src) return "";
+  const abs =
+    src.startsWith("/uploads/") ? `${siteUrl.replace(/\/$/, "")}${src}` : src;
+  return `<img class="card-media" src="${esc(abs)}" alt="" />`;
+}
+
+function sectionParts(
+  data: PublicPortfolio,
+  mode: "portfolio" | "resume",
+  siteUrl = "",
+): SectionParts {
   const linkFn = mode === "portfolio" ? projectLinksSite : projectLinksDocument;
 
   const skillsHtml = data.skills.length
@@ -179,10 +244,10 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         "skills",
         "section-skills",
         mode === "resume"
-          ? `<h2>Skills</h2><p class="skills-keywords">${data.skills
+          ? `<h2>${esc(sectionTitle(data, "skills", mode))}</h2><p class="skills-keywords">${data.skills
               .map((s) => esc(s.name))
               .join(", ")}</p>`
-          : `<h2>Skills</h2><ul class="tags">${data.skills
+          : `<h2>${esc(sectionTitle(data, "skills", mode))}</h2><ul class="tags">${data.skills
               .map((s) => {
                 const recency = String(s.recency ?? "current");
                 const meta = ` <span class="muted">${esc(s.level)}</span> <span class="muted">· ${esc(recency)}</span>`;
@@ -197,13 +262,13 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         mode,
         "projects",
         "section-projects",
-        `<h2>Projects</h2><ul class="cards">${data.projects
-          .map(
-            (pr) =>
-              `<li><strong>${esc(pr.title)}</strong>${
-                pr.description ? `<p>${esc(pr.description)}</p>` : ""
-              }${skillsDevelopedHtml(pr.skills_developed)}${linkFn(pr)}</li>`,
-          )
+        `<h2>${esc(sectionTitle(data, "projects", mode))}</h2><ul class="cards">${data.projects
+          .map((pr) => {
+            const media = projectMediaHtml(pr, mode, siteUrl);
+            return `<li${media ? ' class="has-media"' : ""}>${media}<strong>${esc(pr.title)}</strong>${
+              pr.description ? `<p>${esc(pr.description)}</p>` : ""
+            }${skillsDevelopedHtml(pr.skills_developed)}${linkFn(pr)}</li>`;
+          })
           .join("")}</ul>`,
       )
     : "";
@@ -213,11 +278,12 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         mode,
         "experience",
         "section-experience",
-        `<h2>Experience</h2><ul class="timeline">${data.experience
+        `<h2>${esc(sectionTitle(data, "experience", mode))}</h2><ul class="timeline">${data.experience
           .map((e) => {
+            const writeUpLabel = linkLabel(e.article_url_label, "View write-up");
             const writeUp =
               mode === "portfolio" && e.article_url
-                ? `<p class="links"><a href="${esc(e.article_url)}" rel="noopener noreferrer">View write-up</a></p>`
+                ? `<p class="links"><a href="${esc(e.article_url)}" rel="noopener noreferrer">${esc(writeUpLabel)}</a></p>`
                 : mode === "resume" && e.article_url
                   ? `<p class="links doc-links"><a class="doc-link" href="${esc(e.article_url)}" rel="noopener noreferrer">${esc(String(e.article_url))}</a></p>`
                   : "";
@@ -241,7 +307,7 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         mode,
         "education",
         "section-education",
-        `<h2>Education</h2><ul class="timeline">${data.education
+        `<h2>${esc(sectionTitle(data, "education", mode))}</h2><ul class="timeline">${data.education
           .map(
             (e) =>
               `<li>
@@ -262,7 +328,7 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         mode,
         "certifications",
         "section-certs",
-        `<h2>Certifications</h2><ul class="timeline">${data.certifications
+        `<h2>${esc(sectionTitle(data, "certifications", mode))}</h2><ul class="timeline">${data.certifications
           .map((c) => {
             const cred =
               c.credential_url && mode === "portfolio"
@@ -286,7 +352,7 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
         mode,
         "languages",
         "section-languages",
-        `<h2>Languages</h2><ul class="tags">${data.languages
+        `<h2>${esc(sectionTitle(data, "languages", mode))}</h2><ul class="tags">${data.languages
           .map((l) => `<li>${esc(l.name)} <span class="muted">${esc(l.proficiency)}</span></li>`)
           .join("")}</ul>`,
       )
@@ -305,12 +371,16 @@ function sectionParts(data: PublicPortfolio, mode: "portfolio" | "resume"): Sect
 
 function navItemsFor(data: PublicPortfolio): NavItem[] {
   const items: NavItem[] = [{ id: "about", label: "About" }];
-  if (data.skills.length) items.push({ id: "skills", label: "Skills" });
-  if (data.projects.length) items.push({ id: "projects", label: "Projects" });
-  if (data.experience.length) items.push({ id: "experience", label: "Experience" });
-  if (data.education.length) items.push({ id: "education", label: "Education" });
-  if (data.certifications.length) items.push({ id: "certifications", label: "Certifications" });
-  if (data.languages.length) items.push({ id: "languages", label: "Languages" });
+  if (data.skills.length) items.push({ id: "skills", label: sectionTitle(data, "skills", "portfolio") });
+  if (data.projects.length) items.push({ id: "projects", label: sectionTitle(data, "projects", "portfolio") });
+  if (data.experience.length) {
+    items.push({ id: "experience", label: sectionTitle(data, "experience", "portfolio") });
+  }
+  if (data.education.length) items.push({ id: "education", label: sectionTitle(data, "education", "portfolio") });
+  if (data.certifications.length) {
+    items.push({ id: "certifications", label: sectionTitle(data, "certifications", "portfolio") });
+  }
+  if (data.languages.length) items.push({ id: "languages", label: sectionTitle(data, "languages", "portfolio") });
   return items;
 }
 
@@ -348,8 +418,8 @@ function sparseSectionHtml(mode: "portfolio" | "resume"): string {
   return `<section class="section section-sparse" aria-label="Empty"><p class="muted sparse-copy">${copy}</p></section>`;
 }
 
-function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
-  const p = sectionParts(data, mode);
+function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume", siteUrl = ""): string {
+  const p = sectionParts(data, mode, siteUrl);
   const body = `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}`;
   if (mode === "portfolio" && isSparsePortfolio(data) && !body.trim()) {
     return sparseSectionHtml(mode);
@@ -360,13 +430,13 @@ function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): stri
   return body;
 }
 
-function resumeBodyHtml(data: PublicPortfolio, slug: string): string {
+function resumeBodyHtml(data: PublicPortfolio, slug: string, siteUrl = ""): string {
   const hero = heroHtml(data, "resume");
   if (slug !== "sidebar") {
-    return `<div class="resume-sheet">${hero}${sectionsHtml(data, "resume")}</div>`;
+    return `<div class="resume-sheet">${hero}${sectionsHtml(data, "resume", siteUrl)}</div>`;
   }
 
-  const p = sectionParts(data, "resume");
+  const p = sectionParts(data, "resume", siteUrl);
   return `<div class="resume-sheet">
     <div class="resume-layout">
       <aside class="resume-sidebar">
@@ -465,6 +535,8 @@ const SITE_SHELL_CSS = `
 .social-links a{display:inline-flex;align-items:center;gap:0.4rem;padding:0.4rem 0.75rem;border-radius:999px;border:1px solid var(--line,#e7e5e4);background:var(--surface,#fff);color:var(--ink,inherit);font-size:0.8125rem;font-weight:500;line-height:1;text-decoration:none;transition:border-color .15s ease,color .15s ease,background .15s ease}
 .social-links a:hover{border-color:var(--accent,#0f766e);color:var(--accent,#0f766e)}
 .social-links svg{width:1rem;height:1rem;flex-shrink:0;display:block}
+.card-media{display:block;width:100%;height:9rem;object-fit:cover;margin:0 0 0.85rem;border-radius:6px;background:var(--line,#e7e5e4)}
+.theme-atelier .card-media{height:8.5rem;margin:0;border-radius:0}
 .theme-creative .social-links a{background:rgba(255,255,255,.08);border-color:rgba(232,196,160,.35);color:#f8f1e8}
 .theme-creative .social-links a:hover{border-color:#e8c4a0;color:#f0a06a;background:rgba(255,255,255,.12)}
 .theme-noir .social-links a{background:var(--surface,#181b22);border-color:var(--line,#2a2e36);color:var(--ink,#e8e6e3)}
@@ -479,6 +551,10 @@ const SITE_SHELL_CSS = `
 .section[id],.hero[id]{scroll-margin-top:4.5rem}
 .section-sparse{padding:2rem 0 3rem}
 .sparse-copy{margin:0;font-size:0.9375rem;text-align:center;color:var(--muted,#78716c)}
+.print-fab{position:fixed;right:1rem;bottom:1rem;z-index:30}
+.print-btn{border:0;border-radius:999px;padding:0.7rem 1.1rem;background:var(--accent,#0f766e);color:#fff;font:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.print-btn:hover{opacity:.92}
+@media print{.no-print,.print-fab{display:none!important}}
 @media (max-width:560px){
   .site-nav{padding:0.65rem 1rem;gap:0.5rem 0.75rem}
   .site-nav .site-name{font-size:0.875rem}
@@ -550,6 +626,11 @@ export function renderPortfolioHtml(data: PublicPortfolio, config: Config): stri
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";
+  const chrome = data.download_resume_token
+    ? `<aside class="print-fab no-print" aria-label="Resume download">
+    <a class="print-btn" href="/r/${esc(data.download_resume_token)}" target="_blank" rel="noreferrer">Download resume</a>
+  </aside>`
+    : "";
 
   return documentShell({
     title: `${name} · Foliyo`,
@@ -557,7 +638,8 @@ export function renderPortfolioHtml(data: PublicPortfolio, config: Config): stri
     css,
     variant: "site",
     topbar,
-    body: `${heroHtml(data, "portfolio")}${sectionsHtml(data, "portfolio")}`,
+    body: `${heroHtml(data, "portfolio")}${sectionsHtml(data, "portfolio", config.siteUrl)}`,
+    chrome,
     footer,
   });
 }
@@ -588,7 +670,7 @@ export function renderResumeHtml(
     themeClass: `theme-resume theme-${slug}`,
     css,
     variant: "document",
-    body: resumeBodyHtml(data, slug),
+    body: resumeBodyHtml(data, slug, config.siteUrl),
     chrome,
     footer,
   });

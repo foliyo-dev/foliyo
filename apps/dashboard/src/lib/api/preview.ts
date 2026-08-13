@@ -43,6 +43,12 @@ export type PortfolioDraftPreview = {
 	show_education?: number;
 	show_certifications?: number;
 	show_languages?: number;
+	skills_title?: string;
+	projects_title?: string;
+	experience_title?: string;
+	education_title?: string;
+	certifications_title?: string;
+	languages_title?: string;
 	skill_ids?: string[];
 	project_ids?: string[];
 	experience_ids?: string[];

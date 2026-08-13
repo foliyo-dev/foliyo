@@ -2,8 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { page } from '$app/state';
   import { Logo } from '@foliyo/ui';
-  import { logout, user } from '$lib/stores/auth';
-  import { formatPlanLabel, isPaidHostedPlan } from '$lib/api/plan';
+  import { logout } from '$lib/stores/auth';
   import { isSaas } from '$lib/config';
 
   export let open = false;
@@ -12,10 +11,6 @@
 
   type NavItem = { href: string; label: string; badge?: string };
   type NavGroup = { label: string; items: NavItem[] };
-
-  $: planSlug = $user?.plan ?? (isSaas ? 'free' : 'selfhost');
-  $: planLabel = formatPlanLabel(planSlug);
-  $: paid = isPaidHostedPlan(planSlug);
 
   /** Visible for all hosted users; free hit /import → upgrade (no upload). */
   $: groups = [
@@ -109,9 +104,6 @@
     {/each}
   </nav>
   <div class="footer">
-    {#if $user}
-      <a href="/settings" class="plan-chip" class:paid on:click={close}>{planLabel}</a>
-    {/if}
     <button type="button" class="logout" on:click={handleLogout}>Log out</button>
   </div>
 </aside>
@@ -225,33 +217,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.65rem;
-  }
-  .plan-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.625rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    text-decoration: none;
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
-    color: var(--color-muted);
-    width: auto;
-  }
-  .plan-chip.paid {
-    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
-    background: var(--color-primary);
-    color: #fff;
-  }
-  .plan-chip:hover {
-    background: var(--color-bg);
-  }
-  .plan-chip.paid:hover {
-    filter: brightness(1.05);
-    background: var(--color-primary);
   }
   .logout {
     background: none;

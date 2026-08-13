@@ -16,7 +16,15 @@ export type Portfolio = {
 	show_education: number;
 	show_certifications: number;
 	show_languages: number;
+	skills_title: string;
+	projects_title: string;
+	experience_title: string;
+	education_title: string;
+	certifications_title: string;
+	languages_title: string;
 	sort_order: number;
+	resume_id: string | null;
+	access_token: string | null;
 };
 
 export type PortfolioContent = {
@@ -82,6 +90,10 @@ export const updatePortfolioContent = (id: string, content: PortfolioContent) =>
 		method: 'PUT',
 		body: JSON.stringify(content)
 	});
+export const generatePortfolioAccessToken = (id: string) =>
+	api<{ access_token: string }>(`/portfolios/${id}/access-token`, { method: 'POST' });
+export const revokePortfolioAccessToken = (id: string) =>
+	api<{ ok: boolean }>(`/portfolios/${id}/access-token`, { method: 'DELETE' });
 
 export const portfolioThemes = [
 	'minimal',
@@ -109,4 +121,9 @@ export function portfolioPublicUrl(
 	}
 	if (p.is_default) return corePublicUrl('/');
 	return corePublicUrl(`/${p.slug}`);
+}
+
+/** Unlisted link — works even when the portfolio is private, as long as the token matches. */
+export function portfolioPrivateUrl(accessToken: string): string {
+	return corePublicUrl(`/p/${accessToken}`);
 }

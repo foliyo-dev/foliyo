@@ -61,7 +61,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | Razorpay | Done (cloud Orders + webhook; needs keys) |
 | Email verification | Done (cloud signup → check-email → `/verify` → welcome mail) |
 | Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
-| File uploads | 501 stub |
+| File uploads | Project images shipped (`POST /api/upload/project-image`, `GET /uploads/:file`). Avatar still 501. |
 | DPDP export/delete/consent UX | Done (Settings + privacy page; 30-day delete grace) |
 | Deno single-binary release | Replaced by Node 22 bundle (`foliyo-core.tar.gz`) |
 
@@ -86,7 +86,7 @@ Proof of work on resumes/portfolios without hosting posts yet.
 
 - [x] Projects: optional **write-up / article URL** (alongside existing demo `url` + `repo_url`) — label e.g. “View write-up”
 - [x] Experience: optional **case study / article URL** (same pattern)
-- [ ] Optional stretch: small `links[{label,url}]` JSON for multiple links (Demo, Repo, Article)
+- [x] Optional labels on those URLs (Live / Repo / View write-up defaults; Series, Paper, Read, Talk, …)
 - [x] Public portfolio + resume HTML render those links when set
 - [x] Seed demo data with at least one external write-up URL (e.g. Dev.to / docs)
 - [x] Docs: clarify Foliyo *or* any external blog is valid; full Foliyo blog is Phase E
@@ -159,6 +159,16 @@ Only after activation metrics exist:
 - **AI resume import** — deferred until Foliyo Resume Spec interchange is stable; import should emit `foliyo/resume` v1 JSON
 - MeshQL `@meshql/client` + access plugin hardening
 - Avatar upload (Gravatar remains fallback)
+
+### Honest folios (shipped — no new entities)
+
+Make the existing library work for photo / research / writing without a blog CMS or gallery table:
+
+- [x] Render `project.image_url` on public portfolios; Atelier uses a real image instead of the CSS placeholder
+- [x] `POST /api/upload/project-image` → `{dataDir}/uploads/{id}.{ext}`; public `GET /uploads/:file`
+- [x] Optional `url_label` / `repo_url_label` / `article_url_label` on projects; `article_url_label` on experience
+- [x] Per-portfolio section titles (`projects_title`, …); resume headings stay ATS-canonical
+- User blog CMS remains Later (Phase E)
 
 ### Foliyo Resume Spec (shipped foundation)
 
