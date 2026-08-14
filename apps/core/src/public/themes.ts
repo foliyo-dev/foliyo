@@ -581,7 +581,9 @@ const DOCUMENT_SHELL_CSS = `
   .no-print,.print-fab,.site-footer{display:none!important}
   body{background:#fff!important;padding:0!important}
   .page,.resume-sheet{max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
-  .section,.cards>li,.timeline>li{break-inside:avoid}
+  /* Fill leftover space — don't push a whole section to the next page. Keep a heading with what follows, and don't split a job/project card. */
+  .section h2{break-after:avoid;page-break-after:avoid}
+  .cards>li,.timeline>li,.skills-keywords{break-inside:avoid;page-break-inside:avoid}
   a.doc-link{text-decoration:none}
 }
 @page{margin:0.6in}

@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/themes",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "private": true,
   "description": "Portfolio and resume theme CSS + metadata for Foliyo public pages",
   "type": "module",
