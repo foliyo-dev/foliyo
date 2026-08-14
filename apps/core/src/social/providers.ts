@@ -1,5 +1,6 @@
-/** Known social / presence providers for the content library. */
+import { absoluteHttpUrl, looksLikeBareHost } from "../http-url.js";
 
+/** Known social / presence providers for the content library. */
 export type SocialProvider =
   | "github"
   | "linkedin"
@@ -124,10 +125,14 @@ export function resolveSocialUrl(provider: string, value: string): string {
   const v = value.trim();
   if (!v) return "";
   if (/^https?:\/\//i.test(v)) return v;
+  // Resume import often stores `linkedin.com/in/foo` without a scheme.
+  if (looksLikeBareHost(v) && (v.includes("/") || v.toLowerCase().startsWith("www."))) {
+    return absoluteHttpUrl(v);
+  }
   const def = getSocialProvider(provider);
   if (def?.urlFromValue) return def.urlFromValue(v.replace(/^@/, ""));
-  if (def && !def.usernameBased) return v.startsWith("http") ? v : `https://${v}`;
-  return v;
+  if (def && !def.usernameBased) return absoluteHttpUrl(v) || `https://${v}`;
+  return absoluteHttpUrl(v) || v;
 }
 
 export function socialDisplayLabel(provider: string, label: string): string {

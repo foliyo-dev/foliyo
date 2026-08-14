@@ -5,6 +5,7 @@ import { resolveThemesDir } from "../assets.js";
 import type { Config } from "../config.js";
 import type { PublicPortfolio } from "./pages.js";
 import { effectivePlan, showFoliyoBranding } from "../plan.js";
+import { absoluteHttpUrl } from "../http-url.js";
 import {
   resolveSocialUrl,
   socialDisplayLabel,
@@ -109,21 +110,25 @@ function linkLabel(raw: unknown, fallback: string): string {
   return s || fallback;
 }
 
+function hrefOf(raw: unknown): string {
+  return esc(absoluteHttpUrl(String(raw ?? "")) || String(raw ?? "").trim());
+}
+
 function projectLinksSite(pr: Record<string, unknown>): string {
   const links: string[] = [];
   if (pr.url) {
     links.push(
-      `<a href="${esc(pr.url)}" rel="noopener noreferrer">${esc(linkLabel(pr.url_label, "Live"))}</a>`,
+      `<a href="${hrefOf(pr.url)}" rel="noopener noreferrer">${esc(linkLabel(pr.url_label, "Live"))}</a>`,
     );
   }
   if (pr.repo_url) {
     links.push(
-      `<a href="${esc(pr.repo_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.repo_url_label, "Repo"))}</a>`,
+      `<a href="${hrefOf(pr.repo_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.repo_url_label, "Repo"))}</a>`,
     );
   }
   if (pr.article_url) {
     links.push(
-      `<a href="${esc(pr.article_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.article_url_label, "View write-up"))}</a>`,
+      `<a href="${hrefOf(pr.article_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.article_url_label, "View write-up"))}</a>`,
     );
   }
   return links.length ? `<p class="links">${links.join(" · ")}</p>` : "";
@@ -133,13 +138,13 @@ function projectLinksSite(pr: Record<string, unknown>): string {
 function projectLinksDocument(pr: Record<string, unknown>): string {
   const links: string[] = [];
   if (pr.url) {
-    const href = String(pr.url);
+    const href = absoluteHttpUrl(String(pr.url)) || String(pr.url);
     links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   } else if (pr.repo_url) {
-    const href = String(pr.repo_url);
+    const href = absoluteHttpUrl(String(pr.repo_url)) || String(pr.repo_url);
     links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   } else if (pr.article_url) {
-    const href = String(pr.article_url);
+    const href = absoluteHttpUrl(String(pr.article_url)) || String(pr.article_url);
     links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   }
   return links.length ? `<p class="links doc-links">${links.join("<br>")}</p>` : "";
@@ -283,9 +288,9 @@ function sectionParts(
             const writeUpLabel = linkLabel(e.article_url_label, "View write-up");
             const writeUp =
               mode === "portfolio" && e.article_url
-                ? `<p class="links"><a href="${esc(e.article_url)}" rel="noopener noreferrer">${esc(writeUpLabel)}</a></p>`
+                ? `<p class="links"><a href="${hrefOf(e.article_url)}" rel="noopener noreferrer">${esc(writeUpLabel)}</a></p>`
                 : mode === "resume" && e.article_url
-                  ? `<p class="links doc-links"><a class="doc-link" href="${esc(e.article_url)}" rel="noopener noreferrer">${esc(String(e.article_url))}</a></p>`
+                  ? `<p class="links doc-links"><a class="doc-link" href="${hrefOf(e.article_url)}" rel="noopener noreferrer">${esc(String(e.article_url))}</a></p>`
                   : "";
             return `<li>
               <div class="item-head">
@@ -332,9 +337,9 @@ function sectionParts(
           .map((c) => {
             const cred =
               c.credential_url && mode === "portfolio"
-                ? ` <a href="${esc(c.credential_url)}" rel="noopener noreferrer">Credential</a>`
+                ? ` <a href="${hrefOf(c.credential_url)}" rel="noopener noreferrer">Credential</a>`
                 : c.credential_url && mode === "resume"
-                  ? ` <a class="doc-link" href="${esc(c.credential_url)}" rel="noopener noreferrer">Credential</a>`
+                  ? ` <a class="doc-link" href="${hrefOf(c.credential_url)}" rel="noopener noreferrer">Credential</a>`
                   : "";
             return `<li>
               <strong>${esc(c.name)}</strong>${c.issuer ? ` — ${esc(c.issuer)}` : ""}
@@ -626,9 +631,10 @@ export function renderPortfolioHtml(data: PublicPortfolio, config: Config): stri
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";
+  const resumeHref = `${config.siteUrl.replace(/\/$/, "")}/r/${esc(data.download_resume_token ?? "")}`;
   const chrome = data.download_resume_token
     ? `<aside class="print-fab no-print" aria-label="Resume download">
-    <a class="print-btn" href="/r/${esc(data.download_resume_token)}" target="_blank" rel="noreferrer">Download resume</a>
+    <a class="print-btn" href="${resumeHref}" target="_blank" rel="noreferrer">Download resume</a>
   </aside>`
     : "";
 

@@ -1,6 +1,7 @@
 import { queryOne, run, withTransaction, type FoliyoDb } from "../db.js";
+import { absoluteHttpUrl } from "../http-url.js";
 import type { FioImportDraft } from "../spec/fio.js";
-import { isSocialProvider } from "../social/providers.js";
+import { isSocialProvider, getSocialProvider } from "../social/providers.js";
 import { upsertSkill } from "../skills/upsert.js";
 import { suggestSkillsFromLibrary } from "../skills/evidence.js";
 
@@ -122,9 +123,14 @@ export async function applyImportDraft(
     const links = cand.links && typeof cand.links === "object" ? Object.entries(cand.links) : [];
     for (let i = 0; i < links.length; i++) {
       const [providerRaw, valueRaw] = links[i]!;
-      const value = str(valueRaw);
-      if (!value) continue;
+      const raw = str(valueRaw);
+      if (!raw) continue;
       const provider = isSocialProvider(providerRaw.toLowerCase()) ? providerRaw.toLowerCase() : "other";
+      const def = getSocialProvider(provider);
+      const value =
+        !def?.usernameBased || raw.includes("/") || raw.toLowerCase().startsWith("www.")
+          ? absoluteHttpUrl(raw) || raw
+          : raw;
       try {
         await run(
           db,
@@ -256,8 +262,8 @@ export async function applyImportDraft(
           [
             title,
             str(p.description),
-            str(p.url),
-            str(p.repo_url),
+            absoluteHttpUrl(str(p.url)),
+            absoluteHttpUrl(str(p.repo_url)),
             "",
             "",
             "",
@@ -296,7 +302,7 @@ export async function applyImportDraft(
             name,
             str(c.issuer),
             str(c.credential_id),
-            str(c.credential_url),
+            absoluteHttpUrl(str(c.credential_url)),
             strOrNull(c.issued_at),
             strOrNull(c.expires_at),
             str(c.description),
