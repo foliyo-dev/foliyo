@@ -1,6 +1,9 @@
 /** True when built for hosted SaaS (`VITE_SAAS=true`). */
 export const isSaas = import.meta.env.VITE_SAAS === 'true';
 
+/** Foliyo release version baked in at build time (from @foliyo/core). */
+export const foliyoVersion = __FOLIYO_VERSION__;
+
 const isDev = import.meta.env.DEV;
 
 /** Public site / API origin (portfolios live here). */
@@ -27,4 +30,12 @@ export function publicHost(): string {
 
 export function publicPortfolioPath(handle: string): string {
 	return `${siteUrl}/u/${handle}`;
+}
+
+/** Resolve `/uploads/...` against the API/site origin for dashboard display. */
+export function mediaUrl(path: string | null | undefined): string {
+	const s = (path ?? '').trim();
+	if (!s) return '';
+	if (s.startsWith('/uploads/')) return `${siteUrl}${s}`;
+	return s;
 }

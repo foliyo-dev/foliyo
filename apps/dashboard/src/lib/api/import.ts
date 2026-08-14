@@ -166,3 +166,22 @@ export function getImportUpgrade(err: unknown): UpgradeError | null {
 	if (err instanceof ApiError) return parseUpgradeError(err);
 	return null;
 }
+
+export type ApplyImportResult = {
+	saved: {
+		profile: number;
+		links: number;
+		skills: number;
+		experience: number;
+		education: number;
+		projects: number;
+		certifications: number;
+		languages: number;
+		total: number;
+	};
+	failed: Array<{ section: string; index: number; error: string }>;
+};
+
+/** Write a reviewed Foliyo Resume Spec draft into the library (one request). */
+export const applyImportDraft = (draft: ResumeImportDraft) =>
+	api<ApplyImportResult>('/import/apply', { method: 'POST', body: JSON.stringify({ draft }) });

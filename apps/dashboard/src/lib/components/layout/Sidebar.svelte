@@ -2,8 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { page } from '$app/state';
   import { Logo } from '@foliyo/ui';
-  import { logout } from '$lib/stores/auth';
-  import { isSaas } from '$lib/config';
+  import { foliyoVersion, isSaas } from '$lib/config';
 
   export let open = false;
 
@@ -64,11 +63,6 @@
   function close() {
     dispatch('close');
   }
-
-  async function handleLogout() {
-    await logout();
-    window.location.href = '/login';
-  }
 </script>
 
 {#if open}
@@ -104,7 +98,7 @@
     {/each}
   </nav>
   <div class="footer">
-    <button type="button" class="logout" on:click={handleLogout}>Log out</button>
+    <p class="version" title="Foliyo version">Foliyo v{foliyoVersion}</p>
   </div>
 </aside>
 
@@ -213,21 +207,12 @@
   .footer {
     padding: 1rem 1.5rem;
     border-top: 1px solid var(--color-border);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.65rem;
   }
-  .logout {
-    background: none;
-    border: none;
+  .version {
+    margin: 0;
+    font-size: 0.75rem;
     color: var(--color-muted);
-    font-size: 0.875rem;
-    cursor: pointer;
-    padding: 0;
-  }
-  .logout:hover {
-    color: var(--color-text);
+    letter-spacing: 0.02em;
   }
 
   @media (max-width: 900px) {
@@ -265,9 +250,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-    .footer {
-      display: none; /* logout lives in header on mobile */
     }
   }
 </style>

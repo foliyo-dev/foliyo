@@ -21,6 +21,7 @@
 	} from '$lib/api/projects';
 	import { ApiError } from '$lib/api/client';
 	import { showToast } from '$lib/stores/toast';
+	import { mediaUrl } from '$lib/config';
 
 	let shell: EditorWithPreview;
 
@@ -37,6 +38,13 @@
 	let featured = false;
 	let sortOrder = '0';
 	let uploading = false;
+	let imageInput: HTMLInputElement | null = null;
+	let pasteImageUrl = false;
+	let dragging = false;
+	let dragDepth = 0;
+
+	$: previewSrc = mediaUrl(imageUrl);
+	$: showImageUrlField = pasteImageUrl || /^https?:\/\//i.test(imageUrl.trim());
 
 	function uploadErrorMessage(err: unknown): string {
 		if (err instanceof ApiError) {
@@ -83,6 +91,7 @@
 				repoUrlLabel = item.repo_url_label ?? '';
 				articleUrlLabel = item.article_url_label ?? '';
 				imageUrl = item.image_url;
+				pasteImageUrl = /^https?:\/\//i.test(item.image_url ?? '');
 				skillsInput = skillsFromJson(item.skills_developed);
 				featured = item.featured === 1;
 				sortOrder = String(item.sort_order);
@@ -97,6 +106,7 @@
 				repoUrlLabel = '';
 				articleUrlLabel = '';
 				imageUrl = '';
+				pasteImageUrl = false;
 				skillsInput = '';
 				featured = false;
 				sortOrder = String($items.length);
@@ -112,21 +122,55 @@
 
 	onMount(crud.load);
 
-	async function onImageFile(e: Event) {
-		const input = e.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
-		input.value = '';
-		if (!file) return;
+	async function uploadFile(file: File) {
 		uploading = true;
 		try {
 			const res = await uploadProjectImage(file);
 			imageUrl = res.url;
+			pasteImageUrl = false;
 			showToast('Image uploaded', 'success');
 		} catch (err) {
 			showToast(uploadErrorMessage(err), 'error');
 		} finally {
 			uploading = false;
 		}
+	}
+
+	async function onImageFile(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (file) await uploadFile(file);
+	}
+
+	function onDragEnter(e: DragEvent) {
+		e.preventDefault();
+		dragDepth += 1;
+		dragging = true;
+	}
+
+	function onDragOver(e: DragEvent) {
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+	}
+
+	function onDragLeave(e: DragEvent) {
+		e.preventDefault();
+		dragDepth = Math.max(0, dragDepth - 1);
+		if (dragDepth === 0) dragging = false;
+	}
+
+	async function onDrop(e: DragEvent) {
+		e.preventDefault();
+		dragDepth = 0;
+		dragging = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) await uploadFile(file);
+	}
+
+	function clearImage() {
+		imageUrl = '';
+		pasteImageUrl = false;
 	}
 </script>
 
@@ -164,13 +208,68 @@
 					/>
 					<Input label="Write-up label" bind:value={articleUrlLabel} placeholder="View write-up, Read, Talk…" />
 				</div>
-				<div class="row">
-					<Input label="Image URL" bind:value={imageUrl} placeholder="https://… or upload" />
-					<label class="file-field">
-						<span class="file-label">Upload image</span>
-						<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} on:change={onImageFile} />
-						{#if uploading}<span class="muted">Uploading…</span>{/if}
-					</label>
+				<div class="image-field">
+					<span class="image-label">Project image</span>
+					<input
+						bind:this={imageInput}
+						type="file"
+						accept="image/jpeg,image/png,image/webp"
+						hidden
+						disabled={uploading}
+						on:change={onImageFile}
+					/>
+					<div
+						class="dropzone"
+						class:filled={Boolean(previewSrc)}
+						class:dragging
+						class:busy={uploading}
+						role="button"
+						tabindex="0"
+						aria-label={previewSrc ? 'Replace project image' : 'Upload project image'}
+						on:click={() => !uploading && imageInput?.click()}
+						on:keydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								if (!uploading) imageInput?.click();
+							}
+						}}
+						on:dragenter={onDragEnter}
+						on:dragover={onDragOver}
+						on:dragleave={onDragLeave}
+						on:drop={onDrop}
+					>
+						{#if previewSrc}
+							<img class="dropzone-img" src={previewSrc} alt="" />
+							<div class="dropzone-veil">
+								<span class="dropzone-cta">{uploading ? 'Uploading…' : 'Drop to replace, or click'}</span>
+							</div>
+						{:else}
+							<svg class="dropzone-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.6" />
+								<circle cx="8.5" cy="10" r="1.4" fill="currentColor" />
+								<path d="M7 17l3.4-3.8a1.2 1.2 0 0 1 1.8 0L16 17h2l-4.2-5.2a1.6 1.6 0 0 0-2.5 0L7 17z" fill="currentColor" />
+							</svg>
+							<strong>{uploading ? 'Uploading…' : dragging ? 'Drop image' : 'Drop image here'}</strong>
+							<span>or click to browse · JPEG, PNG, WebP · 3 MB max</span>
+						{/if}
+					</div>
+					{#if previewSrc}
+						<div class="dropzone-bar">
+							<button type="button" class="chip" disabled={uploading} on:click|stopPropagation={() => imageInput?.click()}>
+								Change
+							</button>
+							<button type="button" class="chip danger" disabled={uploading} on:click|stopPropagation={clearImage}>
+								Remove
+							</button>
+						</div>
+					{/if}
+					{#if showImageUrlField}
+						<Input label="Image URL" bind:value={imageUrl} placeholder="https://…" />
+					{:else}
+						<button type="button" class="url-toggle" on:click={() => (pasteImageUrl = true)}>
+							Or paste an image URL
+						</button>
+					{/if}
 				</div>
 				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="React, Node.js" />
 				<div class="row">
@@ -196,40 +295,27 @@
 	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No projects yet — add your first one above.">
 		{#each $items as project (project.id)}
 			<ContentListItem onEdit={() => crud.startEdit(project)} onRemove={() => crud.remove(project)}>
-				<div class="project-row">
-					{#if project.image_url}
-						<img
-							class="thumb"
-							src={project.image_url}
-							alt=""
-							loading="lazy"
-							on:error={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-						/>
+				<h3>
+					{project.title}
+					{#if project.featured}<span class="tag">featured</span>{/if}
+				</h3>
+				{#if project.description}
+					<p class="desc">{project.description}</p>
+				{/if}
+				<p class="meta">
+					{#if project.url}<a href={project.url} target="_blank" rel="noreferrer">{project.url_label || 'Live'}</a>{/if}
+					{#if project.repo_url}
+						{#if project.url} · {/if}
+						<a href={project.repo_url} target="_blank" rel="noreferrer">{project.repo_url_label || 'Repo'}</a>
 					{/if}
-					<div class="project-body">
-						<h3>
-							{project.title}
-							{#if project.featured}<span class="tag">featured</span>{/if}
-						</h3>
-						{#if project.description}
-							<p class="desc">{project.description}</p>
-						{/if}
-						<p class="meta">
-							{#if project.url}<a href={project.url} target="_blank" rel="noreferrer">{project.url_label || 'Live'}</a>{/if}
-							{#if project.repo_url}
-								{#if project.url} · {/if}
-								<a href={project.repo_url} target="_blank" rel="noreferrer">{project.repo_url_label || 'Repo'}</a>
-							{/if}
-							{#if project.article_url}
-								{#if project.url || project.repo_url} · {/if}
-								<a href={project.article_url} target="_blank" rel="noreferrer">{project.article_url_label || 'Write-up'}</a>
-							{/if}
-							{#if skillsFromJson(project.skills_developed)}
-								 · {skillsFromJson(project.skills_developed)}
-							{/if}
-						</p>
-					</div>
-				</div>
+					{#if project.article_url}
+						{#if project.url || project.repo_url} · {/if}
+						<a href={project.article_url} target="_blank" rel="noreferrer">{project.article_url_label || 'Write-up'}</a>
+					{/if}
+					{#if skillsFromJson(project.skills_developed)}
+						 · {skillsFromJson(project.skills_developed)}
+					{/if}
+				</p>
 			</ContentListItem>
 		{/each}
 	</ContentList>
@@ -245,25 +331,6 @@
 		gap: 1rem;
 		align-items: end;
 	}
-	.project-row {
-		display: flex;
-		gap: 1rem;
-		align-items: flex-start;
-		min-width: 0;
-	}
-	.thumb {
-		width: 4.5rem;
-		height: 4.5rem;
-		object-fit: cover;
-		border-radius: var(--radius);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		flex-shrink: 0;
-	}
-	.project-body {
-		min-width: 0;
-		flex: 1;
-	}
 	.checkbox {
 		display: flex;
 		align-items: center;
@@ -271,17 +338,136 @@
 		font-size: 0.875rem;
 		padding-bottom: 0.5rem;
 	}
-	.file-field {
+	.image-field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.875rem;
+		gap: 0.55rem;
 	}
-	.file-label {
+	.image-label {
+		font-size: 0.875rem;
 		font-weight: 500;
 	}
-	.muted {
+	.dropzone {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		width: 100%;
+		min-height: 10.5rem;
+		padding: 1.25rem;
+		border: 1.5px dashed color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+		border-radius: calc(var(--radius) + 4px);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 6%, var(--color-surface)), var(--color-surface));
 		color: var(--color-muted);
+		text-align: center;
+		cursor: pointer;
+		overflow: hidden;
+		transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	}
+	.dropzone:hover,
+	.dropzone:focus-visible {
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 4px var(--color-primary-light);
+		outline: none;
+	}
+	.dropzone.dragging {
+		border-style: solid;
+		border-color: var(--color-primary);
+		background: var(--color-primary-light);
+		transform: scale(1.01);
+	}
+	.dropzone.busy {
+		pointer-events: none;
+		opacity: 0.75;
+	}
+	.dropzone.filled {
+		padding: 0;
+		border-style: solid;
+		border-color: var(--color-border);
+		background: var(--color-bg);
+	}
+	.dropzone-icon {
+		color: var(--color-primary);
+		margin-bottom: 0.25rem;
+	}
+	.dropzone strong {
+		color: var(--color-text);
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+	.dropzone span {
+		font-size: 0.75rem;
+	}
+	.dropzone-img {
+		display: block;
+		width: 100%;
+		height: 10.5rem;
+		object-fit: cover;
+	}
+	.dropzone-veil {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: color-mix(in srgb, #0f172a 48%, transparent);
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+	.dropzone.filled:hover .dropzone-veil,
+	.dropzone.filled:focus-visible .dropzone-veil,
+	.dropzone.dragging .dropzone-veil,
+	.dropzone.busy .dropzone-veil {
+		opacity: 1;
+	}
+	.dropzone-cta {
+		color: #fff !important;
+		font-size: 0.8125rem !important;
+		font-weight: 600;
+		letter-spacing: 0.01em;
+	}
+	.dropzone-bar {
+		display: flex;
+		gap: 0.4rem;
+	}
+	.chip {
+		padding: 0.28rem 0.7rem;
+		border-radius: 999px;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.chip:hover:not(:disabled) {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+		background: var(--color-primary-light);
+	}
+	.chip.danger:hover:not(:disabled) {
+		border-color: color-mix(in srgb, #b91c1c 35%, var(--color-border));
+		color: #b91c1c;
+		background: #fef2f2;
+	}
+	.chip:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	.url-toggle {
+		align-self: flex-start;
+		background: none;
+		border: 0;
+		padding: 0;
+		color: var(--color-muted);
+		font-size: 0.8125rem;
+		cursor: pointer;
+	}
+	.url-toggle:hover {
+		color: var(--color-primary);
 	}
 	h3 {
 		margin: 0;

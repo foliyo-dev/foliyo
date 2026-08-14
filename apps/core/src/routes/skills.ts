@@ -7,6 +7,7 @@ import {
   softHintsForSkill,
   suggestSkillsFromLibrary,
 } from "../skills/evidence.js";
+import { upsertSkill } from "../skills/upsert.js";
 
 const levels = z.enum(["beginner", "intermediate", "advanced", "expert"]);
 const recency = z.enum(["current", "past"]);
@@ -44,38 +45,6 @@ async function enrichSkills(db: FoliyoDb, rows: Record<string, unknown>[]) {
     });
   }
   return out;
-}
-
-/**
- * Insert-or-confirm a single skill by name (case-insensitive dedupe against the
- * `skills_user_name_lower_active` constraint). Shared by the single-item and bulk routes.
- */
-async function upsertSkill(
-  db: FoliyoDb,
-  userId: string,
-  d: z.infer<typeof createSchema>,
-): Promise<{ merged: boolean }> {
-  const existing = await queryOne<{ id: string }>(
-    db,
-    "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND status != 'dismissed'",
-    [userId, d.name],
-  );
-  if (existing) {
-    await run(
-      db,
-      `UPDATE skills SET name=?, level=?, category=?, status='confirmed', recency=?, sort_order=?, updated_at=CURRENT_TIMESTAMP
-       WHERE id=? AND user_id=?`,
-      [d.name, d.level, d.category, d.recency, d.sort_order, existing.id, userId],
-    );
-    return { merged: true };
-  }
-  await run(
-    db,
-    `INSERT INTO skills (user_id, name, level, category, source, status, recency, sort_order)
-     VALUES (?, ?, ?, ?, 'manual', 'confirmed', ?, ?)`,
-    [userId, d.name, d.level, d.category, d.recency, d.sort_order],
-  );
-  return { merged: false };
 }
 
 export function skillsRoutes(db: FoliyoDb) {

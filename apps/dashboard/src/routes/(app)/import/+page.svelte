@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -13,19 +14,13 @@
 		importResumeFromPdf,
 		importResumeFromText,
 		importResumeFromFio,
+		applyImportDraft,
 		getImportUpgrade,
 		ImportLimitError,
+		type ApplyImportResult,
 		type ResumeImportDraft
 	} from '$lib/api/import';
-	import { ApiError, type BulkResult } from '$lib/api/client';
-	import { updateProfile } from '$lib/api/profile';
-	import { bulkCreateSkills, type Skill } from '$lib/api/skills';
-	import { bulkCreateExperience, type Experience } from '$lib/api/experience';
-	import { bulkCreateEducation, type Education } from '$lib/api/education';
-	import { bulkCreateProjects, type Project } from '$lib/api/projects';
-	import { bulkCreateCertifications, type Certification } from '$lib/api/certifications';
-	import { bulkCreateLanguages, type Language } from '$lib/api/languages';
-	import { bulkCreateSocialLinks, type SocialLink, type SocialProvider } from '$lib/api/social';
+	import { ApiError } from '$lib/api/client';
 
 	type SectionKey =
 		| 'candidate'
@@ -46,6 +41,7 @@
 	let fioInput: HTMLInputElement | null = null;
 	let draft: ResumeImportDraft | null = null;
 	let remainingToday: number | null = null;
+	let savedResult: ApplyImportResult | null = null;
 	let include: Record<SectionKey, boolean> = {
 		candidate: true,
 		skills: true,
@@ -209,236 +205,80 @@
 		input.value = '';
 	}
 
-	function knownProvider(key: string): SocialProvider {
-		const k = key.toLowerCase();
-		const allowed: SocialProvider[] = [
-			'github',
-			'linkedin',
-			'twitter',
-			'youtube',
-			'instagram',
-			'dribbble',
-			'behance',
-			'medium',
-			'bluesky',
-			'mastodon',
-			'website',
-			'other'
-		];
-		return (allowed.includes(k as SocialProvider) ? k : 'other') as SocialProvider;
+	function pick<T>(items: T[], flags: boolean[]): T[] {
+		return items.filter((_, i) => flags[i]);
 	}
 
-	// Every section is saved with a single bulk request (one INSERT loop + one skill-
-	// suggestion recompute server-side, instead of N HTTP round trips). A bad row inside
-	// a batch is reported in `failed` rather than aborting the rest of that batch — and
-	// batches are independent, so one section failing entirely can't drop the others.
-	type Labeled<T> = { label: string; data: Partial<T>; originalIndex: number };
+	/** Keep only checked sections/rows — same Foliyo Resume Spec the AI/.fio already returned. */
+	function filteredDraft(): ResumeImportDraft | null {
+		if (!draft) return null;
+		const emptyCandidate = {
+			name: '',
+			headline: '',
+			bio: '',
+			email: '',
+			location: '',
+			links: {} as Record<string, string>
+		};
+		const links = include.links ? draft.candidate.links || {} : {};
+		return {
+			candidate: include.candidate
+				? { ...draft.candidate, links }
+				: { ...emptyCandidate, links },
+			skills: include.skills ? pick(draft.skills, selected.skills) : [],
+			experience: include.experience ? pick(draft.experience, selected.experience) : [],
+			education: include.education ? pick(draft.education, selected.education) : [],
+			projects: include.projects ? pick(draft.projects, selected.projects) : [],
+			certifications: include.certifications ? pick(draft.certifications, selected.certifications) : [],
+			languages: include.languages ? pick(draft.languages, selected.languages) : []
+		};
+	}
 
-	async function bulkSave<T>(
-		fallbackLabel: string,
-		payloads: Labeled<T>[],
-		bulkFn: (items: Partial<T>[]) => Promise<BulkResult<T>>,
-		onSuccess: (originalIndex: number) => void
-	): Promise<{ saved: number; failures: string[] }> {
-		if (payloads.length === 0) return { saved: 0, failures: [] };
-		try {
-			const res = await bulkFn(payloads.map((p) => p.data));
-			const failedIndexes = new Set(res.failed.map((f) => f.index));
-			payloads.forEach((p, i) => {
-				if (!failedIndexes.has(i)) onSuccess(p.originalIndex);
-			});
-			const failures = res.failed.map((f) => `${payloads[f.index]?.label ?? fallbackLabel} (${f.error.slice(0, 100)})`);
-			return { saved: payloads.length - res.failed.length, failures };
-		} catch (err) {
-			const detail = err instanceof ApiError ? err.message.slice(0, 120) : 'failed to save';
-			return { saved: 0, failures: [`${fallbackLabel} (${detail})`] };
-		}
+	const savedBreakdown: Array<{ key: keyof ApplyImportResult['saved']; label: string; href: string }> = [
+		{ key: 'profile', label: 'Basics', href: '/basics' },
+		{ key: 'links', label: 'Social', href: '/social' },
+		{ key: 'skills', label: 'Skills', href: '/skills' },
+		{ key: 'experience', label: 'Experience', href: '/experience' },
+		{ key: 'education', label: 'Education', href: '/education' },
+		{ key: 'projects', label: 'Projects', href: '/projects' },
+		{ key: 'certifications', label: 'Certifications', href: '/certifications' },
+		{ key: 'languages', label: 'Languages', href: '/languages' }
+	];
+
+	function startOver() {
+		savedResult = null;
+		draft = null;
+		pasteText = '';
 	}
 
 	async function saveDraft() {
-		if (!draft) return;
+		const payload = filteredDraft();
+		if (!payload) return;
 		saving = true;
-		let saved = 0;
-		const failures: string[] = [];
 		try {
-			if (include.candidate) {
-				try {
-					await updateProfile({
-						name: draft.candidate.name || undefined,
-						headline: draft.candidate.headline ?? undefined,
-						bio: draft.candidate.bio ?? undefined,
-						email: draft.candidate.email ?? undefined,
-						location: draft.candidate.location ?? undefined
-					});
-					saved += 1;
-				} catch (err) {
-					const detail = err instanceof ApiError ? err.message.slice(0, 120) : 'failed to save';
-					failures.push(`Profile (${detail})`);
-				}
-			}
-
-			if (include.links) {
-				const links = Object.entries(draft.candidate.links || {}).filter(([, v]) => v?.trim());
-				const payloads: Labeled<SocialLink>[] = links.map(([provider, value], i) => ({
-					label: `Link (${provider})`,
-					originalIndex: i,
-					data: {
-						provider: knownProvider(provider),
-						label: provider,
-						value: value.trim(),
-						sort_order: 0
-					}
-				}));
-				const res = await bulkSave('Social links', payloads, bulkCreateSocialLinks, () => {});
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.skills) {
-				const payloads: Labeled<Skill>[] = [];
-				draft.skills.forEach((s, i) => {
-					if (!selected.skills[i]) return;
-					payloads.push({
-						label: `Skill: ${s.name}`,
-						originalIndex: i,
-						data: { name: s.name, level: s.level ?? 'intermediate', category: s.category ?? '', sort_order: i }
-					});
-				});
-				const res = await bulkSave('Skills', payloads, bulkCreateSkills, (i) => (selected.skills[i] = false));
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.experience) {
-				const payloads: Labeled<Experience>[] = [];
-				draft.experience.forEach((e, i) => {
-					if (!selected.experience[i]) return;
-					payloads.push({
-						label: `Experience: ${e.role} @ ${e.company}`,
-						originalIndex: i,
-						data: {
-							company: e.company,
-							role: e.role,
-							location: e.location ?? '',
-							start_date: e.start ?? '',
-							end_date: e.current ? null : e.end,
-							description: e.description ?? '',
-							article_url: '',
-							sort_order: i
-						}
-					});
-				});
-				const res = await bulkSave('Experience', payloads, bulkCreateExperience, (i) => (selected.experience[i] = false));
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.education) {
-				const payloads: Labeled<Education>[] = [];
-				draft.education.forEach((e, i) => {
-					if (!selected.education[i]) return;
-					payloads.push({
-						label: `Education: ${e.institution}`,
-						originalIndex: i,
-						data: {
-							institution: e.institution,
-							degree: e.degree ?? '',
-							field: e.field ?? '',
-							start_date: e.start ?? '',
-							end_date: e.end,
-							description: e.description ?? '',
-							sort_order: i
-						}
-					});
-				});
-				const res = await bulkSave('Education', payloads, bulkCreateEducation, (i) => (selected.education[i] = false));
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.projects) {
-				const payloads: Labeled<Project>[] = [];
-				draft.projects.forEach((p, i) => {
-					if (!selected.projects[i]) return;
-					payloads.push({
-						label: `Project: ${p.title}`,
-						originalIndex: i,
-						data: {
-							title: p.title,
-							description: p.description ?? '',
-							url: p.url ?? '',
-							repo_url: p.repo_url ?? '',
-							article_url: '',
-							image_url: '',
-							skills_developed: JSON.stringify(p.tags ?? p.skills_developed ?? []),
-							featured: p.featured ? 1 : 0,
-							sort_order: i
-						}
-					});
-				});
-				const res = await bulkSave('Projects', payloads, bulkCreateProjects, (i) => (selected.projects[i] = false));
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.certifications) {
-				const payloads: Labeled<Certification>[] = [];
-				draft.certifications.forEach((c, i) => {
-					if (!selected.certifications[i]) return;
-					payloads.push({
-						label: `Certification: ${c.name}`,
-						originalIndex: i,
-						data: {
-							name: c.name,
-							issuer: c.issuer ?? '',
-							credential_id: c.credential_id ?? '',
-							credential_url: c.credential_url ?? '',
-							issued_at: c.issued_at,
-							expires_at: c.expires_at,
-							description: c.description ?? '',
-							sort_order: i
-						}
-					});
-				});
-				const res = await bulkSave(
-					'Certifications',
-					payloads,
-					bulkCreateCertifications,
-					(i) => (selected.certifications[i] = false)
-				);
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (include.languages) {
-				const payloads: Labeled<Language>[] = [];
-				draft.languages.forEach((l, i) => {
-					if (!selected.languages[i]) return;
-					payloads.push({
-						label: `Language: ${l.language}`,
-						originalIndex: i,
-						data: { name: l.language, proficiency: (l.proficiency as 'fluent') || 'fluent', sort_order: i }
-					});
-				});
-				const res = await bulkSave('Languages', payloads, bulkCreateLanguages, (i) => (selected.languages[i] = false));
-				saved += res.saved;
-				failures.push(...res.failures);
-			}
-
-			if (failures.length === 0) {
-				showToast(`Saved ${saved} item(s) to your library`, 'success');
+			const res = await applyImportDraft(payload);
+			if (res.failed.length === 0) {
+				savedResult = res;
 				draft = null;
 				pasteText = '';
-			} else {
-				showToast(
-					`Saved ${saved} item(s), ${failures.length} failed: ${failures.slice(0, 3).join('; ')}${failures.length > 3 ? '…' : ''}`,
-					'error'
-				);
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+				return;
 			}
+			showToast(
+				`Saved ${res.saved.total} item(s), ${res.failed.length} failed: ${res.failed
+					.slice(0, 3)
+					.map((f) => `${f.section}[${f.index}]`)
+					.join(', ')}${res.failed.length > 3 ? '…' : ''}`,
+				'error'
+			);
+		} catch (err) {
+			const detail = err instanceof ApiError ? err.message.slice(0, 200) : 'failed to save';
+			showToast(detail, 'error');
 		} finally {
 			saving = false;
 		}
 	}
+
 </script>
 
 <PageHeader
@@ -448,7 +288,30 @@
 		: 'Import a signed .fio package exported from Foliyo. Review the draft, then save into your library. Does not change login email or verification.'}
 />
 
-{#if draft}
+{#if savedResult}
+	<Card>
+		<h2 class="section-title">Saved to your library</h2>
+		<p class="hint">
+			{savedResult.saved.total} item{savedResult.saved.total === 1 ? '' : 's'} written. Review them in
+			the library, then publish a portfolio or resume.
+		</p>
+		<ul class="saved-list">
+			{#each savedBreakdown as row}
+				{#if savedResult.saved[row.key] > 0}
+					<li>
+						<a href={row.href}>{row.label}</a>
+						<span class="muted">{savedResult.saved[row.key]}</span>
+					</li>
+				{/if}
+			{/each}
+		</ul>
+		<div class="form-actions">
+			<Button on:click={() => goto('/portfolios')}>Create a portfolio</Button>
+			<Button variant="ghost" on:click={() => goto('/resume')}>Create a resume</Button>
+			<Button variant="ghost" on:click={startOver}>Import another</Button>
+		</div>
+	</Card>
+{:else if draft}
 		<Card>
 			<div class="review-head">
 				<h2 class="section-title">Review draft</h2>
@@ -778,5 +641,28 @@
 	}
 	code {
 		font-size: 0.85em;
+	}
+	.saved-list {
+		list-style: none;
+		margin: 0 0 0.25rem;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.saved-list li {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		font-size: 0.9rem;
+	}
+	.saved-list a {
+		color: var(--color-text);
+		text-decoration: none;
+		font-weight: 600;
+	}
+	.saved-list a:hover {
+		color: var(--color-primary);
 	}
 </style>
