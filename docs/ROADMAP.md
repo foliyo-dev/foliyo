@@ -27,7 +27,7 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 
 **Next after Phase D:** tag **v1.0.0** hosted + self-host release (QA / launch assets). Empty-section + onboarding leftovers are done.
 
-**Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest trial, MeshQL client migration, password-protect, Hindi UI.
+**Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest/no-email trial, MeshQL client migration, password-protect, Hindi UI. (Hosted **7-day personal Pro trial** on email verify is in scope and ships with billing.)
 
 **Writing / blogs — split clearly:**
 
@@ -147,7 +147,7 @@ Only after activation metrics exist:
 
 - Custom domains (Pro)
 - Multi-resume
-- Guest / no-email trial (evidence-gated)
+- Guest / no-email trial (evidence-gated; distinct from hosted 7-day account Pro trial on verify)
 - **User blog module** (Foliyo-hosted CMS)
   - Markdown editor, drafts/publish, tags
   - Public `/u/{handle}/blog` and `/u/{handle}/blog/{slug}`

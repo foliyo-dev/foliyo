@@ -20,6 +20,10 @@ export type PlanInfo = {
 	stored_plan?: string;
 	plan_expires: string | null;
 	billing_available: boolean;
+	/** Hosted: true while on the unpaid personal Pro trial. */
+	on_trial?: boolean;
+	/** Hosted: unpaid personal trial has ended (now Free). */
+	trial_ended?: boolean;
 	pricing?: {
 		monthlyInr: number;
 		lifetimeInr: number;
@@ -138,7 +142,13 @@ declare global {
 export { isProPlan };
 
 /** Human label for chrome / settings (not the raw slug). */
-export function formatPlanLabel(plan: string | null | undefined): string {
+export function formatPlanLabel(
+	plan: string | null | undefined,
+	opts?: { onTrial?: boolean },
+): string {
+	if (opts?.onTrial && (plan ?? 'free').toLowerCase() === 'pro') {
+		return 'Pro trial';
+	}
 	switch ((plan ?? 'free').toLowerCase()) {
 		case 'pro':
 			return 'Pro';

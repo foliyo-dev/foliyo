@@ -197,7 +197,9 @@
 	}
 
 	$: planSlug = planInfo?.plan ?? $user?.plan ?? (isSaas ? 'free' : 'selfhost');
-	$: planLabel = formatPlanLabel(planSlug);
+	$: onTrial = Boolean(planInfo?.on_trial);
+	$: trialEnded = Boolean(planInfo?.trial_ended);
+	$: planLabel = formatPlanLabel(planSlug, { onTrial });
 	$: pro = isProPlan(planSlug);
 	/** Hosted account APIs available (cloud), or explicit SaaS build. */
 	$: showDpdp =
@@ -355,6 +357,12 @@
 			{/if}
 		</p>
 		{#if !pro && showDpdp}
+			{#if trialEnded}
+				<p class="muted">
+					Your 7-day Pro trial has ended. Upgrade to restore unlimited portfolios, PDF export,
+					branding removal, and AI tools.
+				</p>
+			{/if}
 			<UpgradePrompt
 				title="Upgrade to Pro"
 				pricing={planInfo?.pricing ?? null}
@@ -369,25 +377,48 @@
 				rewrite unlocked.
 			</p>
 		{:else if pro && showDpdp}
-			<p class="ok">
-				Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
-				unlocked.
-			</p>
-			{#if planExpiresLabel}
-				<p class="muted">
-					Valid through <strong>{planExpiresLabel}</strong>. We don't auto-charge your card — renew
-					manually anytime before then to keep Pro
-					{#if daysUntilExpiry !== null && daysUntilExpiry >= 0}(we'll also email a reminder {daysUntilExpiry >
-						7
-						? 'a week before it expires'
-						: `— ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} left`}){/if}.
+			{#if onTrial}
+				<p class="ok">
+					7-day Pro trial active — unlimited publish slots, PDF export, branding removed, AI resume
+					&amp; rewrite unlocked.
 				</p>
+				{#if planExpiresLabel}
+					<p class="muted">
+						Trial ends <strong>{planExpiresLabel}</strong>. Upgrade anytime to keep Pro — we never
+						auto-charge
+						{#if daysUntilExpiry !== null && daysUntilExpiry >= 0}
+							({daysUntilExpiry} day{daysUntilExpiry === 1 ? '' : 's'} left){/if}.
+					</p>
+				{/if}
+			{:else}
+				<p class="ok">
+					Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
+					unlocked.
+				</p>
+				{#if planExpiresLabel}
+					<p class="muted">
+						Valid through <strong>{planExpiresLabel}</strong>. We don't auto-charge your card — renew
+						manually anytime before then to keep Pro
+						{#if daysUntilExpiry !== null && daysUntilExpiry >= 0}(we'll also email a reminder {daysUntilExpiry >
+							7
+							? 'a week before it expires'
+							: `— ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} left`}){/if}.
+					</p>
+				{/if}
 			{/if}
 			{#if renewalDueSoon}
 				<UpgradePrompt
-					title={daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'Pro expired — renew' : 'Renew Pro'}
-					message="Renewing sets a fresh 30 days from today (it doesn't stack with time left), so renew close to your expiry date."
-					showFeatures={false}
+					title={onTrial
+						? daysUntilExpiry !== null && daysUntilExpiry < 0
+							? 'Trial ended — upgrade'
+							: 'Keep Pro after trial'
+						: daysUntilExpiry !== null && daysUntilExpiry < 0
+							? 'Pro expired — renew'
+							: 'Renew Pro'}
+					message={onTrial
+						? 'Upgrade to Pro ₹99/mo (30 days) or Lifetime. Paying replaces the trial clock with a fresh paid period.'
+						: "Renewing sets a fresh 30 days from today (it doesn't stack with time left), so renew close to your expiry date."}
+					showFeatures={!onTrial}
 					pricing={planInfo?.pricing ?? null}
 					billingAvailable={planInfo?.billing_available ?? false}
 					on:upgraded={(e) => {

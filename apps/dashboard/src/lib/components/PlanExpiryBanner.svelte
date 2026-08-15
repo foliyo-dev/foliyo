@@ -21,9 +21,17 @@
 	$: expiresAt = planInfo?.plan_expires ? parseUtc(planInfo.plan_expires) : null;
 	$: msLeft = expiresAt ? expiresAt.getTime() - Date.now() : null;
 	$: daysLeft = msLeft !== null ? Math.ceil(msLeft / 86_400_000) : null;
+	$: onTrial = Boolean(planInfo?.on_trial);
+	$: trialEnded = Boolean(planInfo?.trial_ended);
 
 	// Only hosted Pro plans expire; lifetime/free/selfhost never carry a plan_expires date here.
-	$: isExpired = Boolean(planInfo?.billing_available && expiresAt && msLeft !== null && msLeft <= 0);
+	$: isExpired = Boolean(
+		planInfo?.billing_available &&
+			expiresAt &&
+			msLeft !== null &&
+			msLeft <= 0 &&
+			(planInfo?.plan === 'pro' || trialEnded)
+	);
 	$: isExpiringSoon = Boolean(
 		planInfo?.billing_available &&
 			planInfo?.plan === 'pro' &&
@@ -43,10 +51,22 @@
 	<div class="plan-banner" class:expired={isExpired} role="status">
 		<div class="text">
 			{#if isExpired}
-				<strong>Your Pro plan expired on {dateLabel}</strong>
+				<strong
+					>{onTrial || trialEnded
+						? `Your Pro trial ended on ${dateLabel}`
+						: `Your Pro plan expired on ${dateLabel}`}</strong
+				>
 				<p>
-					We don't auto-charge your card, so nothing renewed automatically. Renew from Settings to
+					We don't auto-charge your card, so nothing renewed automatically. Upgrade from Settings to
 					restore unlimited portfolios, PDF export, and AI tools.
+				</p>
+			{:else if onTrial}
+				<strong
+					>Pro trial ends in {daysLeft} day{daysLeft === 1 ? '' : 's'} ({dateLabel})</strong
+				>
+				<p>
+					You're on a 7-day Pro trial — try PDF export, unlimited publish slots, branding removal,
+					and AI tools. Upgrade anytime to keep Pro after the trial; we never auto-charge.
 				</p>
 			{:else}
 				<strong>Pro expires in {daysLeft} day{daysLeft === 1 ? '' : 's'} ({dateLabel})</strong>
@@ -57,7 +77,7 @@
 			{/if}
 		</div>
 		<div class="actions">
-			<a class="renew" href="/settings">Renew</a>
+			<a class="renew" href="/settings">{onTrial && !isExpired ? 'Upgrade' : 'Renew'}</a>
 			<button class="dismiss" type="button" on:click={() => (dismissedKey = bannerKey)}
 				>Dismiss</button
 			>
