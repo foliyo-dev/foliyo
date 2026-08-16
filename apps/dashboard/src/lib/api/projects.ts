@@ -16,6 +16,7 @@ export type Project = {
   skills_developed: string;
   featured: number;
   sort_order: number;
+  deleted_at?: string | null;
 };
 
 export const listProjects = () => api<Project[]>('/projects');
@@ -27,6 +28,11 @@ export const updateProject = (id: string, data: Partial<Project>) =>
   api<{ ok: boolean }>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProject = (id: string) =>
 	api<void>(`/projects/${id}`, { method: 'DELETE' });
+export const listDeletedProjects = () => api<Project[]>(`/projects/deleted`);
+export const restoreProject = (id: string) =>
+	api<{ ok: boolean }>(`/projects/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeProject = (id: string) =>
+	api<void>(`/projects/${id}/purge`, { method: 'DELETE' });
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
 

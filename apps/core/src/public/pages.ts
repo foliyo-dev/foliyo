@@ -85,7 +85,7 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
     if (!ids.length) return [];
     return queryAll(
       db,
-      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) ORDER BY sort_order`,
+      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
       ids,
     );
   };
@@ -123,7 +123,7 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
     languages: portfolio.show_languages === 1 ? await fetchByIds("languages", languageIds) : [],
     social_links: await queryAll(
       db,
-      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
       [userId],
     ),
     handle: user?.handle ?? "",
@@ -203,7 +203,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     if (!ids.length) return [];
     return queryAll(
       db,
-      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) ORDER BY sort_order`,
+      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
       ids,
     );
   };
@@ -247,7 +247,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     languages: await fetchByIds("languages", languageIds),
     social_links: await queryAll(
       db,
-      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
       [userId],
     ),
     handle: user?.handle ?? "",
@@ -349,29 +349,29 @@ export async function loadLibraryPreview(
       show_languages: 1,
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
-    skills: await queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [
+    skills: await queryAll(db, "SELECT * FROM skills WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, name", [
       userId,
     ]),
-    projects: await queryAll(db, "SELECT * FROM projects WHERE user_id = ? ORDER BY sort_order, title", [
+    projects: await queryAll(db, "SELECT * FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, title", [
       userId,
     ]),
-    experience: await queryAll(db, "SELECT * FROM experience WHERE user_id = ? ORDER BY sort_order", [
+    experience: await queryAll(db, "SELECT * FROM experience WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order", [
       userId,
     ]),
-    education: await queryAll(db, "SELECT * FROM education WHERE user_id = ? ORDER BY sort_order", [
+    education: await queryAll(db, "SELECT * FROM education WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order", [
       userId,
     ]),
     certifications: await queryAll(
       db,
-      "SELECT * FROM certifications WHERE user_id = ? ORDER BY sort_order",
+      "SELECT * FROM certifications WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order",
       [userId],
     ),
-    languages: await queryAll(db, "SELECT * FROM languages WHERE user_id = ? ORDER BY sort_order", [
+    languages: await queryAll(db, "SELECT * FROM languages WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order", [
       userId,
     ]),
     social_links: await queryAll(
       db,
-      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
       [userId],
     ),
     handle: user.handle ?? "",
@@ -431,7 +431,7 @@ export async function loadPortfolioDraftPreview(
     if (!ids.length) return [];
     return queryAll(
       db,
-      `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")}) ORDER BY sort_order`,
+      `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
       [userId, ...ids],
     );
   };
@@ -491,7 +491,7 @@ export async function loadPortfolioDraftPreview(
         : [],
     social_links: await queryAll(
       db,
-      "SELECT * FROM social_links WHERE user_id = ? ORDER BY sort_order, provider",
+      "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
       [userId],
     ),
     handle: user.handle ?? "",

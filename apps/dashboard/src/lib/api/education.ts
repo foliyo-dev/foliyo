@@ -21,3 +21,8 @@ export const updateEducation = (id: string, data: Partial<Education>) =>
 	api<{ ok: boolean }>(`/education/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteEducation = (id: string) =>
 	api<void>(`/education/${id}`, { method: 'DELETE' });
+export const listDeletedEducation = () => api<Education[]>(`/education/deleted`);
+export const restoreEducation = (id: string) =>
+	api<{ ok: boolean }>(`/education/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeEducation = (id: string) =>
+	api<void>(`/education/${id}/purge`, { method: 'DELETE' });

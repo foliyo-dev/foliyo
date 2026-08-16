@@ -64,7 +64,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title="Basics"
-		description="Name, bio, and contact — shared across portfolios and resumes. Social links live under Social."
+		description="Shared profile information — used across your portfolios and resumes. Update once and it stays consistent everywhere. Social links live under Social."
 	/>
 
 	{#if loading}
@@ -74,7 +74,7 @@
 			<Card>
 				<p class="import-cta">
 					Skip the blank form —
-					<a href="/import">AI resume</a>
+					<a href="/import">Import resume</a>
 					(Pro) to fill basics and your library from a PDF or pasted text.
 				</p>
 			</Card>

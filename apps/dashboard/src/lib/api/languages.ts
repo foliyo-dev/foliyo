@@ -24,3 +24,8 @@ export const bulkCreateLanguages = (items: Partial<Language>[]) =>
 export const updateLanguage = (id: string, data: Partial<Language>) =>
 	api<{ ok: boolean }>(`/languages/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteLanguage = (id: string) => api<void>(`/languages/${id}`, { method: 'DELETE' });
+export const listDeletedLanguages = () => api<Language[]>(`/languages/deleted`);
+export const restoreLanguage = (id: string) =>
+	api<{ ok: boolean }>(`/languages/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeLanguage = (id: string) =>
+	api<void>(`/languages/${id}/purge`, { method: 'DELETE' });

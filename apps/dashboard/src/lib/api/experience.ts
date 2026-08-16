@@ -12,6 +12,7 @@ export type Experience = {
 	article_url_label: string;
 	skills_developed: string;
 	sort_order: number;
+	deleted_at?: string | null;
 };
 
 export const listExperience = () => api<Experience[]>('/experience');
@@ -23,3 +24,8 @@ export const updateExperience = (id: string, data: Partial<Experience>) =>
 	api<{ ok: boolean }>(`/experience/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteExperience = (id: string) =>
 	api<void>(`/experience/${id}`, { method: 'DELETE' });
+export const listDeletedExperience = () => api<Experience[]>(`/experience/deleted`);
+export const restoreExperience = (id: string) =>
+	api<{ ok: boolean }>(`/experience/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeExperience = (id: string) =>
+	api<void>(`/experience/${id}/purge`, { method: 'DELETE' });

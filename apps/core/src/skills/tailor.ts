@@ -43,7 +43,7 @@ export async function computeTailorSelection(
 ): Promise<ResumeContentIds> {
   const ownedSkills = await queryAll<{ id: string; name: string; status: string }>(
     db,
-    "SELECT id, name, status FROM skills WHERE user_id = ? AND status = 'confirmed'",
+    "SELECT id, name, status FROM skills WHERE user_id = ? AND status = 'confirmed' AND deleted_at IS NULL",
     [userId],
   );
   const allowed = new Set(ownedSkills.map((s) => s.id));
@@ -58,7 +58,7 @@ export async function computeTailorSelection(
   if (includeMatching && skillNames.size > 0) {
     const projects = await queryAll<{ id: string; skills_developed: string }>(
       db,
-      "SELECT id, skills_developed FROM projects WHERE user_id = ?",
+      "SELECT id, skills_developed FROM projects WHERE user_id = ? AND deleted_at IS NULL",
       [userId],
     );
     project_ids = projects
@@ -69,7 +69,7 @@ export async function computeTailorSelection(
 
     const experiences = await queryAll<{ id: string; skills_developed: string }>(
       db,
-      "SELECT id, skills_developed FROM experience WHERE user_id = ?",
+      "SELECT id, skills_developed FROM experience WHERE user_id = ? AND deleted_at IS NULL",
       [userId],
     );
     experience_ids = experiences

@@ -352,7 +352,7 @@
 				· Branding {planInfo.entitlements.remove_branding ? 'removed' : 'shown'}
 				· Portfolios {planInfo.entitlements.portfolios_unlimited ? 'unlimited' : `max ${planInfo.entitlements.portfolio_limit}`}
 				· Resumes {planInfo.entitlements.resume_limit == null ? 'unlimited' : `max ${planInfo.entitlements.resume_limit}`}
-				· AI resume {planInfo.entitlements.ai_resume_import ? 'on' : 'off'}
+				· Import resume {planInfo.entitlements.ai_resume_import ? 'on' : 'off'}
 				· AI assist {(planInfo.entitlements.ai_assist ?? planInfo.entitlements.ai_resume_import) ? 'on' : 'off'}
 			{/if}
 		</p>
@@ -373,13 +373,13 @@
 			/>
 		{:else if planSlug === 'lifetime' && showDpdp}
 			<p class="ok">
-				Lifetime active — unlimited publish slots, PDF export, branding removed, AI resume &amp;
+				Lifetime active — unlimited publish slots, PDF export, branding removed, import resume &amp;
 				rewrite unlocked.
 			</p>
 		{:else if pro && showDpdp}
 			{#if onTrial}
 				<p class="ok">
-					7-day Pro trial active — unlimited publish slots, PDF export, branding removed, AI resume
+					7-day Pro trial active — unlimited publish slots, PDF export, branding removed, import resume
 					&amp; rewrite unlocked.
 				</p>
 				{#if planExpiresLabel}
@@ -392,7 +392,7 @@
 				{/if}
 			{:else}
 				<p class="ok">
-					Pro active — unlimited publish slots, PDF export, branding removed, AI resume &amp; rewrite
+					Pro active — unlimited publish slots, PDF export, branding removed, import resume &amp; rewrite
 					unlocked.
 				</p>
 				{#if planExpiresLabel}

@@ -70,14 +70,14 @@ export async function filterOwnedContent(
   const [skills, projects, experience, education, certifications, languages] = await Promise.all([
     queryAll<{ id: string }>(
       db,
-      "SELECT id FROM skills WHERE user_id = ? AND status = 'confirmed'",
+      "SELECT id FROM skills WHERE user_id = ? AND status = 'confirmed' AND deleted_at IS NULL",
       [userId],
     ),
-    queryAll<{ id: string }>(db, "SELECT id FROM projects WHERE user_id = ?", [userId]),
-    queryAll<{ id: string }>(db, "SELECT id FROM experience WHERE user_id = ?", [userId]),
-    queryAll<{ id: string }>(db, "SELECT id FROM education WHERE user_id = ?", [userId]),
-    queryAll<{ id: string }>(db, "SELECT id FROM certifications WHERE user_id = ?", [userId]),
-    queryAll<{ id: string }>(db, "SELECT id FROM languages WHERE user_id = ?", [userId]),
+    queryAll<{ id: string }>(db, "SELECT id FROM projects WHERE user_id = ? AND deleted_at IS NULL", [userId]),
+    queryAll<{ id: string }>(db, "SELECT id FROM experience WHERE user_id = ? AND deleted_at IS NULL", [userId]),
+    queryAll<{ id: string }>(db, "SELECT id FROM education WHERE user_id = ? AND deleted_at IS NULL", [userId]),
+    queryAll<{ id: string }>(db, "SELECT id FROM certifications WHERE user_id = ? AND deleted_at IS NULL", [userId]),
+    queryAll<{ id: string }>(db, "SELECT id FROM languages WHERE user_id = ? AND deleted_at IS NULL", [userId]),
   ]);
   const allow = (rows: Array<{ id: string }>, ids: string[]) => {
     const set = new Set(rows.map((r) => r.id));

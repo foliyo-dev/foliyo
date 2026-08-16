@@ -33,7 +33,7 @@ export function requestConfirm(opts: {
 export function confirmDelete(itemLabel: string): Promise<boolean> {
 	return requestConfirm({
 		title: `Delete ${itemLabel}?`,
-		message: 'This cannot be undone.',
+		message: 'It will move to Recently deleted for 30 days so you can restore it.',
 		confirmLabel: 'Delete'
 	});
 }

@@ -6,12 +6,16 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import {
 		listSkills,
 		createSkill,
 		updateSkill,
 		deleteSkill,
+		listDeletedSkills,
+		restoreSkill,
+		purgeSkill,
 		confirmSkill,
 		dismissSkill,
 		type Skill
@@ -22,6 +26,7 @@
 	const recencies = ['current', 'past'] as const;
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 
 	let name = '';
 	let level: (typeof levels)[number] = 'intermediate';
@@ -56,7 +61,10 @@
 			getDeleteLabel: (item) => item.name?.trim() || 'this skill',
 			validate: () => (!name.trim() ? 'Skill name is required' : null),
 			canSave: () => name.trim().length > 0,
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'skills', entity: 'Skill' }
@@ -66,6 +74,28 @@
 	$: pending = $items.filter((s) => s.status === 'pending');
 	$: confirmed = $items.filter((s) => s.status !== 'pending' && s.status !== 'dismissed');
 	$: dismissed = $items.filter((s) => s.status === 'dismissed');
+	$: categorySuggestions = [
+		...new Set(
+			confirmed
+				.map((s) => s.category?.trim())
+				.filter((c): c is string => Boolean(c) && c !== 'general')
+		)
+	].sort((a, b) => a.localeCompare(b));
+	$: skillsByCategory = (() => {
+		const map = new Map<string, Skill[]>();
+		for (const skill of confirmed) {
+			const raw = skill.category?.trim() || '';
+			const cat = !raw || raw === 'general' ? 'Uncategorized' : raw;
+			const list = map.get(cat) ?? [];
+			list.push(skill);
+			map.set(cat, list);
+		}
+		return [...map.entries()].sort(([a], [b]) => {
+			if (a === 'Uncategorized') return 1;
+			if (b === 'Uncategorized') return -1;
+			return a.localeCompare(b);
+		});
+	})();
 
 	onMount(crud.load);
 
@@ -111,7 +141,19 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={$editingId ? 'Edit skill' : 'Skills'}
-		description="Add manually anytime, or confirm suggestions from skills developed on experience, projects, education, and certifications."
+		description="Name categories however you like (Backend, Photo, Research…). Grouped lists keep the library readable — pick what visitors see in each portfolio."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedSkills}
+		restore={restoreSkill}
+		purge={purgeSkill}
+		getLabel={(s) => (s as Skill).name?.trim() || 'Untitled skill'}
+		entityLabel="Skill"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}
@@ -141,7 +183,19 @@
 						{/each}
 					</select>
 				</label>
-				<Input label="Category" bind:value={category} placeholder="frontend" />
+				<label class="field">
+					<span class="label">Category</span>
+					<input
+						bind:value={category}
+						list="skill-category-suggestions"
+						placeholder="e.g. Backend, Design, Leadership"
+					/>
+					<datalist id="skill-category-suggestions">
+						{#each categorySuggestions as c}
+							<option value={c} />
+						{/each}
+					</datalist>
+				</label>
 				<Input label="Sort order" bind:value={sortOrder} placeholder="0" />
 			</div>
 			<div class="form-actions">
@@ -187,14 +241,19 @@
 		{:else if confirmed.length > 0}
 			<section class="block">
 				<h2 class="section-title">Your skills</h2>
-				<ul class="list">
-					{#each confirmed as skill (skill.id)}
-						<ContentListItem onEdit={() => crud.startEdit(skill)} onRemove={() => crud.remove(skill)}>
-							<strong>{skill.name}</strong>
-							<span class="meta">{skill.level} · {skill.recency ?? 'current'} · {skill.category}</span>
-						</ContentListItem>
-					{/each}
-				</ul>
+				{#each skillsByCategory as [cat, skills]}
+					<div class="category-block">
+						<h3 class="category-title">{cat}</h3>
+						<ul class="list">
+							{#each skills as skill (skill.id)}
+								<ContentListItem onEdit={() => crud.startEdit(skill)} onRemove={() => crud.remove(skill)}>
+									<strong>{skill.name}</strong>
+									<span class="meta">{skill.level} · {skill.recency ?? 'current'}</span>
+								</ContentListItem>
+							{/each}
+						</ul>
+					</div>
+				{/each}
 			</section>
 		{/if}
 
@@ -227,6 +286,17 @@
 	.block {
 		margin-top: 1.25rem;
 	}
+	.category-block {
+		margin-bottom: 1.25rem;
+	}
+	.category-title {
+		margin: 0 0 0.5rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+	}
 	.section-title {
 		margin: 0 0 1rem;
 		font-size: 1rem;
@@ -245,12 +315,14 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 	}
-	select {
+	select,
+	.field input {
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
 		color: var(--color-text);
+		font: inherit;
 	}
 	.form-actions {
 		position: sticky;

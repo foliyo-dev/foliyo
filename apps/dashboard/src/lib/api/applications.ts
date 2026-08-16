@@ -12,7 +12,7 @@ export type ApplicationStatus =
 	| 'on_hold';
 
 export const applicationStatuses: { value: ApplicationStatus; label: string }[] = [
-	{ value: 'application_received', label: 'Application received' },
+	{ value: 'application_received', label: 'Applied' },
 	{ value: 'viewed', label: 'Viewed by recruiter' },
 	{ value: 'shortlisted', label: 'Shortlisted' },
 	{ value: 'interview_scheduled', label: 'Interview scheduled' },

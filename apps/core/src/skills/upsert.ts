@@ -21,7 +21,7 @@ export async function upsertSkill(
 ): Promise<{ merged: boolean }> {
   const existing = await queryOne<{ id: string }>(
     db,
-    "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND status != 'dismissed'",
+    "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND status != 'dismissed' AND deleted_at IS NULL",
     [userId, d.name],
   );
   if (existing) {

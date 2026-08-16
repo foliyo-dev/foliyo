@@ -58,3 +58,8 @@ export const updateSocialLink = (id: string, data: Partial<SocialLink>) =>
 	api<{ ok: boolean }>(`/social-links/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteSocialLink = (id: string) =>
 	api<void>(`/social-links/${id}`, { method: 'DELETE' });
+export const listDeletedSocialLinks = () => api<SocialLink[]>(`/social-links/deleted`);
+export const restoreSocialLink = (id: string) =>
+	api<{ ok: boolean }>(`/social-links/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeSocialLink = (id: string) =>
+	api<void>(`/social-links/${id}/purge`, { method: 'DELETE' });

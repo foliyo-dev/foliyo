@@ -25,3 +25,8 @@ export const updateCertification = (id: string, data: Partial<Certification>) =>
 	api<{ ok: boolean }>(`/certifications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteCertification = (id: string) =>
 	api<void>(`/certifications/${id}`, { method: 'DELETE' });
+export const listDeletedCertifications = () => api<Certification[]>(`/certifications/deleted`);
+export const restoreCertification = (id: string) =>
+	api<{ ok: boolean }>(`/certifications/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeCertification = (id: string) =>
+	api<void>(`/certifications/${id}/purge`, { method: 'DELETE' });

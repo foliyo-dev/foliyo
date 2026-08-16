@@ -145,7 +145,7 @@ export function createCrudList<T extends { id: string }>(
 			await api.remove(item.id);
 			items.update((list) => list.filter((i) => i.id !== item.id));
 			if (get(editingId) === item.id) resetForm();
-			showToast(`${labels.entity} deleted`, 'success');
+			showToast(`${labels.entity} moved to Recently deleted`, 'success');
 			await hooks.onChange?.();
 		} catch {
 			showToast(`Failed to delete ${labels.entity.toLowerCase()}`, 'error');

@@ -8,6 +8,7 @@ import {
   suggestSkillsFromLibrary,
 } from "../skills/evidence.js";
 import { upsertSkill } from "../skills/upsert.js";
+import { listTrash, purgeRow, restoreRow, softDeleteRow } from "../soft-delete.js";
 
 const levels = z.enum(["beginner", "intermediate", "advanced", "expert"]);
 const recency = z.enum(["current", "past"]);
@@ -47,20 +48,30 @@ async function enrichSkills(db: FoliyoDb, rows: Record<string, unknown>[]) {
   return out;
 }
 
+async function listActiveSkills(db: FoliyoDb, userId: string, status?: string | null) {
+  let sql = "SELECT * FROM skills WHERE user_id = ? AND deleted_at IS NULL";
+  const params: string[] = [userId];
+  if (status && status !== "all") {
+    sql += " AND status = ?";
+    params.push(status);
+  }
+  sql += " ORDER BY sort_order, name";
+  return queryAll(db, sql, params);
+}
+
 export function skillsRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
   r.get("/", async (c) => {
     const userId = c.get("userId");
     const status = c.req.query("status");
-    let sql = "SELECT * FROM skills WHERE user_id = ?";
-    const params: string[] = [userId];
-    if (status && status !== "all") {
-      sql += " AND status = ?";
-      params.push(status);
-    }
-    sql += " ORDER BY sort_order, name";
-    const items = await queryAll(db, sql, params);
+    const items = await listActiveSkills(db, userId, status);
+    return c.json(await enrichSkills(db, items));
+  });
+
+  r.get("/deleted", async (c) => {
+    const userId = c.get("userId");
+    const items = await listTrash(db, "skills", userId);
     return c.json(await enrichSkills(db, items));
   });
 
@@ -78,7 +89,7 @@ export function skillsRoutes(db: FoliyoDb) {
 
     const skill = await queryOne<{ id: string; status: string }>(
       db,
-      "SELECT id, status FROM skills WHERE id = ? AND user_id = ?",
+      "SELECT id, status FROM skills WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
       [id, userId],
     );
     if (!skill) return c.json({ error: "not found" }, 404);
@@ -99,7 +110,7 @@ export function skillsRoutes(db: FoliyoDb) {
       values.push(body.data.category);
     }
     values.push(id, userId);
-    await run(db, `UPDATE skills SET ${sets.join(", ")} WHERE id=? AND user_id=?`, values);
+    await run(db, `UPDATE skills SET ${sets.join(", ")} WHERE id=? AND user_id=? AND deleted_at IS NULL`, values);
     const updated = await queryOne(db, "SELECT * FROM skills WHERE id = ?", [id]);
     const [enriched] = await enrichSkills(db, updated ? [updated] : []);
     return c.json(enriched);
@@ -108,13 +119,31 @@ export function skillsRoutes(db: FoliyoDb) {
   r.post("/:id/dismiss", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");
-    const skill = await queryOne(db, "SELECT id FROM skills WHERE id = ? AND user_id = ?", [id, userId]);
+    const skill = await queryOne(
+      db,
+      "SELECT id FROM skills WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+      [id, userId],
+    );
     if (!skill) return c.json({ error: "not found" }, 404);
     await run(
       db,
-      "UPDATE skills SET status='dismissed', updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+      "UPDATE skills SET status='dismissed', updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND deleted_at IS NULL",
       [id, userId],
     );
+    return c.json({ ok: true });
+  });
+
+  r.post("/:id/restore", async (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+    const result = await restoreRow(db, "skills", id, userId);
+    if (result === "not_found") return c.json({ error: "not found" }, 404);
+    if (result === "conflict") {
+      return c.json(
+        { error: "conflict", message: "An active skill with the same name already exists" },
+        409,
+      );
+    }
     return c.json({ ok: true });
   });
 
@@ -123,11 +152,9 @@ export function skillsRoutes(db: FoliyoDb) {
     const body = createSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
 
-    // One active (non-dismissed) skill name per user, case-insensitive (DB constraint).
-    // A name collision usually means this skill was already auto-suggested (status='pending')
-    // — confirm/update that row instead of a raw INSERT crashing on the unique index.
+    // One active (non-dismissed, non-deleted) skill name per user, case-insensitive.
     const { merged } = await upsertSkill(db, userId, body.data);
-    const items = await queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [userId]);
+    const items = await listActiveSkills(db, userId);
     return c.json(await enrichSkills(db, items), merged ? 200 : 201);
   });
 
@@ -152,7 +179,7 @@ export function skillsRoutes(db: FoliyoDb) {
         failed.push({ index: i, error: err instanceof Error ? err.message : "insert failed" });
       }
     }
-    const items = await queryAll(db, "SELECT * FROM skills WHERE user_id = ? ORDER BY sort_order, name", [userId]);
+    const items = await listActiveSkills(db, userId);
     return c.json({ items: await enrichSkills(db, items), failed }, 201);
   });
 
@@ -164,17 +191,25 @@ export function skillsRoutes(db: FoliyoDb) {
     const cols = Object.keys(body.data);
     if (cols.length === 0) return c.json({ ok: true });
     const sets = cols.map((col) => `${col}=?`).join(", ");
-    await run(db, `UPDATE skills SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
-      ...Object.values(body.data),
-      id,
-      userId,
-    ]);
+    await run(
+      db,
+      `UPDATE skills SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND deleted_at IS NULL`,
+      [...Object.values(body.data), id, userId],
+    );
     return c.json({ ok: true });
+  });
+
+  r.delete("/:id/purge", async (c) => {
+    const userId = c.get("userId");
+    const ok = await purgeRow(db, "skills", c.req.param("id"), userId);
+    if (!ok) return c.json({ error: "not found" }, 404);
+    return c.body(null, 204);
   });
 
   r.delete("/:id", async (c) => {
     const userId = c.get("userId");
-    await run(db, "DELETE FROM skills WHERE id=? AND user_id=?", [c.req.param("id"), userId]);
+    const ok = await softDeleteRow(db, "skills", c.req.param("id"), userId);
+    if (!ok) return c.json({ error: "not found" }, 404);
     return c.body(null, 204);
   });
 

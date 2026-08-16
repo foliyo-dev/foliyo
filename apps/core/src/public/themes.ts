@@ -252,13 +252,33 @@ function sectionParts(
           ? `<h2>${esc(sectionTitle(data, "skills", mode))}</h2><p class="skills-keywords">${data.skills
               .map((s) => esc(s.name))
               .join(", ")}</p>`
-          : `<h2>${esc(sectionTitle(data, "skills", mode))}</h2><ul class="tags">${data.skills
-              .map((s) => {
-                const recency = String(s.recency ?? "current");
-                const meta = ` <span class="muted">${esc(s.level)}</span> <span class="muted">· ${esc(recency)}</span>`;
-                return `<li>${esc(s.name)}${meta}</li>`;
-              })
-              .join("")}</ul>`,
+          : (() => {
+              const groups = new Map<string, typeof data.skills>();
+              for (const s of data.skills) {
+                const raw = String(s.category ?? "").trim();
+                const cat = !raw || raw === "general" ? "Skills" : raw;
+                const list = groups.get(cat) ?? [];
+                list.push(s);
+                groups.set(cat, list);
+              }
+              const entries = [...groups.entries()];
+              const multi = entries.length > 1;
+              const body = entries
+                .map(([cat, list]) => {
+                  const heading = multi
+                    ? `<h3 class="skill-group">${esc(cat)}</h3>`
+                    : "";
+                  const items = list
+                    .map((s) => {
+                      const level = s.level ? ` <span class="muted">${esc(String(s.level))}</span>` : "";
+                      return `<li>${esc(String(s.name))}${level}</li>`;
+                    })
+                    .join("");
+                  return `${heading}<ul class="tags">${items}</ul>`;
+                })
+                .join("");
+              return `<h2>${esc(sectionTitle(data, "skills", mode))}</h2>${body}`;
+            })(),
       )
     : "";
 
@@ -556,6 +576,8 @@ const SITE_SHELL_CSS = `
 .section[id],.hero[id]{scroll-margin-top:4.5rem}
 .section-sparse{padding:2rem 0 3rem}
 .sparse-copy{margin:0;font-size:0.9375rem;text-align:center;color:var(--muted,#78716c)}
+.skill-group{margin:1rem 0 0.5rem;font-size:0.8125rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted,#78716c)}
+.skill-group:first-of-type{margin-top:0.35rem}
 .print-fab{position:fixed;right:1rem;bottom:1rem;z-index:30}
 .print-btn{border:0;border-radius:999px;padding:0.7rem 1.1rem;background:var(--accent,#0f766e);color:#fff;font:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .print-btn:hover{opacity:.92}

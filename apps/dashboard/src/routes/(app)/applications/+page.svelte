@@ -25,6 +25,7 @@
 	let loading = true;
 	let saving = false;
 	let editingId: string | null = null;
+	let showMore = false;
 
 	let company = '';
 	let role = '';
@@ -58,6 +59,7 @@
 		notes = '';
 		jobId = '';
 		editingId = null;
+		showMore = false;
 	}
 
 	function payload() {
@@ -80,7 +82,7 @@
 		saving = true;
 		try {
 			items = await createApplication(payload());
-			showToast('Application added', 'success');
+			showToast('Application logged', 'success');
 			resetForm();
 		} catch {
 			showToast('Failed to add application', 'error');
@@ -98,6 +100,7 @@
 		nextStep = a.next_step ?? '';
 		notes = a.notes ?? '';
 		jobId = a.job_id ?? '';
+		showMore = Boolean(a.next_step || a.job_id);
 	}
 
 	async function saveEdit() {
@@ -146,23 +149,29 @@
 </script>
 
 <PageHeader
-	title={editingId ? 'Edit application' : 'Applications'}
-	description="Track where you applied. Update status yourself, or receive updates from ATS partners via the Foliyo Resume Spec Status API."
+	title={editingId ? 'Edit application' : 'Job applications'}
+	description="Track where you applied and which resume you sent. This is not another portfolio — it’s a simple log of opportunities."
 />
 
 <Card>
-	<h2 class="section-title">{editingId ? 'Edit application' : 'Log application'}</h2>
+	<h2 class="section-title">{editingId ? 'Edit application' : 'Log an application'}</h2>
+	<p class="form-hint">
+		After you apply somewhere, note the company and the resume you used so you can follow up later.
+	</p>
 	<div class="fields">
 		<Input label="Company" bind:value={company} placeholder="Acme Corp" />
 		<Input label="Role" bind:value={role} placeholder="Senior Node.js Engineer" />
 		<label class="field">
-			<span class="label">Resume used</span>
+			<span class="label">Resume you sent</span>
 			<select bind:value={resumeId}>
-				<option value="">None</option>
+				<option value="">None yet</option>
 				{#each resumes as r}
 					<option value={r.id}>{r.name}</option>
 				{/each}
 			</select>
+			{#if resumes.length === 0}
+				<span class="field-hint">No resumes yet — <a href="/resume">create one from your library</a> first.</span>
+			{/if}
 		</label>
 		<label class="field">
 			<span class="label">Status</span>
@@ -172,16 +181,21 @@
 				{/each}
 			</select>
 		</label>
-		<Input label="Next step (optional)" bind:value={nextStep} placeholder="technical_interview" />
-		<Input label="Job ID (optional)" bind:value={jobId} placeholder="JOB_4521" />
-		<Textarea label="Notes" bind:value={notes} rows={3} placeholder="Recruiter notes, links…" />
+		<Textarea label="Notes (optional)" bind:value={notes} rows={3} placeholder="Recruiter name, interview date, link to the posting…" />
+		<details class="more" bind:open={showMore}>
+			<summary>More details (optional)</summary>
+			<div class="fields more-fields">
+				<Input label="Next step" bind:value={nextStep} placeholder="e.g. Phone screen on Friday" />
+				<Input label="Job / posting ID" bind:value={jobId} placeholder="Only if you have one from the employer" />
+			</div>
+		</details>
 	</div>
 	<div class="form-actions">
 		{#if editingId}
 			<Button disabled={saving} on:click={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
 			<Button variant="ghost" on:click={resetForm}>Cancel</Button>
 		{:else}
-			<Button disabled={saving} on:click={add}>{saving ? 'Adding…' : 'Add application'}</Button>
+			<Button disabled={saving} on:click={add}>{saving ? 'Saving…' : 'Log application'}</Button>
 		{/if}
 	</div>
 </Card>
@@ -189,7 +203,10 @@
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else if items.length === 0}
-	<p class="muted empty">No applications yet — log one when you apply, or wait for an ATS notify.</p>
+	<p class="muted empty">
+		No applications logged yet. When you apply for a role, add it here so you remember which resume you
+		sent.
+	</p>
 {:else}
 	<ul class="list">
 		{#each items as a (a.id)}
@@ -199,9 +216,9 @@
 						<div class="main">
 							<h2>{a.company}{#if a.role} · {a.role}{/if}</h2>
 							<p class="meta">
-								{#if a.resume_name}Resume: “{a.resume_name}” · {/if}
-								Applied {formatDate(a.applied_at)}
-								{#if a.source === 'ats'} · via ATS{/if}
+								{#if a.resume_name}Resume sent: “{a.resume_name}” · {/if}
+								Logged {formatDate(a.applied_at)}
+								{#if a.source === 'ats'} · updated via ATS{/if}
 								{#if a.ats} ({a.ats}){/if}
 							</p>
 							<div class="pipeline" aria-hidden="true">
@@ -225,10 +242,21 @@
 	</ul>
 {/if}
 
+<p class="ats-footnote muted">
+	Optional later: some ATS partners can push status updates into this list via the Foliyo Resume Spec.
+	You can always update status yourself.
+</p>
+
 <style>
 	.section-title {
-		margin: 0 0 1rem;
+		margin: 0 0 0.35rem;
 		font-size: 1rem;
+	}
+	.form-hint {
+		margin: 0 0 1rem;
+		font-size: 0.875rem;
+		color: var(--color-muted);
+		line-height: 1.45;
 	}
 	.fields {
 		display: flex;
@@ -244,11 +272,34 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 	}
+	.field-hint {
+		font-size: 0.75rem;
+		color: var(--color-muted);
+	}
+	.field-hint a {
+		font-weight: 600;
+	}
 	select {
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
+	}
+	.more {
+		margin: 0;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		padding: 0.65rem 0.85rem;
+		background: var(--color-bg);
+	}
+	.more summary {
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-muted);
+	}
+	.more-fields {
+		margin-top: 0.85rem;
 	}
 	.form-actions {
 		display: flex;
@@ -260,6 +311,12 @@
 	}
 	.empty {
 		margin-top: 1rem;
+	}
+	.ats-footnote {
+		margin: 1.5rem 0 0;
+		font-size: 0.75rem;
+		line-height: 1.45;
+		max-width: 40rem;
 	}
 	.list {
 		list-style: none;

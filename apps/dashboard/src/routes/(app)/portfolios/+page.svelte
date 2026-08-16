@@ -83,13 +83,24 @@
 
 	$: atLimit = !pro && items.length >= FREE_PORTFOLIO_LIMIT;
 	$: overLimit = !pro && items.length > FREE_PORTFOLIO_LIMIT;
-	$: selectedCount =
-		selectedSkills.size +
-		selectedProjects.size +
-		selectedExperience.size +
-		selectedEducation.size +
-		selectedCertifications.size +
-		selectedLanguages.size;
+	$: selectedSummary = [
+		selectedProjects.size ? `${selectedProjects.size} project${selectedProjects.size === 1 ? '' : 's'}` : null,
+		selectedExperience.size
+			? `${selectedExperience.size} role${selectedExperience.size === 1 ? '' : 's'}`
+			: null,
+		selectedSkills.size ? `${selectedSkills.size} skill${selectedSkills.size === 1 ? '' : 's'}` : null,
+		selectedEducation.size
+			? `${selectedEducation.size} education`
+			: null,
+		selectedCertifications.size
+			? `${selectedCertifications.size} cert${selectedCertifications.size === 1 ? '' : 's'}`
+			: null,
+		selectedLanguages.size
+			? `${selectedLanguages.size} language${selectedLanguages.size === 1 ? '' : 's'}`
+			: null
+	]
+		.filter(Boolean)
+		.join(' · ') || 'Nothing selected yet';
 	$: showCreateForm = showCreate || (!loading && items.length === 0);
 
 	$: createDraft = (showCreateForm
@@ -332,7 +343,7 @@
 
 <PageHeader
 	title="Portfolios"
-	description="Curated public views of your content library. Default portfolio powers /u/your-handle."
+	description="Public presentations of your library. Choose what visitors will see — default portfolio powers /u/your-handle."
 />
 
 {#if showWelcome}
@@ -342,12 +353,12 @@
 				{#if $user?.handle}
 					You’re live at /u/{$user.handle}
 				{:else}
-					You’re in — create your first folio
+					You’re in — create your first portfolio
 				{/if}
 			</strong>
 			<p>
 				{#if items.length === 0}
-					Name it, pick a theme, add library items, then publish when you’re ready.
+					Name it, pick a theme, choose what visitors will see, then publish when you’re ready.
 				{:else}
 					Publish or polish a portfolio so visitors have somewhere to land.
 				{/if}
@@ -482,7 +493,10 @@
 				</details>
 
 				<details class="step" open>
-					<summary>2. Library content <span class="step-meta">{selectedCount} selected</span></summary>
+					<summary>
+						2. What visitors will see
+						<span class="step-meta">{selectedSummary}</span>
+					</summary>
 					<PortfolioLibraryPicker
 						{skills}
 						{projects}
@@ -508,7 +522,8 @@
 						bind:educationTitle
 						bind:certificationsTitle
 						bind:languagesTitle
-						hint="Choose which library items this portfolio includes. Everything is selected by default — open a section to trim. Optional titles rename the public headings (Projects → Papers, Gallery…)."
+						title="Choose what visitors will see"
+						hint="Turn sections on or off, then open each section to pick individual items. Everything starts selected — trim what doesn’t belong. Optional titles rename public headings (Projects → Papers, Gallery…)."
 					/>
 				</details>
 

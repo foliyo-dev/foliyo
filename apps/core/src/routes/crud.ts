@@ -1,8 +1,15 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
-import { queryAll, run, type FoliyoDb, type SqlValue } from "../db.js";
+import { run, type FoliyoDb, type SqlValue } from "../db.js";
 import { suggestSkillsFromLibrary } from "../skills/evidence.js";
+import {
+  listActive,
+  listTrash,
+  purgeRow,
+  restoreRow,
+  softDeleteRow,
+} from "../soft-delete.js";
 
 export function projectsRoutes(db: FoliyoDb) {
   return crudRoutes(
@@ -22,7 +29,7 @@ export function projectsRoutes(db: FoliyoDb) {
       featured: z.number().int().default(0),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId) },
+    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
   );
 }
 
@@ -44,7 +51,7 @@ export function experienceRoutes(db: FoliyoDb) {
       skills_developed: z.string().default("[]"),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId) },
+    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
   );
 }
 
@@ -62,7 +69,7 @@ export function educationRoutes(db: FoliyoDb) {
       skills_developed: z.string().default("[]"),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId) },
+    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
   );
 }
 
@@ -81,7 +88,7 @@ export function certificationsRoutes(db: FoliyoDb) {
       skills_developed: z.string().default("[]"),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId) },
+    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
   );
 }
 
@@ -118,6 +125,7 @@ export function socialLinksRoutes(db: FoliyoDb) {
       value: z.string().min(1),
       sort_order: z.number().int().default(0),
     }),
+    { orderBy: "sort_order, provider" },
   );
 }
 
@@ -125,13 +133,23 @@ function crudRoutes(
   db: FoliyoDb,
   table: string,
   schema: z.ZodObject<z.ZodRawShape>,
-  opts?: { afterWrite?: (userId: string) => Promise<unknown> },
+  opts?: {
+    afterWrite?: (userId: string) => Promise<unknown>;
+    orderBy?: string;
+  },
 ) {
   const r = new Hono<AppEnv>();
+  const orderBy = opts?.orderBy ?? "sort_order";
 
   r.get("/", async (c) => {
     const userId = c.get("userId");
-    const items = await queryAll(db, `SELECT * FROM ${table} WHERE user_id = ? ORDER BY sort_order`, [userId]);
+    const items = await listActive(db, table, userId, orderBy);
+    return c.json(items);
+  });
+
+  r.get("/deleted", async (c) => {
+    const userId = c.get("userId");
+    const items = await listTrash(db, table, userId);
     return c.json(items);
   });
 
@@ -144,7 +162,7 @@ function crudRoutes(
     const values = [...Object.values(body.data), userId] as SqlValue[];
     await run(db, `INSERT INTO ${table} (${cols.join(", ")}, user_id) VALUES (${placeholders}, ?)`, values);
     if (opts?.afterWrite) await opts.afterWrite(userId);
-    const items = await queryAll(db, `SELECT * FROM ${table} WHERE user_id = ? ORDER BY sort_order`, [userId]);
+    const items = await listActive(db, table, userId, orderBy);
     return c.json(items, 201);
   });
 
@@ -176,8 +194,20 @@ function crudRoutes(
       }
     }
     if (opts?.afterWrite && insertedCount > 0) await opts.afterWrite(userId);
-    const items = await queryAll(db, `SELECT * FROM ${table} WHERE user_id = ? ORDER BY sort_order`, [userId]);
+    const items = await listActive(db, table, userId, orderBy);
     return c.json({ items, failed }, 201);
+  });
+
+  r.post("/:id/restore", async (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+    const result = await restoreRow(db, table, id, userId);
+    if (result === "not_found") return c.json({ error: "not found" }, 404);
+    if (result === "conflict") {
+      return c.json({ error: "conflict", message: "An active item with the same name already exists" }, 409);
+    }
+    if (opts?.afterWrite) await opts.afterWrite(userId);
+    return c.json({ ok: true });
   });
 
   r.put("/:id", async (c) => {
@@ -189,15 +219,29 @@ function crudRoutes(
     if (cols.length === 0) return c.json({ ok: true });
     const sets = cols.map((col) => `${col}=?`).join(", ");
     const values = [...Object.values(body.data), id, userId] as SqlValue[];
-    await run(db, `UPDATE ${table} SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, values);
+    await run(
+      db,
+      `UPDATE ${table} SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND deleted_at IS NULL`,
+      values,
+    );
     if (opts?.afterWrite) await opts.afterWrite(userId);
     return c.json({ ok: true });
+  });
+
+  r.delete("/:id/purge", async (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+    const ok = await purgeRow(db, table, id, userId);
+    if (!ok) return c.json({ error: "not found" }, 404);
+    if (opts?.afterWrite) await opts.afterWrite(userId);
+    return c.body(null, 204);
   });
 
   r.delete("/:id", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");
-    await run(db, `DELETE FROM ${table} WHERE id=? AND user_id=?`, [id, userId]);
+    const ok = await softDeleteRow(db, table, id, userId);
+    if (!ok) return c.json({ error: "not found" }, 404);
     if (opts?.afterWrite) await opts.afterWrite(userId);
     return c.body(null, 204);
   });

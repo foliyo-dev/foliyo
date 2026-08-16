@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -15,12 +16,17 @@
 		importResumeFromText,
 		importResumeFromFio,
 		applyImportDraft,
+		listImportSnapshots,
+		restoreImportSnapshot,
+		deleteImportSnapshot,
 		getImportUpgrade,
 		ImportLimitError,
 		type ApplyImportResult,
+		type ImportSnapshot,
 		type ResumeImportDraft
 	} from '$lib/api/import';
 	import { ApiError } from '$lib/api/client';
+	import { requestConfirm } from '$lib/stores/confirm';
 
 	type SectionKey =
 		| 'candidate'
@@ -42,6 +48,9 @@
 	let draft: ResumeImportDraft | null = null;
 	let remainingToday: number | null = null;
 	let savedResult: ApplyImportResult | null = null;
+	let snapshots: ImportSnapshot[] = [];
+	let snapshotLimit = 5;
+	let snapshotBusyId: string | null = null;
 	let include: Record<SectionKey, boolean> = {
 		candidate: true,
 		skills: true,
@@ -62,11 +71,14 @@
 	};
 	let showUpgrade = false;
 	let upgradeMessage =
-		'AI resume is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
+		'Import resume is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
 
 	$: pro = isProPlan(planInfo?.plan ?? 'free');
+	$: onboarding = $page.url.searchParams.get('onboarding') === '1';
+	$: importPhase = savedResult ? 3 : draft ? 2 : 1;
 
 	onMount(async () => {
+		void loadSnapshots();
 		if (!isSaas) {
 			loadingPlan = false;
 			return;
@@ -79,6 +91,70 @@
 			loadingPlan = false;
 		}
 	});
+
+	async function loadSnapshots() {
+		try {
+			const res = await listImportSnapshots();
+			snapshots = res.items;
+			snapshotLimit = res.limit;
+		} catch {
+			snapshots = [];
+		}
+	}
+
+	function formatSnapshotDate(iso: string) {
+		const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
+		if (Number.isNaN(d.getTime())) return iso;
+		return d.toLocaleString(undefined, {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	async function restoreSnapshot(s: ImportSnapshot) {
+		const ok = await requestConfirm({
+			title: 'Restore library from this snapshot?',
+			message:
+				'Your current active library (skills, projects, experience, …) will be replaced with what was saved before that import. Portfolios and resumes stay. This cannot be undone except by another snapshot.',
+			confirmLabel: 'Restore library'
+		});
+		if (!ok) return;
+		snapshotBusyId = s.id;
+		try {
+			await restoreImportSnapshot(s.id);
+			showToast('Library restored from snapshot', 'success');
+			savedResult = null;
+			draft = null;
+			await loadSnapshots();
+		} catch (err) {
+			const detail = err instanceof ApiError ? err.message.slice(0, 200) : 'Restore failed';
+			showToast(detail, 'error');
+		} finally {
+			snapshotBusyId = null;
+		}
+	}
+
+	async function removeSnapshot(s: ImportSnapshot) {
+		const ok = await requestConfirm({
+			title: 'Delete this snapshot?',
+			message: 'You will no longer be able to restore to this point.',
+			confirmLabel: 'Delete snapshot'
+		});
+		if (!ok) return;
+		snapshotBusyId = s.id;
+		try {
+			await deleteImportSnapshot(s.id);
+			snapshots = snapshots.filter((x) => x.id !== s.id);
+			showToast('Snapshot deleted', 'success');
+		} catch {
+			showToast('Failed to delete snapshot', 'error');
+		} finally {
+			snapshotBusyId = null;
+		}
+	}
 
 	function coerceEditable(d: ResumeImportDraft): ResumeImportDraft {
 		return {
@@ -262,6 +338,10 @@
 				draft = null;
 				pasteText = '';
 				window.scrollTo({ top: 0, behavior: 'smooth' });
+				await loadSnapshots();
+				if (res.snapshot) {
+					showToast('Library saved — undo point kept in Import history', 'success');
+				}
 				return;
 			}
 			showToast(
@@ -282,18 +362,66 @@
 </script>
 
 <PageHeader
-	title="AI resume"
+	title="Import resume"
 	description={isSaas
-		? 'Upload a text-based PDF or paste your CV. AI extracts a Foliyo Resume Spec draft — you review, then save into your library.'
-		: 'Import a signed .fio package exported from Foliyo. Review the draft, then save into your library. Does not change login email or verification.'}
+		? 'Step through: add your resume → review the extraction → save to your library. Each save keeps an undo snapshot (up to 5).'
+		: 'Import a signed .fio package. Review the draft, then save into your library. Each save keeps an undo snapshot (up to 5).'}
 />
+
+{#if onboarding}
+	<ol class="import-steps" aria-label="Import progress">
+		<li class:current={importPhase === 1} class:done={importPhase > 1}>1. Add resume</li>
+		<li class:current={importPhase === 2} class:done={importPhase > 2}>2. Review extraction</li>
+		<li class:current={importPhase === 3}>3. Save to library</li>
+	</ol>
+{/if}
+
+{#if snapshots.length > 0 && !draft}
+	<details class="history" open={Boolean(savedResult)}>
+		<summary>Import history ({snapshots.length}/{snapshotLimit})</summary>
+		<p class="hint history-hint">
+			Each successful import saves your library first. Restore replaces today’s active library with that
+			snapshot — portfolios and resumes stay.
+		</p>
+		<ul class="history-list">
+			{#each snapshots as s (s.id)}
+				<li>
+					<div class="history-meta">
+						<strong>{s.label}</strong>
+						<span class="muted">{formatSnapshotDate(s.created_at)}</span>
+					</div>
+					<div class="form-actions history-actions">
+						<Button
+							variant="ghost"
+							disabled={snapshotBusyId === s.id}
+							on:click={() => restoreSnapshot(s)}
+						>
+							Restore
+						</Button>
+						<Button
+							variant="ghost"
+							disabled={snapshotBusyId === s.id}
+							on:click={() => removeSnapshot(s)}
+						>
+							Delete
+						</Button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+	</details>
+{/if}
 
 {#if savedResult}
 	<Card>
 		<h2 class="section-title">Saved to your library</h2>
 		<p class="hint">
-			{savedResult.saved.total} item{savedResult.saved.total === 1 ? '' : 's'} written. Review them in
-			the library, then publish a portfolio or resume.
+			{savedResult.saved.total} item{savedResult.saved.total === 1 ? '' : 's'} written.
+			{#if onboarding}
+				Next: review what landed, then create your default portfolio.
+			{:else}
+				Review them in the library, then publish a portfolio or resume.
+			{/if}
 		</p>
 		<ul class="saved-list">
 			{#each savedBreakdown as row}
@@ -306,15 +434,21 @@
 			{/each}
 		</ul>
 		<div class="form-actions">
-			<Button on:click={() => goto('/portfolios')}>Create a portfolio</Button>
-			<Button variant="ghost" on:click={() => goto('/resume')}>Create a resume</Button>
-			<Button variant="ghost" on:click={startOver}>Import another</Button>
+			{#if onboarding}
+				<Button on:click={() => goto('/basics')}>Review library</Button>
+				<Button variant="ghost" on:click={() => goto('/portfolios')}>Create default portfolio</Button>
+				<Button variant="ghost" on:click={() => goto('/')}>Back to Overview</Button>
+			{:else}
+				<Button on:click={() => goto('/portfolios')}>Create a portfolio</Button>
+				<Button variant="ghost" on:click={() => goto('/resume')}>Create a resume</Button>
+				<Button variant="ghost" on:click={startOver}>Import another</Button>
+			{/if}
 		</div>
 	</Card>
 {:else if draft}
 		<Card>
 			<div class="review-head">
-				<h2 class="section-title">Review draft</h2>
+				<h2 class="section-title">{onboarding ? '2. Review extraction' : 'Review draft'}</h2>
 				{#if remainingToday != null}
 					<p class="hint">{remainingToday} imports left today</p>
 				{/if}
@@ -491,7 +625,7 @@
 {:else if !pro}
 	<Card>
 		<p class="muted">
-			AI resume is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
+			Import resume is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
 			cannot use this feature.
 		</p>
 	</Card>
@@ -522,7 +656,7 @@
 	</div>
 {:else}
 		<Card>
-			<h2 class="section-title">Upload or paste</h2>
+			<h2 class="section-title">{onboarding ? '1. Add resume' : 'Upload or paste'}</h2>
 			<p class="hint">
 				Text-based PDFs only (max 12 pages / 4MB). No scanned/image PDFs. We check the file before
 				sending anything to AI.
@@ -564,6 +698,68 @@
 	.muted {
 		color: var(--color-muted);
 		margin: 0;
+	}
+	.import-steps {
+		list-style: none;
+		margin: 0 0 1.25rem;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-muted);
+	}
+	.import-steps li.current {
+		color: var(--color-primary);
+	}
+	.import-steps li.done {
+		color: #166534;
+	}
+	.history {
+		margin: 0 0 1.25rem;
+		padding: 0.85rem 1rem;
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.history summary {
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-muted);
+	}
+	.history-hint {
+		margin-top: 0.5rem;
+	}
+	.history-list {
+		list-style: none;
+		margin: 0.5rem 0 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.history-list li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem 1rem;
+		padding: 0.5rem 0;
+		border-top: 1px solid var(--color-border);
+	}
+	.history-meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+	.history-meta strong {
+		font-size: 0.875rem;
+	}
+	.history-actions {
+		margin-top: 0;
 	}
 	.section-title {
 		margin: 0 0 0.5rem;

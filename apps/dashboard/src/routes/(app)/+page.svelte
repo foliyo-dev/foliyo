@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import { user } from '$lib/stores/auth';
@@ -32,6 +34,17 @@
 		cta: string;
 	};
 
+	type GettingStartedStep = {
+		id: string;
+		title: string;
+		detail: string;
+		href: string;
+		cta: string;
+		done: boolean;
+		secondaryHref?: string;
+		secondaryCta?: string;
+	};
+
 	let loading = true;
 	let profile: Profile | null = null;
 	let planInfo: PlanInfo | null = null;
@@ -49,13 +62,23 @@
 	$: publicPortfolios = portfolios.filter((p) => p.is_public);
 	$: libraryFilled = library.filter((i) => i.count > 0).length;
 	$: libraryTotal = library.length;
-	$: nextSteps = buildNextSteps({
-		profile,
-		library,
-		portfolios,
-		resumes,
-		handle
+	$: libraryHasContent = libraryFilled > 0;
+	$: showGettingStarted = !loading && (!libraryHasContent || portfolios.length === 0);
+	$: gettingStartedSteps = buildGettingStarted({
+		libraryHasContent,
+		hasBasics: Boolean(profile?.name?.trim()),
+		hasPortfolio: portfolios.length > 0,
+		pro
 	});
+	$: nextSteps = showGettingStarted
+		? []
+		: buildNextSteps({
+				profile,
+				library,
+				portfolios,
+				resumes,
+				handle
+			});
 
 	onMount(async () => {
 		try {
@@ -110,8 +133,58 @@
 			];
 		} finally {
 			loading = false;
+			if ($page.url.searchParams.get('start') === '1') {
+				const next = new URL($page.url);
+				next.searchParams.delete('start');
+				void goto(`${next.pathname}${next.search}`, { replaceState: true, noScroll: true });
+			}
 		}
 	});
+
+	function buildGettingStarted(ctx: {
+		libraryHasContent: boolean;
+		hasBasics: boolean;
+		hasPortfolio: boolean;
+		pro: boolean;
+	}): GettingStartedStep[] {
+		const importDetail = isSaas
+			? ctx.pro
+				? 'Upload a PDF or paste your CV — AI fills your library in one pass.'
+				: 'Import resume is Pro — upgrade, or add Basics and library items by hand.'
+			: 'Import a signed .fio package, or add Basics and library items by hand.';
+		const importCta = isSaas ? (ctx.pro ? 'Import resume' : 'Open import') : 'Import .fio';
+
+		return [
+			{
+				id: 'import',
+				title: 'Import your resume',
+				detail: importDetail,
+				href: '/import?onboarding=1',
+				cta: importCta,
+				done: ctx.libraryHasContent,
+				secondaryHref: '/basics',
+				secondaryCta: 'Or start with Basics'
+			},
+			{
+				id: 'review',
+				title: 'Review your library',
+				detail: ctx.libraryHasContent
+					? 'Confirm basics, skills, and experience — edit anything that looks wrong.'
+					: 'After import, skim your library so portfolios and resumes stay accurate.',
+				href: ctx.hasBasics ? '/skills' : '/basics',
+				cta: 'Review library',
+				done: ctx.libraryHasContent && ctx.hasBasics
+			},
+			{
+				id: 'portfolio',
+				title: 'Create your default portfolio',
+				detail: 'Choose what visitors will see, pick a theme, then publish when you’re ready.',
+				href: '/portfolios',
+				cta: 'Create portfolio',
+				done: ctx.hasPortfolio
+			}
+		];
+	}
 
 	function buildNextSteps(ctx: {
 		profile: Profile | null;
@@ -123,16 +196,6 @@
 		const steps: NextStep[] = [];
 		const p = ctx.profile;
 		if (!p?.name?.trim() || !p?.headline?.trim()) {
-			if (isSaas) {
-				steps.push({
-					title: pro ? 'Try AI resume' : 'AI resume (Pro)',
-					detail: pro
-						? 'Upload a PDF or paste text — AI fills your library.'
-						: 'Upgrade to Pro to fill your library from a PDF or pasted CV.',
-					href: '/import',
-					cta: pro ? 'Open AI resume' : 'See Pro AI resume'
-				});
-			}
 			steps.push({
 				title: 'Complete your basics',
 				detail: 'Add your name and headline — they appear on every public page.',
@@ -184,7 +247,7 @@
 		if (!ctx.handle && isSaas) {
 			steps.push({
 				title: 'Claim your handle',
-				detail: 'Pick a short public URL for your folio.',
+				detail: 'Pick a short public URL for your portfolio.',
 				href: '/onboarding',
 				cta: 'Claim handle'
 			});
@@ -203,7 +266,7 @@
 
 <PageHeader
 	title="Overview"
-	description="Your library, public folio, and resume — at a glance."
+	description="Your library, portfolios, and resumes — update once, reuse everywhere."
 />
 
 {#if loading}
@@ -260,7 +323,39 @@
 		</div>
 	</section>
 
-	{#if nextSteps.length}
+	{#if showGettingStarted}
+		<section class="section getting-started">
+			<div class="section-head">
+				<h3 class="section-title">Get started</h3>
+			</div>
+			<p class="muted gs-lead">Import once → review your library → create your default portfolio.</p>
+			<ol class="gs-steps">
+				{#each gettingStartedSteps as step, i}
+					<li
+						class="gs-step"
+						class:done={step.done}
+						class:active={!step.done && gettingStartedSteps.slice(0, i).every((s) => s.done)}
+					>
+						<div class="gs-num" aria-hidden="true">{step.done ? '✓' : i + 1}</div>
+						<div class="gs-body">
+							<h4>{step.title}</h4>
+							<p class="muted">{step.detail}</p>
+							{#if !step.done}
+								<div class="gs-actions">
+									<a class="gs-cta" href={step.href}>{step.cta} →</a>
+									{#if step.secondaryHref && step.secondaryCta && step.id === 'import'}
+										<a class="gs-secondary" href={step.secondaryHref}>{step.secondaryCta}</a>
+									{/if}
+								</div>
+							{:else}
+								<p class="gs-done-label">Done</p>
+							{/if}
+						</div>
+					</li>
+				{/each}
+			</ol>
+		</section>
+	{:else if nextSteps.length}
 		<section class="section">
 			<h3 class="section-title">Suggested next steps</h3>
 			<div class="steps">
@@ -278,7 +373,7 @@
 
 	<section class="section">
 		<div class="section-head">
-			<h3 class="section-title">Content library</h3>
+			<h3 class="section-title">My Library</h3>
 			<a href="/basics">Edit basics →</a>
 		</div>
 		<div class="counts">
@@ -300,7 +395,7 @@
 			</div>
 			{#if portfolios.length === 0}
 				<Card>
-					<p class="muted">No portfolios yet. Curate library items into a public page.</p>
+					<p class="muted">No portfolios yet. Choose what visitors will see from your library.</p>
 					<a href="/portfolios">Create portfolio →</a>
 				</Card>
 			{:else}
@@ -373,10 +468,10 @@
 				<Card>
 					{#if pro}
 						<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
-						<a href="/import">AI resume →</a>
+						<a href="/import?onboarding=1">Import resume →</a>
 					{:else}
-						<p class="muted">AI resume is a Pro feature — upgrade to extract a CV into Foliyo.</p>
-						<a href="/import">AI resume (Pro) →</a>
+						<p class="muted">Import resume is a Pro feature — upgrade to extract a CV into Foliyo.</p>
+						<a href="/import">Import resume (Pro) →</a>
 					{/if}
 				</Card>
 			{/if}
@@ -387,7 +482,7 @@
 		<h3 class="section-title">Quick links</h3>
 		<div class="grid">
 			<Card>
-				<h4>My content</h4>
+				<h4>My Library</h4>
 				<p class="muted">
 					Basics, skills, projects, experience, education, certifications, and languages.
 				</p>
@@ -396,7 +491,7 @@
 			<Card>
 				<h4>Portfolios</h4>
 				<p class="muted">
-					Curate public views from your library — Free includes 1, Pro unlimited.
+					Choose what visitors will see — Free includes 1, Pro unlimited.
 				</p>
 				<a href="/portfolios">Manage portfolios →</a>
 			</Card>
@@ -524,6 +619,86 @@
 	.section-head a {
 		font-size: 0.8125rem;
 		font-weight: 600;
+	}
+	.gs-lead {
+		margin: -0.25rem 0 1rem;
+	}
+	.gs-steps {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.gs-step {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		padding: 1rem 1.15rem;
+		border-radius: var(--radius);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+	}
+	.gs-step.active {
+		border-color: var(--color-primary-muted);
+		background: var(--color-primary-light);
+	}
+	.gs-step.done {
+		opacity: 0.72;
+	}
+	.gs-num {
+		flex-shrink: 0;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 999px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		color: var(--color-text);
+	}
+	.gs-step.active .gs-num {
+		background: var(--color-primary);
+		border-color: var(--color-primary);
+		color: #fff;
+	}
+	.gs-step.done .gs-num {
+		background: #dcfce7;
+		border-color: #bbf7d0;
+		color: #166534;
+	}
+	.gs-body {
+		flex: 1;
+		min-width: 0;
+	}
+	.gs-body h4 {
+		margin: 0 0 0.25rem;
+		font-size: 1rem;
+	}
+	.gs-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 0.65rem;
+	}
+	.gs-cta {
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+	.gs-secondary {
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+	}
+	.gs-done-label {
+		margin: 0.5rem 0 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #166534;
 	}
 	.steps {
 		display: grid;

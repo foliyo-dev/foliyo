@@ -7,6 +7,7 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import SocialIcon from '$lib/components/social/SocialIcon.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import {
@@ -14,6 +15,9 @@
 		createSocialLink,
 		updateSocialLink,
 		deleteSocialLink,
+		listDeletedSocialLinks,
+		restoreSocialLink,
+		purgeSocialLink,
 		socialProviders,
 		providerMeta,
 		type SocialLink,
@@ -21,6 +25,7 @@
 	} from '$lib/api/social';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 
 	let provider: SocialProvider = 'github';
 	let label = '';
@@ -54,7 +59,10 @@
 			getDeleteLabel: (item) => item.label?.trim() || item.value?.trim() || 'this link',
 			validate: () => (!value.trim() ? `${valueLabel} is required` : null),
 			canSave: () => value.trim().length > 0,
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'social links', entity: 'Link' }
@@ -73,6 +81,21 @@
 	<PageHeader
 		title={$editingId ? 'Edit link' : 'Social'}
 		description="Profiles and sites shown on your public folio — pick a common network or add any URL."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedSocialLinks}
+		restore={restoreSocialLink}
+		purge={purgeSocialLink}
+		getLabel={(s) => {
+			const x = s as SocialLink;
+			return x.label?.trim() || x.value?.trim() || x.provider || 'Untitled link';
+		}}
+		entityLabel="Social link"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

@@ -37,7 +37,7 @@ export async function collectLibraryTags(db: FoliyoDb, userId: string): Promise<
 
   const experiences = await queryAll<{ id: string; skills_developed: string }>(
     db,
-    "SELECT id, skills_developed FROM experience WHERE user_id = ?",
+    "SELECT id, skills_developed FROM experience WHERE user_id = ? AND deleted_at IS NULL",
     [userId],
   );
   for (const row of experiences) {
@@ -48,7 +48,7 @@ export async function collectLibraryTags(db: FoliyoDb, userId: string): Promise<
 
   const projects = await queryAll<{ id: string; skills_developed: string }>(
     db,
-    "SELECT id, skills_developed FROM projects WHERE user_id = ?",
+    "SELECT id, skills_developed FROM projects WHERE user_id = ? AND deleted_at IS NULL",
     [userId],
   );
   for (const row of projects) {
@@ -59,7 +59,7 @@ export async function collectLibraryTags(db: FoliyoDb, userId: string): Promise<
 
   const education = await queryAll<{ id: string; skills_developed: string }>(
     db,
-    "SELECT id, skills_developed FROM education WHERE user_id = ?",
+    "SELECT id, skills_developed FROM education WHERE user_id = ? AND deleted_at IS NULL",
     [userId],
   );
   for (const row of education) {
@@ -70,7 +70,7 @@ export async function collectLibraryTags(db: FoliyoDb, userId: string): Promise<
 
   const certifications = await queryAll<{ id: string; skills_developed: string }>(
     db,
-    "SELECT id, skills_developed FROM certifications WHERE user_id = ?",
+    "SELECT id, skills_developed FROM certifications WHERE user_id = ? AND deleted_at IS NULL",
     [userId],
   );
   for (const row of certifications) {
@@ -108,7 +108,7 @@ export async function suggestSkillsFromLibrary(
     name: string;
     status: string;
     source: string;
-  }>(db, "SELECT id, name, status, source FROM skills WHERE user_id = ?", [userId]);
+  }>(db, "SELECT id, name, status, source FROM skills WHERE user_id = ? AND deleted_at IS NULL", [userId]);
 
   const byExistingKey = new Map(existing.map((s) => [normKey(s.name), s]));
 
@@ -131,7 +131,7 @@ export async function suggestSkillsFromLibrary(
       );
       const created = await queryOne<{ id: string; name: string; status: string; source: string }>(
         db,
-        "SELECT id, name, status, source FROM skills WHERE user_id = ? AND lower(name) = ?",
+        "SELECT id, name, status, source FROM skills WHERE user_id = ? AND lower(name) = ? AND deleted_at IS NULL",
         [userId, key],
       );
       if (!created) continue;
@@ -174,7 +174,7 @@ export async function suggestSkillsFromLibrary(
 
   const pendingCount = await queryOne<{ c: number | string }>(
     db,
-    "SELECT COUNT(*) as c FROM skills WHERE user_id = ? AND status = 'pending'",
+    "SELECT COUNT(*) as c FROM skills WHERE user_id = ? AND status = 'pending' AND deleted_at IS NULL",
     [userId],
   );
   pending = Number(pendingCount?.c ?? pending);

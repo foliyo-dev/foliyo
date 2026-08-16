@@ -18,10 +18,10 @@
       items: [{ href: '/', label: 'Overview' }]
     },
     {
-      label: 'My content',
+      label: 'My Library',
       items: [
         { href: '/basics', label: 'Basics' },
-        ...(isSaas ? [{ href: '/import', label: 'AI resume', badge: 'AI' }] : []),
+        ...(isSaas ? [{ href: '/import', label: 'Import resume', badge: 'AI' }] : [{ href: '/import', label: 'Import' }]),
         { href: '/social', label: 'Social' },
         { href: '/skills', label: 'Skills' },
         { href: '/projects', label: 'Projects' },
@@ -35,8 +35,7 @@
       label: 'Publish',
       items: [
         { href: '/portfolios', label: 'Portfolios' },
-        { href: '/resume', label: 'Resume' },
-        { href: '/applications', label: 'Applications' }
+        { href: '/resume', label: 'Resume' }
       ]
     },
     {

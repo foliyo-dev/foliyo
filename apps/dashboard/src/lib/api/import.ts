@@ -180,8 +180,32 @@ export type ApplyImportResult = {
 		total: number;
 	};
 	failed: Array<{ section: string; index: number; error: string }>;
+	snapshot?: { id: string; label: string; created_at: string } | null;
+	snapshot_limit?: number;
 };
 
-/** Write a reviewed Foliyo Resume Spec draft into the library (one request). */
+export type ImportSnapshot = {
+	id: string;
+	user_id: string;
+	label: string;
+	filename: string;
+	content_hash: string;
+	byte_size: number;
+	created_at: string;
+};
+
+/** Write a reviewed Foliyo Resume Spec draft into the library (one request). Snapshots library first. */
 export const applyImportDraft = (draft: ResumeImportDraft) =>
 	api<ApplyImportResult>('/import/apply', { method: 'POST', body: JSON.stringify({ draft }) });
+
+export const listImportSnapshots = () =>
+	api<{ items: ImportSnapshot[]; limit: number }>('/import/snapshots');
+
+export const restoreImportSnapshot = (id: string) =>
+	api<{ ok: boolean; saved: ApplyImportResult['saved']; failed: ApplyImportResult['failed']; message: string }>(
+		`/import/snapshots/${id}/restore`,
+		{ method: 'POST', body: '{}' }
+	);
+
+export const deleteImportSnapshot = (id: string) =>
+	api<void>(`/import/snapshots/${id}`, { method: 'DELETE' });

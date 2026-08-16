@@ -79,6 +79,23 @@
 	let selectedCertifications = new Set<string>();
 	let selectedLanguages = new Set<string>();
 
+	$: selectedSummary = [
+		selectedProjects.size ? `${selectedProjects.size} project${selectedProjects.size === 1 ? '' : 's'}` : null,
+		selectedExperience.size
+			? `${selectedExperience.size} role${selectedExperience.size === 1 ? '' : 's'}`
+			: null,
+		selectedSkills.size ? `${selectedSkills.size} skill${selectedSkills.size === 1 ? '' : 's'}` : null,
+		selectedEducation.size ? `${selectedEducation.size} education` : null,
+		selectedCertifications.size
+			? `${selectedCertifications.size} cert${selectedCertifications.size === 1 ? '' : 's'}`
+			: null,
+		selectedLanguages.size
+			? `${selectedLanguages.size} language${selectedLanguages.size === 1 ? '' : 's'}`
+			: null
+	]
+		.filter(Boolean)
+		.join(' · ') || 'Nothing selected yet';
+
 	$: portfolioId = $page.params.id;
 
 	$: draft = (loading
@@ -292,7 +309,7 @@
 {:else if portfolio}
 	<PageHeader
 		title={portfolio.name}
-		description="Select library content, set headline/bio overrides, theme, and publish."
+		description="Choose what visitors will see, set headline/bio overrides, theme, and publish."
 	/>
 
 	{#if isPublic && liveUrl}
@@ -408,15 +425,8 @@
 		<Card>
 			<details class="block" open>
 				<summary>
-					Library content
-					<span class="step-meta"
-						>{selectedSkills.size +
-							selectedProjects.size +
-							selectedExperience.size +
-							selectedEducation.size +
-							selectedCertifications.size +
-							selectedLanguages.size} selected</span
-					>
+					What visitors will see
+					<span class="step-meta">{selectedSummary}</span>
 				</summary>
 				<PortfolioLibraryPicker
 					{skills}
@@ -443,6 +453,8 @@
 					bind:educationTitle
 					bind:certificationsTitle
 					bind:languagesTitle
+					title="Choose what visitors will see"
+					hint="Turn sections on or off, then open each section to pick individual items. Optional titles rename public headings."
 				/>
 			</details>
 		</Card>

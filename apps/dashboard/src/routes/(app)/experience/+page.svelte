@@ -8,6 +8,7 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
@@ -16,10 +17,14 @@
 		createExperience,
 		updateExperience,
 		deleteExperience,
+		listDeletedExperience,
+		restoreExperience,
+		purgeExperience,
 		type Experience
 	} from '$lib/api/experience';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 	let present = false;
 
 	let company = '';
@@ -79,7 +84,10 @@
 				!company.trim() || !role.trim() || !startDate
 					? 'Company, role, and start date are required'
 					: null,
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'experience', entity: 'Experience' }
@@ -93,6 +101,21 @@
 	<PageHeader
 		title={$editingId ? 'Edit role' : 'Experience'}
 		description="Work history — add skills developed so Foliyo can suggest skills for your library. Optional write-up links for resume deep dives."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedExperience}
+		restore={restoreExperience}
+		purge={purgeExperience}
+		getLabel={(e) => {
+			const x = e as Experience;
+			return [x.role, x.company].filter(Boolean).join(' @ ') || 'Untitled experience';
+		}}
+		entityLabel="Experience"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

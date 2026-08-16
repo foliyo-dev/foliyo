@@ -8,6 +8,7 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
@@ -15,10 +16,14 @@
 		createCertification,
 		updateCertification,
 		deleteCertification,
+		listDeletedCertifications,
+		restoreCertification,
+		purgeCertification,
 		type Certification
 	} from '$lib/api/certifications';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 
 	let name = '';
 	let issuer = '';
@@ -76,7 +81,10 @@
 			},
 			getDeleteLabel: (item) => item.name?.trim() || 'this certification',
 			validate: () => (!name.trim() ? 'Name is required' : null),
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'certifications', entity: 'Certification' }
@@ -90,6 +98,18 @@
 	<PageHeader
 		title={$editingId ? 'Edit certification' : 'Certifications'}
 		description="Credentials and licenses — add skills covered to feed your skill library."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedCertifications}
+		restore={restoreCertification}
+		purge={purgeCertification}
+		getLabel={(c) => (c as Certification).name?.trim() || 'Untitled certification'}
+		entityLabel="Certification"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

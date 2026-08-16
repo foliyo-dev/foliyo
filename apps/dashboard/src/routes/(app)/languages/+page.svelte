@@ -7,18 +7,23 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import {
 		listLanguages,
 		createLanguage,
 		updateLanguage,
 		deleteLanguage,
+		listDeletedLanguages,
+		restoreLanguage,
+		purgeLanguage,
 		languageProficiencies,
 		type Language,
 		type LanguageProficiency
 	} from '$lib/api/languages';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 
 	let name = '';
 	let proficiency: LanguageProficiency = 'conversational';
@@ -44,7 +49,10 @@
 			},
 			getDeleteLabel: (item) => item.name?.trim() || 'this language',
 			validate: () => (!name.trim() ? 'Name is required' : null),
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'languages', entity: 'Language' }
@@ -58,6 +66,18 @@
 	<PageHeader
 		title={$editingId ? 'Edit language' : 'Languages'}
 		description="Spoken and written languages for your public profile and resume."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedLanguages}
+		restore={restoreLanguage}
+		purge={purgeLanguage}
+		getLabel={(l) => (l as Language).name?.trim() || 'Untitled language'}
+		entityLabel="Language"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

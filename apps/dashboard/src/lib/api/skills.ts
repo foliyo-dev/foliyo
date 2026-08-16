@@ -13,6 +13,7 @@ export type Skill = {
   suggested_level?: string;
   suggested_recency?: 'current' | 'past';
   suggested_years?: number | null;
+  deleted_at?: string | null;
 };
 
 export const listSkills = (status?: string) =>
@@ -25,6 +26,11 @@ export const updateSkill = (id: string, data: Partial<Skill>) =>
   api<{ ok: boolean }>(`/skills/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteSkill = (id: string) =>
   api<void>(`/skills/${id}`, { method: 'DELETE' });
+export const listDeletedSkills = () => api<Skill[]>(`/skills/deleted`);
+export const restoreSkill = (id: string) =>
+  api<{ ok: boolean }>(`/skills/${id}/restore`, { method: 'POST', body: '{}' });
+export const purgeSkill = (id: string) =>
+  api<void>(`/skills/${id}/purge`, { method: 'DELETE' });
 export const confirmSkill = (
   id: string,
   data?: { level?: string; category?: string; recency?: 'current' | 'past' },

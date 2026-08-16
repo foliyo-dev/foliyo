@@ -8,6 +8,7 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
@@ -15,10 +16,14 @@
 		createEducation,
 		updateEducation,
 		deleteEducation,
+		listDeletedEducation,
+		restoreEducation,
+		purgeEducation,
 		type Education
 	} from '$lib/api/education';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 	let present = false;
 
 	let institution = '';
@@ -67,7 +72,10 @@
 			},
 			getDeleteLabel: (item) => item.institution?.trim() || 'this school',
 			validate: () => (!institution.trim() || !startDate ? 'Institution and start date are required' : null),
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'education', entity: 'Education' }
@@ -81,6 +89,21 @@
 	<PageHeader
 		title={$editingId ? 'Edit education' : 'Education'}
 		description="Degrees and schools — add skills developed to feed your skill library."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedEducation}
+		restore={restoreEducation}
+		purge={purgeEducation}
+		getLabel={(e) => {
+			const x = e as Education;
+			return [x.degree, x.institution].filter(Boolean).join(' — ') || 'Untitled education';
+		}}
+		entityLabel="Education"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

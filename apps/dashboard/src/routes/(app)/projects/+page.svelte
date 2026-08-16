@@ -8,6 +8,7 @@
 	import ContentFormCard from '$lib/components/content/ContentFormCard.svelte';
 	import ContentList from '$lib/components/content/ContentList.svelte';
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
+	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
 	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
@@ -16,6 +17,9 @@
 		createProject,
 		updateProject,
 		deleteProject,
+		listDeletedProjects,
+		restoreProject,
+		purgeProject,
 		uploadProjectImage,
 		type Project
 	} from '$lib/api/projects';
@@ -24,6 +28,7 @@
 	import { mediaUrl } from '$lib/config';
 
 	let shell: EditorWithPreview;
+	let trash: RecentlyDeleted;
 
 	let title = '';
 	let description = '';
@@ -113,7 +118,10 @@
 			},
 			getDeleteLabel: (item) => item.title?.trim() || 'this project',
 			validate: () => (!title.trim() ? 'Project title is required' : null),
-			onChange: () => shell?.refreshPreview(),
+			onChange: async () => {
+				await shell?.refreshPreview();
+				await trash?.reload();
+			},
 			onOpen: () => shell?.scrollToForm()
 		},
 		{ loadName: 'projects', entity: 'Project' }
@@ -178,6 +186,18 @@
 	<PageHeader
 		title={$editingId ? 'Edit project' : 'Projects'}
 		description="Showcase your work — links and labels can be Live/Repo, Series/Prints, Paper/Read, or whatever the folio needs."
+	/>
+	<RecentlyDeleted
+		bind:this={trash}
+		listDeleted={listDeletedProjects}
+		restore={restoreProject}
+		purge={purgeProject}
+		getLabel={(p) => (p as Project).title?.trim() || 'Untitled project'}
+		entityLabel="Project"
+		onRestored={async () => {
+			await crud.load();
+			await shell?.refreshPreview();
+		}}
 	/>
 
 	{#if !$formOpen}

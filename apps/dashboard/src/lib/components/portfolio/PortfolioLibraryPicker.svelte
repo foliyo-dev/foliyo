@@ -34,11 +34,11 @@
 	export let certificationsTitle = '';
 	export let languagesTitle = '';
 
-	/** When false, hide per-section “Show on folio” toggles (e.g. resume Custom). */
+	/** When false, hide per-section “Show on portfolio” toggles (e.g. resume Custom). */
 	export let showSectionVisibility = true;
 
-	export let title = 'Include from your library';
-	export let hint = 'Edit items under My content; select which ones appear in this portfolio.';
+	export let title = 'Choose what visitors will see';
+	export let hint = 'Edit items under My Library; select which ones appear in this portfolio.';
 
 	type SectionId =
 		| 'skills'
@@ -164,7 +164,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showSkills} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"
@@ -248,7 +248,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showProjects} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"
@@ -331,7 +331,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showExperience} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"
@@ -414,7 +414,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showEducation} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"
@@ -499,7 +499,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showCertifications} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"
@@ -585,7 +585,7 @@
 				<div class="section-aside">
 					<label class="show-toggle" on:click|stopPropagation>
 						<input type="checkbox" bind:checked={showLanguages} />
-						Show on folio
+						Show on portfolio
 					</label>
 					<input
 						class="title-override"

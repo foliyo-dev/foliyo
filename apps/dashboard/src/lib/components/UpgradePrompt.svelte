@@ -25,7 +25,7 @@
 		{ label: 'Unlimited portfolios & resumes', ai: false },
 		{ label: 'PDF export (print-ready)', ai: false },
 		{ label: 'Remove Foliyo branding', ai: false },
-		{ label: 'AI resume — fill library from PDF/CV', ai: true },
+		{ label: 'Import resume — fill library from PDF/CV', ai: true },
 		{ label: 'AI rewrite — stronger / shorter / metrics', ai: true },
 		{ label: 'Daily AI unit budget', ai: true }
 	];
