@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/jobs-client",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "private": true,
   "description": "Shared job analysis types and client helpers for dashboard and extension",
   "type": "module",

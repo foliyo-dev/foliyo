@@ -160,14 +160,13 @@ importers:
   packages/themes: {}
 
   packages/ui:
-    dependencies:
-      '@foliyo/jobs-client':
-        specifier: workspace:*
-        version: link:../jobs-client
     devDependencies:
       '@foliyo/brand':
         specifier: workspace:*
         version: link:../brand
+      '@foliyo/jobs-client':
+        specifier: workspace:*
+        version: link:../jobs-client
       svelte:
         specifier: ^5.55.2
         version: 5.56.4
