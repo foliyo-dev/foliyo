@@ -18,6 +18,7 @@
 	},
 	"dependencies": {
 		"@foliyo/brand": "workspace:*",
+		"@foliyo/jobs-client": "workspace:*",
 		"@foliyo/ui": "workspace:*",
 		"meshql-client": "^0.6.0"
 	},

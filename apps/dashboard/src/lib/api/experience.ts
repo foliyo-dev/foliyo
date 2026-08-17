@@ -22,6 +22,8 @@ export const bulkCreateExperience = (items: Partial<Experience>[]) =>
 	api<BulkResult<Experience>>('/experience/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateExperience = (id: string, data: Partial<Experience>) =>
 	api<{ ok: boolean }>(`/experience/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const reorderExperience = (ids: string[]) =>
+	api<{ ok: boolean }>('/experience/reorder', { method: 'PUT', body: JSON.stringify({ ids }) });
 export const deleteExperience = (id: string) =>
 	api<void>(`/experience/${id}`, { method: 'DELETE' });
 export const listDeletedExperience = () => api<Experience[]>(`/experience/deleted`);

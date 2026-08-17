@@ -17,6 +17,7 @@
 		createProject,
 		updateProject,
 		deleteProject,
+		reorderProjects,
 		listDeletedProjects,
 		restoreProject,
 		purgeProject,
@@ -70,7 +71,7 @@
 	}
 
 	const crud = createCrudList<Project>(
-		{ list: listProjects, create: createProject, update: updateProject, remove: deleteProject },
+		{ list: listProjects, create: createProject, update: updateProject, remove: deleteProject, reorder: reorderProjects },
 		{
 			getPayload: () => ({
 				title: title.trim(),
@@ -185,7 +186,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={$editingId ? 'Edit project' : 'Projects'}
-		description="Showcase your work — links and labels can be Live/Repo, Series/Prints, Paper/Read, or whatever the folio needs."
+		description="Showcase your work — list order is how they appear on folios and resumes."
 	/>
 	<RecentlyDeleted
 		bind:this={trash}
@@ -292,13 +293,10 @@
 					{/if}
 				</div>
 				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="React, Node.js" />
-				<div class="row">
-					<Input label="Sort order" bind:value={sortOrder} />
-					<label class="checkbox">
-						<input type="checkbox" bind:checked={featured} />
-						Featured project
-					</label>
-				</div>
+				<label class="checkbox">
+					<input type="checkbox" bind:checked={featured} />
+					Featured project
+				</label>
 			</svelte:fragment>
 			<svelte:fragment slot="actions">
 				{#if $editingId}
@@ -313,8 +311,13 @@
 	{/if}
 
 	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No projects yet — add your first one above.">
-		{#each $items as project (project.id)}
-			<ContentListItem onEdit={() => crud.startEdit(project)} onRemove={() => crud.remove(project)}>
+		{#each $items as project, i (project.id)}
+			<ContentListItem
+				onEdit={() => crud.startEdit(project)}
+				onRemove={() => crud.remove(project)}
+				onMoveUp={$items.length > 1 && i > 0 ? () => crud.move(project.id, -1) : undefined}
+				onMoveDown={$items.length > 1 && i < $items.length - 1 ? () => crud.move(project.id, 1) : undefined}
+			>
 				<h3>
 					{project.title}
 					{#if project.featured}<span class="tag">featured</span>{/if}

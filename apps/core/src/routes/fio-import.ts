@@ -110,6 +110,14 @@ export function fioImportRoutes(db: FoliyoDb, config: Config) {
     }
 
     const result = await applyImportDraft(db, userId, draft);
+    if (result.saved.total === 0 && snapshot) {
+      try {
+        await deleteSnapshot(db, config, userId, snapshot.id);
+      } catch {
+        /* keep the unused undo point rather than failing the apply */
+      }
+      snapshot = null;
+    }
     return c.json(
       {
         ...result,
@@ -139,6 +147,7 @@ export function fioImportRoutes(db: FoliyoDb, config: Config) {
     return c.json({
       ok: true,
       saved: result.apply.saved,
+      skipped: result.apply.skipped,
       failed: result.apply.failed,
       message: "Library restored from snapshot. Active library items were replaced.",
     });

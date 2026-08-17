@@ -1,15 +1,23 @@
 {
   "name": "@foliyo/extension",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build",
+    "dev": "VITE_API_BASE=http://localhost:8080 VITE_APP_BASE=http://localhost:5173 vite build --watch",
+    "build": "VITE_API_BASE=http://localhost:8080 VITE_APP_BASE=http://localhost:5173 vite build",
+    "build:prod": "VITE_API_BASE=https://api.foliyo.dev VITE_APP_BASE=https://app.foliyo.dev vite build",
     "clean": "rm -rf dist"
   },
+  "dependencies": {
+    "@foliyo/brand": "workspace:*",
+    "@foliyo/jobs-client": "workspace:*",
+    "@foliyo/ui": "workspace:*"
+  },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/chrome": "^0.1.1",
+    "svelte": "^5.55.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.7"
   }

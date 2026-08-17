@@ -1,0 +1,18 @@
+meta {
+  name: List saved analyses
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/jobs/analyses
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Recent saved JD analyses for the signed-in user. Summaries only (no JD text).
+}

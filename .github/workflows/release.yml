@@ -74,7 +74,8 @@ jobs:
             echo "\"@foliyo/core\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-core-${VER}.tgz\","
             echo "\"@foliyo/themes\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-themes-${VER}.tgz\","
             echo "\"@foliyo/brand\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-brand-${VER}.tgz\","
-            echo "\"@foliyo/ui\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-ui-${VER}.tgz\""
+            echo "\"@foliyo/ui\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-ui-${VER}.tgz\","
+            echo "\"@foliyo/jobs-client\": \"https://github.com/foliyo-dev/foliyo/releases/download/${GITHUB_REF_NAME}/foliyo-jobs-client-${VER}.tgz\""
             echo '```'
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -88,6 +89,7 @@ jobs:
             dist/packages/foliyo-brand-*.tgz
             dist/packages/foliyo-ui-*.tgz
             dist/packages/foliyo-themes-*.tgz
+            dist/packages/foliyo-jobs-client-*.tgz
           body: ${{ steps.meta.outputs.body }}
           fail_on_unmatched_files: true
       - uses: actions/upload-artifact@v7

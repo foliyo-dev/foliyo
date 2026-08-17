@@ -77,6 +77,11 @@ export function tailorResume(data: {
 	skill_ids?: string[];
 	jd_text?: string;
 	include_matching?: boolean;
+	approved?: {
+		skill_ids: string[];
+		project_ids?: string[];
+		experience_ids?: string[];
+	};
 }) {
 	return api<TailorResult>('/resumes/tailor', { method: 'POST', body: JSON.stringify(data) });
 }

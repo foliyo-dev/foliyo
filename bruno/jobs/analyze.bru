@@ -1,0 +1,34 @@
+meta {
+  name: Analyze job
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/jobs/analyze
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "jd_text": "Senior Backend Engineer\nCompany: Acme\n\nRequirements:\n- Go, PostgreSQL, AWS, Kubernetes (K8s)\n\nPreferred:\n- Kafka, Terraform\n",
+    "portfolio_id": "{{portfolioId}}",
+    "enhance": false
+  }
+}
+
+docs {
+  Paste-first job analysis. Heuristic parse always. Optional enhance=true uses hosted LLM (Pro, 1 AI unit) with heuristic fallback.
+  Persists the analysis (upsert by JD hash) so refresh/reopen does not spend another unit.
+  Returns verdict, coverage, matches, proposed changes, and `id`.
+  Missing skills are never proposed as adds.
+}

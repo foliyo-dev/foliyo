@@ -6,7 +6,7 @@ export type AiUsage = {
 	units: number;
 	limit: number;
 	remaining: number;
-	costs: { import: number; rewrite: number };
+	costs: { import: number; rewrite: number; analyze?: number };
 	tokens_in: number;
 	tokens_out: number;
 	import_count: number;

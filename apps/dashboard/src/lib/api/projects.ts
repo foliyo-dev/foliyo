@@ -26,6 +26,8 @@ export const bulkCreateProjects = (items: Partial<Project>[]) =>
   api<BulkResult<Project>>('/projects/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateProject = (id: string, data: Partial<Project>) =>
   api<{ ok: boolean }>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const reorderProjects = (ids: string[]) =>
+  api<{ ok: boolean }>('/projects/reorder', { method: 'PUT', body: JSON.stringify({ ids }) });
 export const deleteProject = (id: string) =>
 	api<void>(`/projects/${id}`, { method: 'DELETE' });
 export const listDeletedProjects = () => api<Project[]>(`/projects/deleted`);

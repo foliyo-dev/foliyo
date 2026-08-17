@@ -23,7 +23,11 @@ import { publicRoutes } from "./routes/public.js";
 import { specRoutes } from "./routes/spec.js";
 import { statusNotifyRoutes } from "./routes/status-notify.js";
 import { fioImportRoutes } from "./routes/fio-import.js";
+import { jobsRoutes } from "./routes/jobs.js";
 import { authMiddleware } from "./middleware/auth.js";
+import type { JobDocumentParser } from "./jobs/types.js";
+
+export type { JobDocumentParser };
 
 export type CreateFoliyoAppOptions = {
   /** Mount public / SaaS routes here (after mesh/public, before core /api/auth). */
@@ -33,6 +37,8 @@ export type CreateFoliyoAppOptions = {
    * Required for Hono: routes added to `api` after `app.route("/api", api)` are ignored.
    */
   extendApi?: (api: Hono) => void;
+  /** Optional hosted LLM JD parser. Heuristic analysis always runs without this. */
+  jobDocumentParser?: JobDocumentParser;
 };
 
 /** Build the Foliyo Hono app without starting the server — used by foliyo-cloud to mount SaaS routes. */
@@ -118,6 +124,7 @@ export function createFoliyoApp(
   api.route("/social-links", socialLinksRoutes(db));
   api.route("/portfolios", portfoliosRoutes(db, config));
   api.route("/resumes", resumesRoutes(db, config));
+  api.route("/jobs", jobsRoutes(db, options.jobDocumentParser));
   api.route("/applications", applicationsRoutes(db));
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));

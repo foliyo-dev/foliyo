@@ -410,12 +410,16 @@
 	{:else}
 		<ul class="list">
 			{#each items as p (p.id)}
-				<li>
+				<li
+					class:previewing={previewingId === p.id && !showCreateForm}
+					aria-current={previewingId === p.id && !showCreateForm ? 'true' : undefined}
+				>
 					<Card>
 						<div class="row">
 							<div>
 								<h2>
 									{p.name}
+									{#if previewingId === p.id && !showCreateForm}<span class="tag previewing">previewing</span>{/if}
 									{#if p.is_default}<span class="star">default</span>{/if}
 									{#if p.is_public}<span class="tag public">public</span>{:else}<span
 											class="tag private">private</span
@@ -458,9 +462,10 @@
 				<Button on:click={openCreate}>New portfolio</Button>
 			</div>
 		{:else}
+			<div class="create-wrap previewing">
 			<Card>
 				<div class="create-head">
-					<h2 class="section-title">New portfolio</h2>
+					<h2 class="section-title">New portfolio <span class="tag previewing">previewing</span></h2>
 					{#if items.length > 0}
 						<Button
 							variant="ghost"
@@ -533,6 +538,7 @@
 					>
 				</div>
 			</Card>
+			</div>
 		{/if}
 	{/if}
 </EditorWithPortfolioPreview>
@@ -541,6 +547,10 @@
 	.section-title {
 		margin: 0;
 		font-size: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
 	.create-head {
 		display: flex;
@@ -656,6 +666,15 @@
 	.tag.private {
 		background: #f3f4f6;
 		color: var(--color-muted);
+	}
+	.tag.previewing {
+		background: var(--color-primary-light);
+		color: var(--color-primary);
+	}
+	.list li.previewing :global(.card),
+	.create-wrap.previewing :global(.card) {
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent);
 	}
 	.slug,
 	.url {

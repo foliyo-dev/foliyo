@@ -167,18 +167,21 @@ export function getImportUpgrade(err: unknown): UpgradeError | null {
 	return null;
 }
 
+export type ApplyImportCounts = {
+	profile: number;
+	links: number;
+	skills: number;
+	experience: number;
+	education: number;
+	projects: number;
+	certifications: number;
+	languages: number;
+	total: number;
+};
+
 export type ApplyImportResult = {
-	saved: {
-		profile: number;
-		links: number;
-		skills: number;
-		experience: number;
-		education: number;
-		projects: number;
-		certifications: number;
-		languages: number;
-		total: number;
-	};
+	saved: ApplyImportCounts;
+	skipped: ApplyImportCounts;
 	failed: Array<{ section: string; index: number; error: string }>;
 	snapshot?: { id: string; label: string; created_at: string } | null;
 	snapshot_limit?: number;
@@ -202,7 +205,13 @@ export const listImportSnapshots = () =>
 	api<{ items: ImportSnapshot[]; limit: number }>('/import/snapshots');
 
 export const restoreImportSnapshot = (id: string) =>
-	api<{ ok: boolean; saved: ApplyImportResult['saved']; failed: ApplyImportResult['failed']; message: string }>(
+	api<{
+		ok: boolean;
+		saved: ApplyImportResult['saved'];
+		skipped?: ApplyImportResult['skipped'];
+		failed: ApplyImportResult['failed'];
+		message: string;
+	}>(
 		`/import/snapshots/${id}/restore`,
 		{ method: 'POST', body: '{}' }
 	);

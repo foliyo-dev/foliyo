@@ -170,7 +170,7 @@
 				{/each}
 			</select>
 			{#if resumes.length === 0}
-				<span class="field-hint">No resumes yet — <a href="/resume">create one from your library</a> first.</span>
+				<span class="field-hint">No resumes yet — <a href="/resume/new">create one from your library</a> first.</span>
 			{/if}
 		</label>
 		<label class="field">

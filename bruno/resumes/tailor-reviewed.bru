@@ -1,0 +1,38 @@
+meta {
+  name: Tailor resume (reviewed)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/resumes/tailor
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Acme backend — reviewed",
+    "portfolio_id": "{{portfolioId}}",
+    "theme_slug": "classic",
+    "jd_text": "Senior Backend Engineer. Requirements: Go, PostgreSQL, AWS.",
+    "approved": {
+      "skill_ids": [],
+      "project_ids": [],
+      "experience_ids": []
+    }
+  }
+}
+
+docs {
+  After POST /api/jobs/analyze, copy accepted Library IDs into approved.
+  Missing JD skills must not appear in skill_ids. Free: 1 resume (402 if at limit).
+}

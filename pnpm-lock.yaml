@@ -90,6 +90,9 @@ importers:
       '@foliyo/brand':
         specifier: workspace:*
         version: link:../../packages/brand
+      '@foliyo/jobs-client':
+        specifier: workspace:*
+        version: link:../../packages/jobs-client
       '@foliyo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -123,10 +126,26 @@ importers:
         version: 8.1.4(@types/node@25.9.5)(esbuild@0.25.12)(tsx@4.23.1)(yaml@2.9.0)
 
   apps/extension:
+    dependencies:
+      '@foliyo/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
+      '@foliyo/jobs-client':
+        specifier: workspace:*
+        version: link:../../packages/jobs-client
+      '@foliyo/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
     devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^7.0.0
+        version: 7.2.0(svelte@5.56.4)(vite@8.1.4(@types/node@25.9.5)(esbuild@0.25.12)(tsx@4.23.1)(yaml@2.9.0))
       '@types/chrome':
         specifier: ^0.1.1
         version: 0.1.43
+      svelte:
+        specifier: ^5.55.2
+        version: 5.56.4
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
@@ -136,9 +155,15 @@ importers:
 
   packages/brand: {}
 
+  packages/jobs-client: {}
+
   packages/themes: {}
 
   packages/ui:
+    dependencies:
+      '@foliyo/jobs-client':
+        specifier: workspace:*
+        version: link:../jobs-client
     devDependencies:
       '@foliyo/brand':
         specifier: workspace:*

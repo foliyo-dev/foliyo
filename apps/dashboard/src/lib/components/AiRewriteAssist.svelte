@@ -165,7 +165,7 @@
 				</div>
 				<div class="result-actions">
 					<Button on:click={accept}>Use suggestion</Button>
-					<Button variant="ghost" on:click={retry} disabled={busy !== null || !usedTone}>
+					<Button variant="secondary" on:click={retry} disabled={busy !== null || !usedTone}>
 						Try again
 					</Button>
 					<button type="button" class="discard" on:click={dismiss}>Discard</button>

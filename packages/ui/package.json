@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/ui",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "private": true,
   "description": "Shared Foliyo UI primitives (Svelte)",
   "type": "module",
@@ -13,7 +13,13 @@
     },
     "./Logo.svelte": "./src/Logo.svelte",
     "./Button.svelte": "./src/Button.svelte",
+    "./JobAnalysisPanel.svelte": "./src/JobAnalysisPanel.svelte",
+    "./CoverageHero.svelte": "./src/CoverageHero.svelte",
+    "./RecentAnalyses.svelte": "./src/RecentAnalyses.svelte",
     "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@foliyo/jobs-client": "workspace:*"
   },
   "files": [
     "src"

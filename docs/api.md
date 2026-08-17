@@ -27,7 +27,12 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | CRUD | `/api/resumes`, `/api/resumes/:id` |
 | GET | `/api/resumes/:id/export` — Pro: printable HTML; Free: **402** + upgrade payload |
 | GET | `/api/resumes/:id/export.fio` — Foliyo Resume Spec `.fio` ZIP (all plans) |
-| POST | `/api/resumes/tailor` — JD/skills tailor → resume content snapshot (portfolio unchanged) `{ resume, content, matched_skill_ids, analysis }` |
+| POST | `/api/resumes/tailor` — JD/skills tailor → resume content snapshot (portfolio unchanged) `{ resume, content, matched_skill_ids, analysis }`. Optional `approved: { skill_ids, project_ids?, experience_ids? }` applies a user-reviewed Library change-set (missing JD skills cannot be added). |
+| POST | `/api/jobs/analyze` — paste JD → verdict, coverage, matches, proposed changes. **Saves the analysis** to the account (upsert by JD hash). Heuristic parse always; optional `enhance: true` uses hosted LLM (Pro, 1 AI unit) with heuristic fallback. Response includes `id`. |
+| GET | `/api/jobs/analyses` — `{ items }` recent saved analyses (summaries; no JD text). |
+| GET | `/api/jobs/analyses/:id` — full saved analysis + `jd_text` + `accepted` change ids. |
+| PUT | `/api/jobs/analyses/:id` — `{ accepted: string[] }` persist Include/Skip choices. |
+| DELETE | `/api/jobs/analyses/:id` — drop a saved analysis. |
 | GET, PUT | `/api/resumes/:id/content` — resume content snapshot IDs |
 | GET | `/api/preview/library` — auth HTML preview of full content library as a portfolio |
 | GET | `/api/preview/resume/:id` — auth private resume HTML preview (all plans) |

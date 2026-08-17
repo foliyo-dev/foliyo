@@ -125,7 +125,7 @@
 			<Button disabled={busy !== null} on:click={() => checkout('monthly')}>
 				{busy === 'monthly' ? 'Opening…' : `Pro ₹${monthly}/mo`}
 			</Button>
-			<Button variant="ghost" disabled={busy !== null} on:click={() => checkout('lifetime')}>
+			<Button variant="secondary" disabled={busy !== null} on:click={() => checkout('lifetime')}>
 				{busy === 'lifetime' ? 'Opening…' : `Lifetime ₹${lifetime}`}
 			</Button>
 		</div>

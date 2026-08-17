@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { resolve } from "node:path";
 
 export default defineConfig({
+  plugins: [svelte({ configFile: resolve(__dirname, "svelte.config.js") })],
   root: resolve(__dirname, "src"),
   publicDir: resolve(__dirname, "public"),
   build: {

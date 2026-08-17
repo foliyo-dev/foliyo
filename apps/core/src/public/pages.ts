@@ -28,6 +28,19 @@ function handleFromEmail(email: string): string {
   return local.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32) || "user";
 }
 
+async function fetchRowsByIds(
+  db: FoliyoDb,
+  table: string,
+  ids: string[],
+): Promise<Record<string, unknown>[]> {
+  if (!ids.length) return [];
+  return queryAll<Record<string, unknown>>(
+    db,
+    `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
+    ids,
+  );
+}
+
 /** Ensure every user has a handle (for /u/:handle URLs). */
 export async function ensureHandles(db: FoliyoDb): Promise<void> {
   const users = await queryAll<{ id: string; email: string; handle: string | null }>(
@@ -81,14 +94,7 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
     db, "SELECT language_id FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId],
   )).map((r) => r.language_id);
 
-  const fetchByIds = async (table: string, ids: string[]) => {
-    if (!ids.length) return [];
-    return queryAll(
-      db,
-      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
-      ids,
-    );
-  };
+  const fetchByIds = (table: string, ids: string[]) => fetchRowsByIds(db, table, ids);
 
   let skills =
     portfolio.show_skills === 1 ? await fetchByIds("skills", skillIds) : [];
@@ -199,14 +205,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     )
   ).map((r) => r.language_id);
 
-  const fetchByIds = async (table: string, ids: string[]) => {
-    if (!ids.length) return [];
-    return queryAll(
-      db,
-      `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
-      ids,
-    );
-  };
+  const fetchByIds = (table: string, ids: string[]) => fetchRowsByIds(db, table, ids);
 
   let skills = await fetchByIds("skills", skillIds);
   skills = skills.filter(
@@ -429,7 +428,7 @@ export async function loadPortfolioDraftPreview(
 
   const fetchOwned = async (table: string, ids: string[]) => {
     if (!ids.length) return [];
-    return queryAll(
+    return queryAll<Record<string, unknown>>(
       db,
       `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
       [userId, ...ids],

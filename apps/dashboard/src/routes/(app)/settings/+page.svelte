@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { formatPlanLabel, getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { getAiUsage, type AiUsage } from '$lib/api/ai';
 	import { isSaas, privacyUrl, publicHost, publicPortfolioPath } from '$lib/config';
 	import {
 		checkHandle,
@@ -22,6 +23,7 @@
 
 	let loading = true;
 	let planInfo: PlanInfo | null = null;
+	let aiUsage: AiUsage | null = null;
 	let accountBusy = false;
 	let privacyConsent: ConsentRow | null = null;
 	let accountPrivacy = false;
@@ -231,6 +233,13 @@
 			} catch {
 				planInfo = null;
 			}
+			if (isSaas) {
+				try {
+					aiUsage = await getAiUsage();
+				} catch {
+					aiUsage = null;
+				}
+			}
 			try {
 				const c = await getConsents();
 				privacyConsent = c.privacy_policy;
@@ -356,6 +365,18 @@
 				· AI assist {(planInfo.entitlements.ai_assist ?? planInfo.entitlements.ai_resume_import) ? 'on' : 'off'}
 			{/if}
 		</p>
+		{#if isSaas && pro && aiUsage}
+			<p class="muted">
+				Daily AI budget:
+				<strong>{aiUsage.remaining} of {aiUsage.limit} units left</strong>
+				({aiUsage.units} used today). Smarter JD parse and rewrite cost {aiUsage.costs.analyze ?? 1} unit;
+				resume import costs {aiUsage.costs.import}. Resets midnight UTC.
+			</p>
+		{:else if isSaas && !pro}
+			<p class="muted">
+				Pro includes a daily AI unit budget for smarter JD parse, rewrite, and resume import.
+			</p>
+		{/if}
 		{#if !pro && showDpdp}
 			{#if trialEnded}
 				<p class="muted">
@@ -367,8 +388,15 @@
 				title="Upgrade to Pro"
 				pricing={planInfo?.pricing ?? null}
 				billingAvailable={planInfo?.billing_available ?? false}
-				on:upgraded={(e) => {
+				on:upgraded={async (e) => {
 					planInfo = e.detail;
+					if (isSaas) {
+						try {
+							aiUsage = await getAiUsage();
+						} catch {
+							aiUsage = null;
+						}
+					}
 				}}
 			/>
 		{:else if planSlug === 'lifetime' && showDpdp}

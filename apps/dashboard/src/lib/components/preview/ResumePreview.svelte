@@ -72,9 +72,12 @@
 </script>
 
 <!-- Desktop sticky pane (same pattern as LibraryPreview) -->
-<aside class="pane desktop" aria-label="Private resume preview">
+<aside class="pane desktop" aria-label={resumeId ? `Previewing ${resumeName}` : 'Resume preview'}>
 	<div class="toolbar">
-		<span class="title">Private preview</span>
+		<div class="heading">
+			<span class="kicker">Previewing</span>
+			<strong class="subject">{resumeId ? resumeName : 'None selected'}</strong>
+		</div>
 		<div class="actions">
 			<button type="button" class="ghost" disabled={loading || !resumeId} on:click={() => refresh()}>
 				{loading ? '…' : 'Refresh'}
@@ -86,7 +89,7 @@
 	</div>
 	<p class="hint">
 		{#if resumeId}
-			Signed-in preview of {resumeName}. Stays private until you publish a share link.
+			Stays private until you publish a share link.
 		{:else}
 			Select <strong>Preview</strong> on a resume to see it here.
 		{/if}
@@ -105,13 +108,18 @@
 </aside>
 
 <!-- Mobile trigger + drawer -->
-<button type="button" class="fab mobile" on:click={openDrawer}>Preview</button>
+<button type="button" class="fab mobile" on:click={openDrawer}>
+	Preview{#if resumeId}<span class="fab-name">{resumeName}</span>{/if}
+</button>
 
 {#if drawerOpen}
 	<div class="overlay mobile" role="presentation" on:click={closeDrawer} on:keydown={() => {}}></div>
-	<aside class="drawer mobile" aria-label="Private resume preview">
+	<aside class="drawer mobile" aria-label={resumeId ? `Previewing ${resumeName}` : 'Resume preview'}>
 		<div class="toolbar">
-			<span class="title">Private preview</span>
+			<div class="heading">
+				<span class="kicker">Previewing</span>
+				<strong class="subject">{resumeId ? resumeName : 'None selected'}</strong>
+			</div>
 			<div class="actions">
 				<button type="button" class="ghost" disabled={loading || !resumeId} on:click={() => refresh()}>
 					{loading ? '…' : 'Refresh'}
@@ -124,7 +132,7 @@
 		</div>
 		<p class="hint">
 			{#if resumeId}
-				Signed-in preview of {resumeName}.
+				Stays private until you publish a share link.
 			{:else}
 				Select Preview on a resume first.
 			{/if}
@@ -162,12 +170,26 @@
 		justify-content: space-between;
 		gap: 0.5rem;
 	}
-	.title {
-		font-size: 0.8125rem;
+	.heading {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.kicker {
+		font-size: 0.6875rem;
 		font-weight: 700;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--color-muted);
+	}
+	.subject {
+		font-size: 0.9375rem;
+		font-weight: 600;
+		color: var(--color-text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.actions {
 		display: flex;
@@ -248,6 +270,8 @@
 		}
 		.fab {
 			display: inline-flex;
+			flex-direction: column;
+			align-items: flex-start;
 			position: fixed;
 			right: 1rem;
 			bottom: 1rem;
@@ -261,6 +285,17 @@
 			font-size: 0.875rem;
 			box-shadow: 0 8px 24px rgba(83, 74, 183, 0.35);
 			cursor: pointer;
+			max-width: min(90vw, 18rem);
+		}
+		.fab-name {
+			display: block;
+			font-size: 0.6875rem;
+			font-weight: 500;
+			opacity: 0.9;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			max-width: 12rem;
 		}
 		.overlay {
 			display: block;

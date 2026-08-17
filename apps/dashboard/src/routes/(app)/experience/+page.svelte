@@ -17,6 +17,7 @@
 		createExperience,
 		updateExperience,
 		deleteExperience,
+		reorderExperience,
 		listDeletedExperience,
 		restoreExperience,
 		purgeExperience,
@@ -39,7 +40,7 @@
 	let sortOrder = '0';
 
 	const crud = createCrudList<Experience>(
-		{ list: listExperience, create: createExperience, update: updateExperience, remove: deleteExperience },
+		{ list: listExperience, create: createExperience, update: updateExperience, remove: deleteExperience, reorder: reorderExperience },
 		{
 			getPayload: () => ({
 				company: company.trim(),
@@ -100,7 +101,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={$editingId ? 'Edit role' : 'Experience'}
-		description="Work history — add skills developed so Foliyo can suggest skills for your library. Optional write-up links for resume deep dives."
+		description="Work history — list order is how they appear on folios and resumes. Add skills developed so Foliyo can suggest skills for your library."
 	/>
 	<RecentlyDeleted
 		bind:this={trash}
@@ -149,7 +150,6 @@
 					placeholder="https://… (external blog or future Foliyo post)"
 				/>
 				<Input label="Link label" bind:value={articleUrlLabel} placeholder="View write-up, Syllabus, Talk…" />
-				<Input label="Sort order" bind:value={sortOrder} />
 			</svelte:fragment>
 			<svelte:fragment slot="actions">
 				{#if $editingId}
@@ -164,8 +164,13 @@
 	{/if}
 
 	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No experience entries yet.">
-		{#each $items as item (item.id)}
-			<ContentListItem onEdit={() => crud.startEdit(item)} onRemove={() => crud.remove(item)}>
+		{#each $items as item, i (item.id)}
+			<ContentListItem
+				onEdit={() => crud.startEdit(item)}
+				onRemove={() => crud.remove(item)}
+				onMoveUp={$items.length > 1 && i > 0 ? () => crud.move(item.id, -1) : undefined}
+				onMoveDown={$items.length > 1 && i < $items.length - 1 ? () => crud.move(item.id, 1) : undefined}
+			>
 				<strong>{item.role}</strong> at {item.company}
 				<span class="meta">
 					{item.start_date} – {item.end_date ?? 'Present'}

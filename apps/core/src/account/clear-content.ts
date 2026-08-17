@@ -12,6 +12,7 @@ export type ClearContentCounts = {
   social_links: number;
   applications: number;
   blog_posts: number;
+  job_analyses: number;
 };
 
 /**
@@ -36,11 +37,13 @@ export async function clearUserContent(db: FoliyoDb, userId: string): Promise<Cl
     social_links: await count("social_links"),
     applications: await count("applications"),
     blog_posts: await count("blog_posts"),
+    job_analyses: await count("job_analyses"),
   };
 
   // Resumes first (share tokens / public /r die). Portfolio junctions cascade with portfolios.
   await run(db, "DELETE FROM resumes WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM portfolios WHERE user_id = ?", [userId]);
+  await run(db, "DELETE FROM job_analyses WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM applications WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM blog_posts WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM skills WHERE user_id = ?", [userId]);

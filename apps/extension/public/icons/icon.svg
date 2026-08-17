@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">
+  <title>Foliyo icon outlined</title>
+  <desc>Foliyo icon — tile mark on light wash (light UI accents)</desc>
+  <rect x="1" y="1" width="42" height="42" rx="10" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="7" y="7" width="9" height="9" rx="2" fill="#534AB7"/>
+  <rect x="18" y="7" width="9" height="9" rx="2" fill="#534AB7"/>
+  <rect x="29" y="7" width="8" height="9" rx="2" fill="#ffffff" stroke="#534AB7" stroke-width="1.25"/>
+  <rect x="7" y="18" width="9" height="9" rx="2" fill="#ffffff" stroke="#534AB7" stroke-width="1.25"/>
+  <rect x="18" y="18" width="9" height="9" rx="2" fill="#534AB7"/>
+  <rect x="29" y="18" width="8" height="9" rx="2" fill="#534AB7"/>
+  <rect x="7" y="29" width="9" height="8" rx="2" fill="#534AB7"/>
+  <rect x="18" y="29" width="19" height="8" rx="2" fill="#E8C547"/>
+</svg>

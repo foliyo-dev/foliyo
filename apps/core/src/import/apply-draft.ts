@@ -1,9 +1,19 @@
-import { queryOne, run, withTransaction, type FoliyoDb } from "../db.js";
+import { queryAll, queryOne, run, withTransaction, type FoliyoDb } from "../db.js";
 import { absoluteHttpUrl } from "../http-url.js";
 import type { FioImportDraft } from "../spec/fio.js";
 import { isSocialProvider, getSocialProvider } from "../social/providers.js";
 import { upsertSkill } from "../skills/upsert.js";
 import { suggestSkillsFromLibrary } from "../skills/evidence.js";
+import {
+  certificationKey,
+  educationKey,
+  experienceKey,
+  languageKey,
+  linkMatchesExisting,
+  projectKey,
+  rememberLink,
+  skillKey,
+} from "./match.js";
 
 const LEVELS = new Set(["beginner", "intermediate", "advanced", "expert"]);
 const PROFICIENCIES = new Set(["native", "fluent", "conversational", "basic"]);
@@ -24,6 +34,7 @@ export type ApplyDraftCounts = {
 
 export type ApplyDraftResult = {
   saved: ApplyDraftCounts;
+  skipped: ApplyDraftCounts;
   failed: ApplyDraftFailure[];
 };
 
@@ -67,18 +78,8 @@ function tags(row: Record<string, unknown>): string[] {
   return [];
 }
 
-/**
- * Write a reviewed Foliyo Resume Spec / AI / .fio draft into the user's library.
- * One DB pass + one skill-suggestion recompute. Invalid rows are skipped rather
- * than aborting the rest. Never writes users.email or email_verified.
- */
-export async function applyImportDraft(
-  db: FoliyoDb,
-  userId: string,
-  draft: FioImportDraft,
-): Promise<ApplyDraftResult> {
-  const failed: ApplyDraftFailure[] = [];
-  const saved: ApplyDraftCounts = {
+function emptyCounts(): ApplyDraftCounts {
+  return {
     profile: 0,
     links: 0,
     skills: 0,
@@ -89,8 +90,110 @@ export async function applyImportDraft(
     languages: 0,
     total: 0,
   };
+}
+
+function sumTotal(c: ApplyDraftCounts): void {
+  c.total =
+    c.profile +
+    c.links +
+    c.skills +
+    c.experience +
+    c.education +
+    c.projects +
+    c.certifications +
+    c.languages;
+}
+
+type ExistingKeys = {
+  skills: Set<string>;
+  experience: Set<string>;
+  education: Set<string>;
+  projects: Set<string>;
+  certifications: Set<string>;
+  languages: Set<string>;
+  links: Set<string>;
+};
+
+async function loadExistingKeys(db: FoliyoDb, userId: string): Promise<ExistingKeys> {
+  const keys: ExistingKeys = {
+    skills: new Set(),
+    experience: new Set(),
+    education: new Set(),
+    projects: new Set(),
+    certifications: new Set(),
+    languages: new Set(),
+    links: new Set(),
+  };
+
+  const skills = await queryAll<{ name: string }>(
+    db,
+    `SELECT name FROM skills
+     WHERE user_id = ? AND status = 'confirmed' AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of skills) keys.skills.add(skillKey(row.name));
+
+  const experience = await queryAll<{ company: string; role: string; start_date: string }>(
+    db,
+    `SELECT company, role, start_date FROM experience WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of experience) keys.experience.add(experienceKey(row.company, row.role, row.start_date));
+
+  const education = await queryAll<{ institution: string; degree: string }>(
+    db,
+    `SELECT institution, degree FROM education WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of education) keys.education.add(educationKey(row.institution, row.degree));
+
+  const projects = await queryAll<{ title: string; url: string; repo_url: string }>(
+    db,
+    `SELECT title, url, repo_url FROM projects WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of projects) keys.projects.add(projectKey(row.title, row.url, row.repo_url));
+
+  const certs = await queryAll<{ name: string; issuer: string }>(
+    db,
+    `SELECT name, issuer FROM certifications WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of certs) keys.certifications.add(certificationKey(row.name, row.issuer));
+
+  const languages = await queryAll<{ name: string }>(
+    db,
+    `SELECT name FROM languages WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of languages) keys.languages.add(languageKey(row.name));
+
+  const links = await queryAll<{ provider: string; value: string }>(
+    db,
+    `SELECT provider, value FROM social_links WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  for (const row of links) rememberLink(keys.links, row.provider, row.value);
+
+  return keys;
+}
+
+/**
+ * Write a reviewed Foliyo Resume Spec / AI / .fio draft into the user's library.
+ * One DB pass + one skill-suggestion recompute. Duplicate library rows are skipped.
+ * Invalid rows fail rather than aborting the rest. Never writes users.email or email_verified.
+ */
+export async function applyImportDraft(
+  db: FoliyoDb,
+  userId: string,
+  draft: FioImportDraft,
+): Promise<ApplyDraftResult> {
+  const failed: ApplyDraftFailure[] = [];
+  const saved = emptyCounts();
+  const skipped = emptyCounts();
 
   await withTransaction(db, async () => {
+    const existing = await loadExistingKeys(db, userId);
     const cand = draft.candidate ?? {
       name: "",
       headline: "",
@@ -131,12 +234,17 @@ export async function applyImportDraft(
         !def?.usernameBased || raw.includes("/") || raw.toLowerCase().startsWith("www.")
           ? absoluteHttpUrl(raw) || raw
           : raw;
+      if (linkMatchesExisting(existing.links, provider, value)) {
+        skipped.links += 1;
+        continue;
+      }
       try {
         await run(
           db,
           `INSERT INTO social_links (provider, label, value, sort_order, user_id) VALUES (?, ?, ?, ?, ?)`,
           [provider, providerRaw, value, i, userId],
         );
+        rememberLink(existing.links, provider, value);
         saved.links += 1;
       } catch (err) {
         failed.push({
@@ -154,6 +262,11 @@ export async function applyImportDraft(
         failed.push({ section: "skills", index: i, error: "invalid body" });
         continue;
       }
+      const key = skillKey(name);
+      if (existing.skills.has(key)) {
+        skipped.skills += 1;
+        continue;
+      }
       const levelRaw = str(skills[i]?.level);
       try {
         await upsertSkill(db, userId, {
@@ -163,6 +276,7 @@ export async function applyImportDraft(
           recency: "current",
           sort_order: i,
         });
+        existing.skills.add(key);
         saved.skills += 1;
       } catch (err) {
         failed.push({
@@ -180,6 +294,11 @@ export async function applyImportDraft(
       const role = str(e.role);
       if (!company || !role) {
         failed.push({ section: "experience", index: i, error: "invalid body" });
+        continue;
+      }
+      const expKey = experienceKey(company, role, e.start);
+      if (existing.experience.has(expKey)) {
+        skipped.experience += 1;
         continue;
       }
       try {
@@ -201,6 +320,7 @@ export async function applyImportDraft(
             userId,
           ],
         );
+        existing.experience.add(expKey);
         saved.experience += 1;
       } catch (err) {
         failed.push({
@@ -217,6 +337,11 @@ export async function applyImportDraft(
       const institution = str(e.institution);
       if (!institution) {
         failed.push({ section: "education", index: i, error: "invalid body" });
+        continue;
+      }
+      const eduKey = educationKey(institution, e.degree);
+      if (existing.education.has(eduKey)) {
+        skipped.education += 1;
         continue;
       }
       try {
@@ -236,6 +361,7 @@ export async function applyImportDraft(
             userId,
           ],
         );
+        existing.education.add(eduKey);
         saved.education += 1;
       } catch (err) {
         failed.push({
@@ -252,6 +378,11 @@ export async function applyImportDraft(
       const title = str(p.title);
       if (!title) {
         failed.push({ section: "projects", index: i, error: "invalid body" });
+        continue;
+      }
+      const projKey = projectKey(title, p.url, p.repo_url);
+      if (existing.projects.has(projKey)) {
+        skipped.projects += 1;
         continue;
       }
       try {
@@ -275,6 +406,7 @@ export async function applyImportDraft(
             userId,
           ],
         );
+        existing.projects.add(projKey);
         saved.projects += 1;
       } catch (err) {
         failed.push({
@@ -291,6 +423,11 @@ export async function applyImportDraft(
       const name = str(c.name);
       if (!name) {
         failed.push({ section: "certifications", index: i, error: "invalid body" });
+        continue;
+      }
+      const certKey = certificationKey(name, c.issuer);
+      if (existing.certifications.has(certKey)) {
+        skipped.certifications += 1;
         continue;
       }
       try {
@@ -311,6 +448,7 @@ export async function applyImportDraft(
             userId,
           ],
         );
+        existing.certifications.add(certKey);
         saved.certifications += 1;
       } catch (err) {
         failed.push({
@@ -329,6 +467,11 @@ export async function applyImportDraft(
         failed.push({ section: "languages", index: i, error: "invalid body" });
         continue;
       }
+      const langKey = languageKey(name);
+      if (existing.languages.has(langKey)) {
+        skipped.languages += 1;
+        continue;
+      }
       const proficiencyRaw = str(l.proficiency);
       try {
         await run(
@@ -336,6 +479,7 @@ export async function applyImportDraft(
           `INSERT INTO languages (name, proficiency, sort_order, user_id) VALUES (?, ?, ?, ?)`,
           [name, PROFICIENCIES.has(proficiencyRaw) ? proficiencyRaw : "fluent", i, userId],
         );
+        existing.languages.add(langKey);
         saved.languages += 1;
       } catch (err) {
         failed.push({
@@ -346,15 +490,8 @@ export async function applyImportDraft(
       }
     }
 
-    saved.total =
-      saved.profile +
-      saved.links +
-      saved.skills +
-      saved.experience +
-      saved.education +
-      saved.projects +
-      saved.certifications +
-      saved.languages;
+    sumTotal(saved);
+    sumTotal(skipped);
 
     if (
       saved.experience + saved.education + saved.projects + saved.certifications > 0
@@ -363,7 +500,7 @@ export async function applyImportDraft(
     }
   });
 
-  return { saved, failed };
+  return { saved, skipped, failed };
 }
 
 async function upsertProfile(

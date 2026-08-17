@@ -210,6 +210,20 @@ function crudRoutes(
     return c.json({ ok: true });
   });
 
+  r.put("/reorder", async (c) => {
+    const userId = c.get("userId");
+    const body = z.object({ ids: z.array(z.string()) }).safeParse(await c.req.json());
+    if (!body.success) return c.json({ error: "invalid body" }, 400);
+    for (const [i, id] of body.data.ids.entries()) {
+      await run(
+        db,
+        `UPDATE ${table} SET sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND deleted_at IS NULL`,
+        [i, id, userId],
+      );
+    }
+    return c.json({ ok: true });
+  });
+
   r.put("/:id", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");

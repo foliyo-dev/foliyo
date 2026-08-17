@@ -6,6 +6,11 @@ export const foliyoVersion = __FOLIYO_VERSION__;
 
 const isDev = import.meta.env.DEV;
 
+/** Dashboard app origin (for in-app links like /skills). */
+export const APP_BASE = (
+	import.meta.env.VITE_APP_URL ?? (isDev ? 'http://localhost:5173' : 'https://app.foliyo.dev')
+).replace(/\/$/, '');
+
 /** Public site / API origin (portfolios live here). */
 export const siteUrl = (
 	import.meta.env.VITE_SITE_URL ?? (isDev ? 'http://localhost:8080' : 'https://foliyo.dev')

@@ -1,5 +1,5 @@
 import { queryAll, queryOne, type FoliyoDb } from "../db.js";
-import type { ResumeContentIds } from "../resume/content.js";
+import { filterOwnedContent, type ResumeContentIds } from "../resume/content.js";
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -93,6 +93,58 @@ export async function computeTailorSelection(
     skill_ids,
     project_ids,
     experience_ids,
+    education_ids,
+    certification_ids,
+    language_ids,
+  };
+}
+
+/**
+ * Apply a user-reviewed change-set. Only confirmed Library IDs are kept.
+ * Education / certifications / languages are always included (same as auto-tailor).
+ */
+export async function computeApprovedSelection(
+  db: FoliyoDb,
+  userId: string,
+  approved: {
+    skill_ids: string[];
+    project_ids?: string[];
+    experience_ids?: string[];
+  },
+): Promise<ResumeContentIds> {
+  const owned = await filterOwnedContent(db, userId, {
+    skill_ids: approved.skill_ids,
+    project_ids: approved.project_ids ?? [],
+    experience_ids: approved.experience_ids ?? [],
+    education_ids: [],
+    certification_ids: [],
+    language_ids: [],
+  });
+
+  const education_ids = (
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM education WHERE user_id = ? AND deleted_at IS NULL",
+      [userId],
+    )
+  ).map((r) => r.id);
+  const certification_ids = (
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM certifications WHERE user_id = ? AND deleted_at IS NULL",
+      [userId],
+    )
+  ).map((r) => r.id);
+  const language_ids = (
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM languages WHERE user_id = ? AND deleted_at IS NULL",
+      [userId],
+    )
+  ).map((r) => r.id);
+
+  return {
+    ...owned,
     education_ids,
     certification_ids,
     language_ids,

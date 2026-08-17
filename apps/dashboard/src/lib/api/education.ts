@@ -19,6 +19,8 @@ export const bulkCreateEducation = (items: Partial<Education>[]) =>
 	api<BulkResult<Education>>('/education/bulk', { method: 'POST', body: JSON.stringify({ items }) });
 export const updateEducation = (id: string, data: Partial<Education>) =>
 	api<{ ok: boolean }>(`/education/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const reorderEducation = (ids: string[]) =>
+	api<{ ok: boolean }>('/education/reorder', { method: 'PUT', body: JSON.stringify({ ids }) });
 export const deleteEducation = (id: string) =>
 	api<void>(`/education/${id}`, { method: 'DELETE' });
 export const listDeletedEducation = () => api<Education[]>(`/education/deleted`);

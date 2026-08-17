@@ -16,6 +16,7 @@
 		createEducation,
 		updateEducation,
 		deleteEducation,
+		reorderEducation,
 		listDeletedEducation,
 		restoreEducation,
 		purgeEducation,
@@ -36,7 +37,7 @@
 	let sortOrder = '0';
 
 	const crud = createCrudList<Education>(
-		{ list: listEducation, create: createEducation, update: updateEducation, remove: deleteEducation },
+		{ list: listEducation, create: createEducation, update: updateEducation, remove: deleteEducation, reorder: reorderEducation },
 		{
 			getPayload: () => ({
 				institution: institution.trim(),
@@ -88,7 +89,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={$editingId ? 'Edit education' : 'Education'}
-		description="Degrees and schools — add skills developed to feed your skill library."
+		description="Degrees and schools — list order is how they appear on folios and resumes."
 	/>
 	<RecentlyDeleted
 		bind:this={trash}
@@ -130,7 +131,6 @@
 				</label>
 				<Textarea label="Description" bind:value={description} rows={3} />
 				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Python, Data structures" />
-				<Input label="Sort order" bind:value={sortOrder} />
 			</svelte:fragment>
 			<svelte:fragment slot="actions">
 				{#if $editingId}
@@ -145,8 +145,13 @@
 	{/if}
 
 	<ContentList loading={$loading} empty={$items.length === 0} emptyMessage="No education entries yet.">
-		{#each $items as item (item.id)}
-			<ContentListItem onEdit={() => crud.startEdit(item)} onRemove={() => crud.remove(item)}>
+		{#each $items as item, i (item.id)}
+			<ContentListItem
+				onEdit={() => crud.startEdit(item)}
+				onRemove={() => crud.remove(item)}
+				onMoveUp={$items.length > 1 && i > 0 ? () => crud.move(item.id, -1) : undefined}
+				onMoveDown={$items.length > 1 && i < $items.length - 1 ? () => crud.move(item.id, 1) : undefined}
+			>
 				<strong>{item.institution}</strong>
 				{#if item.degree || item.field}
 					<span class="meta">{item.degree}{#if item.degree && item.field}, {/if}{item.field}</span>

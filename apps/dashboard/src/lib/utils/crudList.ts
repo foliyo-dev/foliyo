@@ -7,6 +7,8 @@ export type CrudApi<T> = {
 	create: (payload: Partial<T>) => Promise<T[]>;
 	update: (id: string, payload: Partial<T>) => Promise<unknown>;
 	remove: (id: string) => Promise<void>;
+	/** Persist a new display order (library list). Folios and resumes follow this. */
+	reorder?: (ids: string[]) => Promise<unknown>;
 };
 
 export type CrudHooks<T> = {
@@ -50,6 +52,7 @@ export type CrudList<T extends { id: string }> = {
 	startEdit: (item: T) => void;
 	saveEdit: () => Promise<void>;
 	remove: (item: T) => Promise<void>;
+	move: (id: string, dir: -1 | 1) => Promise<void>;
 };
 
 /**
@@ -152,5 +155,36 @@ export function createCrudList<T extends { id: string }>(
 		}
 	}
 
-	return { items, loading, saving, editingId, formOpen, load, resetForm, openAdd, add, startEdit, saveEdit, remove };
+	async function move(id: string, dir: -1 | 1) {
+		if (!api.reorder) return;
+		const list = [...get(items)];
+		const i = list.findIndex((item) => item.id === id);
+		const j = i + dir;
+		if (i < 0 || j < 0 || j >= list.length) return;
+		[list[i], list[j]] = [list[j], list[i]];
+		items.set(list);
+		try {
+			await api.reorder(list.map((item) => item.id));
+			await hooks.onChange?.();
+		} catch {
+			await load();
+			showToast('Could not update order', 'error');
+		}
+	}
+
+	return {
+		items,
+		loading,
+		saving,
+		editingId,
+		formOpen,
+		load,
+		resetForm,
+		openAdd,
+		add,
+		startEdit,
+		saveEdit,
+		remove,
+		move
+	};
 }

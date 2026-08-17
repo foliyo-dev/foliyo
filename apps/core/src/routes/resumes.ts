@@ -40,6 +40,7 @@ import {
 import { buildFioFromPortfolio, FIO_MIME } from "../spec/fio.js";
 import {
   buildTailorAnalysis,
+  computeApprovedSelection,
   computeTailorSelection,
   matchSkillsFromJd,
 } from "../skills/tailor.js";
@@ -62,6 +63,12 @@ const resumeSchema = z.object({
   content: contentSchema.optional(),
 });
 
+const approvedSchema = z.object({
+  skill_ids: z.array(z.string()).min(1),
+  project_ids: z.array(z.string()).optional(),
+  experience_ids: z.array(z.string()).optional(),
+});
+
 const tailorSchema = z
   .object({
     name: z.string().min(1),
@@ -71,10 +78,18 @@ const tailorSchema = z
     skill_ids: z.array(z.string()).optional(),
     jd_text: z.string().optional(),
     include_matching: z.boolean().default(true),
+    /** User-reviewed Library IDs from job analysis. Missing JD skills must not appear here. */
+    approved: approvedSchema.optional(),
   })
-  .refine((d) => (d.skill_ids && d.skill_ids.length > 0) || (d.jd_text && d.jd_text.trim().length > 0), {
-    message: "Provide skill_ids or jd_text",
-  });
+  .refine(
+    (d) =>
+      Boolean(d.approved) ||
+      (d.skill_ids && d.skill_ids.length > 0) ||
+      (d.jd_text && d.jd_text.trim().length > 0),
+    {
+      message: "Provide approved, skill_ids, or jd_text",
+    },
+  );
 
 export function resumesRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
@@ -114,16 +129,32 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     const hadJd = Boolean(d.jd_text?.trim());
     const hadSelection = selectedIds.length > 0;
     const fromJd = hadJd ? matchSkillsFromJd(d.jd_text!, confirmed) : [];
-    const skillIds = [...new Set([...selectedIds, ...fromJd])];
 
-    if (skillIds.length === 0) {
+    let skillIds = [...new Set([...selectedIds, ...fromJd])];
+    let content: Awaited<ReturnType<typeof computeTailorSelection>>;
+
+    if (d.approved) {
+      content = await computeApprovedSelection(db, userId, d.approved);
+      skillIds = content.skill_ids;
+    } else {
+      if (skillIds.length === 0) {
+        return c.json(
+          { error: "no_matching_skills", message: "No confirmed skills matched. Pick skills manually." },
+          400,
+        );
+      }
+      content = await computeTailorSelection(db, userId, skillIds, d.include_matching);
+    }
+
+    if (content.skill_ids.length === 0) {
       return c.json(
-        { error: "no_matching_skills", message: "No confirmed skills matched. Pick skills manually." },
+        {
+          error: "no_matching_skills",
+          message: "Accept at least one Library skill. Missing JD skills cannot be added.",
+        },
         400,
       );
     }
-
-    const content = await computeTailorSelection(db, userId, skillIds, d.include_matching);
 
     const shareToken = nanoid(16);
     await run(

@@ -6,6 +6,8 @@
 	export let onEdit: (() => void) | undefined = undefined;
 	/** Shown as a default "Delete" button in the actions area, unless the `actions` slot is used instead. */
 	export let onRemove: (() => void) | undefined = undefined;
+	export let onMoveUp: (() => void) | undefined = undefined;
+	export let onMoveDown: (() => void) | undefined = undefined;
 	export let align: 'flex-start' | 'center' = 'flex-start';
 </script>
 
@@ -17,6 +19,10 @@
 			</div>
 			<div class="row-actions">
 				<slot name="actions">
+					{#if onMoveUp || onMoveDown}
+						<Button variant="ghost" disabled={!onMoveUp} on:click={() => onMoveUp?.()}>↑</Button>
+						<Button variant="ghost" disabled={!onMoveDown} on:click={() => onMoveDown?.()}>↓</Button>
+					{/if}
 					{#if onEdit}
 						<Button variant="ghost" on:click={onEdit}>Edit</Button>
 					{/if}

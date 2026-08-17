@@ -35,7 +35,8 @@
       label: 'Publish',
       items: [
         { href: '/portfolios', label: 'Portfolios' },
-        { href: '/resume', label: 'Resume' }
+        { href: '/resume/tailor', label: 'Tailor to a job' },
+        { href: '/resume', label: 'Resumes' }
       ]
     },
     {
@@ -56,6 +57,12 @@
 
   function isActive(href: string, pathname: string): boolean {
     if (href === '/') return pathname === '/';
+    if (href === '/resume') {
+      return pathname === '/resume' || pathname.startsWith('/resume/new');
+    }
+    if (href === '/resume/tailor') {
+      return pathname.startsWith('/resume/tailor') || pathname.startsWith('/resume/analyses');
+    }
     return pathname === href || pathname.startsWith(href + '/');
   }
 

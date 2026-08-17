@@ -27,6 +27,28 @@
 	} from '$lib/api/import';
 	import { ApiError } from '$lib/api/client';
 	import { requestConfirm } from '$lib/stores/confirm';
+	import { listSkills } from '$lib/api/skills';
+	import { listExperience } from '$lib/api/experience';
+	import { listEducation } from '$lib/api/education';
+	import { listProjects } from '$lib/api/projects';
+	import { listCertifications } from '$lib/api/certifications';
+	import { listLanguages } from '$lib/api/languages';
+	import { listSocialLinks } from '$lib/api/social';
+	import {
+		certificationKey,
+		dupCount,
+		educationKey,
+		emptyDupFlags,
+		emptyLibraryIndex,
+		experienceKey,
+		languageKey,
+		matchDraftAgainstLibrary,
+		projectKey,
+		rememberLink,
+		skillKey,
+		type ImportDupFlags,
+		type ImportLibraryIndex
+	} from '$lib/utils/importMatch';
 
 	type SectionKey =
 		| 'candidate'
@@ -67,8 +89,11 @@
 		education: [] as boolean[],
 		projects: [] as boolean[],
 		certifications: [] as boolean[],
-		languages: [] as boolean[]
+		languages: [] as boolean[],
+		links: [] as boolean[]
 	};
+	let libraryIndex: ImportLibraryIndex = emptyLibraryIndex();
+	let dup: ImportDupFlags = emptyDupFlags();
 	let showUpgrade = false;
 	let upgradeMessage =
 		'Import resume is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
@@ -79,6 +104,7 @@
 
 	onMount(async () => {
 		void loadSnapshots();
+		void loadLibraryIndex();
 		if (!isSaas) {
 			loadingPlan = false;
 			return;
@@ -91,6 +117,46 @@
 			loadingPlan = false;
 		}
 	});
+
+	async function loadLibraryIndex() {
+		try {
+			const [skills, experience, education, projects, certs, languages, social] =
+				await Promise.all([
+					listSkills('confirmed').catch(() => []),
+					listExperience().catch(() => []),
+					listEducation().catch(() => []),
+					listProjects().catch(() => []),
+					listCertifications().catch(() => []),
+					listLanguages().catch(() => []),
+					listSocialLinks().catch(() => [])
+				]);
+			const next = emptyLibraryIndex();
+			for (const s of skills) next.skills.add(skillKey(s.name));
+			for (const e of experience) next.experience.add(experienceKey(e.company, e.role, e.start_date));
+			for (const e of education) next.education.add(educationKey(e.institution, e.degree));
+			for (const p of projects) next.projects.add(projectKey(p.title, p.url, p.repo_url));
+			for (const c of certs) next.certifications.add(certificationKey(c.name, c.issuer));
+			for (const l of languages) next.languages.add(languageKey(l.name));
+			for (const l of social) rememberLink(next.links, l.provider, l.value);
+			libraryIndex = next;
+			if (draft) applyDuplicateFlags(draft);
+		} catch {
+			libraryIndex = emptyLibraryIndex();
+		}
+	}
+
+	function applyDuplicateFlags(d: ResumeImportDraft) {
+		dup = matchDraftAgainstLibrary(d, libraryIndex);
+		selected = {
+			skills: d.skills.map((_, i) => !dup.skills[i]),
+			experience: d.experience.map((_, i) => !dup.experience[i]),
+			education: d.education.map((_, i) => !dup.education[i]),
+			projects: d.projects.map((_, i) => !dup.projects[i]),
+			certifications: d.certifications.map((_, i) => !dup.certifications[i]),
+			languages: d.languages.map((_, i) => !dup.languages[i]),
+			links: Object.keys(d.candidate.links || {}).map((_, i) => !dup.links[i])
+		};
+	}
 
 	async function loadSnapshots() {
 		try {
@@ -128,7 +194,7 @@
 			showToast('Library restored from snapshot', 'success');
 			savedResult = null;
 			draft = null;
-			await loadSnapshots();
+			await Promise.all([loadSnapshots(), loadLibraryIndex()]);
 		} catch (err) {
 			const detail = err instanceof ApiError ? err.message.slice(0, 200) : 'Restore failed';
 			showToast(detail, 'error');
@@ -172,14 +238,7 @@
 	}
 
 	function initSelection(d: ResumeImportDraft) {
-		selected = {
-			skills: d.skills.map(() => true),
-			experience: d.experience.map(() => true),
-			education: d.education.map(() => true),
-			projects: d.projects.map(() => true),
-			certifications: d.certifications.map(() => true),
-			languages: d.languages.map(() => true)
-		};
+		applyDuplicateFlags(d);
 		include = {
 			candidate: true,
 			skills: d.skills.length > 0,
@@ -224,7 +283,7 @@
 			const res = await importResumeFromText(pasteText.trim());
 			draft = coerceEditable(res.draft);
 			remainingToday = res.meta.remaining_today;
-			initSelection(res.draft);
+			initSelection(draft);
 			showToast('Draft ready — review before saving', 'success');
 		} catch (err) {
 			await handleExtractError(err);
@@ -243,7 +302,7 @@
 			const res = await importResumeFromPdf(file);
 			draft = coerceEditable(res.draft);
 			remainingToday = res.meta.remaining_today;
-			initSelection(res.draft);
+			initSelection(draft);
 			showToast('Draft ready — review before saving', 'success');
 		} catch (err) {
 			await handleExtractError(err);
@@ -265,7 +324,7 @@
 			const res = await importResumeFromFio(file);
 			draft = coerceEditable(res.draft);
 			remainingToday = null;
-			initSelection(res.draft);
+			initSelection(draft);
 			showToast('Signed .fio verified — review before saving', 'success');
 		} catch (err) {
 			await handleExtractError(err);
@@ -296,7 +355,11 @@
 			location: '',
 			links: {} as Record<string, string>
 		};
-		const links = include.links ? draft.candidate.links || {} : {};
+		const links = include.links
+			? Object.fromEntries(
+					Object.entries(draft.candidate.links || {}).filter((_, i) => selected.links[i])
+				)
+			: {};
 		return {
 			candidate: include.candidate
 				? { ...draft.candidate, links }
@@ -324,6 +387,7 @@
 	function startOver() {
 		savedResult = null;
 		draft = null;
+		dup = emptyDupFlags();
 		pasteText = '';
 	}
 
@@ -336,10 +400,13 @@
 			if (res.failed.length === 0) {
 				savedResult = res;
 				draft = null;
+				dup = emptyDupFlags();
 				pasteText = '';
 				window.scrollTo({ top: 0, behavior: 'smooth' });
-				await loadSnapshots();
-				if (res.snapshot) {
+				await Promise.all([loadSnapshots(), loadLibraryIndex()]);
+				if (res.saved.total === 0 && (res.skipped?.total ?? 0) > 0) {
+					showToast('Nothing new — those items are already in your library', 'success');
+				} else if (res.snapshot) {
 					showToast('Library saved — undo point kept in Import history', 'success');
 				}
 				return;
@@ -414,12 +481,23 @@
 
 {#if savedResult}
 	<Card>
-		<h2 class="section-title">Saved to your library</h2>
+		<h2 class="section-title">
+			{savedResult.saved.total === 0 ? 'Nothing new to save' : 'Saved to your library'}
+		</h2>
 		<p class="hint">
-			{savedResult.saved.total} item{savedResult.saved.total === 1 ? '' : 's'} written.
-			{#if onboarding}
-				Next: review what landed, then create your default portfolio.
+			{#if savedResult.saved.total === 0}
+				{(savedResult.skipped?.total ?? 0) > 0
+					? `${savedResult.skipped?.total} item${savedResult.skipped?.total === 1 ? ' was' : 's were'} already in your library.`
+					: 'No items were selected.'}
 			{:else}
+				{savedResult.saved.total} item{savedResult.saved.total === 1 ? '' : 's'} written.
+				{#if (savedResult.skipped?.total ?? 0) > 0}
+					{savedResult.skipped?.total} already in your library — not added again.
+				{/if}
+			{/if}
+			{#if onboarding && savedResult.saved.total > 0}
+				Next: review what landed, then create your default portfolio.
+			{:else if savedResult.saved.total > 0}
 				Review them in the library, then publish a portfolio or resume.
 			{/if}
 		</p>
@@ -428,7 +506,7 @@
 				{#if savedResult.saved[row.key] > 0}
 					<li>
 						<a href={row.href}>{row.label}</a>
-						<span class="muted">{savedResult.saved[row.key]}</span>
+						<span class="muted">{savedResult.saved[row.key]} new</span>
 					</li>
 				{/if}
 			{/each}
@@ -436,11 +514,11 @@
 		<div class="form-actions">
 			{#if onboarding}
 				<Button on:click={() => goto('/basics')}>Review library</Button>
-				<Button variant="ghost" on:click={() => goto('/portfolios')}>Create default portfolio</Button>
+				<Button variant="secondary" on:click={() => goto('/portfolios')}>Create default portfolio</Button>
 				<Button variant="ghost" on:click={() => goto('/')}>Back to Overview</Button>
 			{:else}
 				<Button on:click={() => goto('/portfolios')}>Create a portfolio</Button>
-				<Button variant="ghost" on:click={() => goto('/resume')}>Create a resume</Button>
+				<Button variant="secondary" on:click={() => goto('/resume/new')}>Create a resume</Button>
 				<Button variant="ghost" on:click={startOver}>Import another</Button>
 			{/if}
 		</div>
@@ -453,7 +531,15 @@
 					<p class="hint">{remainingToday} imports left today</p>
 				{/if}
 			</div>
-			<p class="hint">Uncheck anything you don’t want saved. Nothing is written until you confirm. Public profile email is optional contact only — not your login.</p>
+			<p class="hint">
+				Uncheck anything you don’t want saved. Nothing is written until you confirm. Public profile
+				email is optional contact only — not your login.
+				{#if dupCount(dup) > 0}
+					{@const n = dupCount(dup)}
+					{n} item{n === 1 ? '' : 's'} already in your library
+					{n === 1 ? ' is' : ' are'} unchecked.
+				{/if}
+			</p>
 
 			<label class="section-toggle">
 				<input type="checkbox" bind:checked={include.candidate} />
@@ -475,8 +561,14 @@
 			</label>
 			{#if include.links}
 				<ul class="item-list">
-					{#each Object.entries(draft.candidate.links || {}) as [k, v]}
-						<li><code>{k}</code> — {v}</li>
+					{#each Object.entries(draft.candidate.links || {}) as [k, v], i}
+						<li>
+							<label class="row-check">
+								<input type="checkbox" bind:checked={selected.links[i]} />
+								<code>{k}</code> — {v}
+								{#if dup.links[i]}<span class="dup-badge">Already in library</span>{/if}
+							</label>
+						</li>
 					{/each}
 				</ul>
 			{/if}
@@ -492,6 +584,7 @@
 							<label class="row-check">
 								<input type="checkbox" bind:checked={selected.skills[i]} />
 								{s.name}{#if s.level} · {s.level}{/if}{#if s.category} · {s.category}{/if}
+								{#if dup.skills[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 						</li>
 					{/each}
@@ -510,6 +603,7 @@
 								<input type="checkbox" bind:checked={selected.experience[i]} />
 								<strong>{e.role}</strong> @ {e.company}
 								<span class="meta">{e.start ?? '?'} – {e.current ? 'present' : e.end ?? '?'}</span>
+								{#if dup.experience[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 							{#if e.description}<p class="desc">{e.description}</p>{/if}
 						</li>
@@ -528,6 +622,7 @@
 							<label class="row-check">
 								<input type="checkbox" bind:checked={selected.education[i]} />
 								{e.institution}{#if e.degree} · {e.degree}{/if}
+								{#if dup.education[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 						</li>
 					{/each}
@@ -545,6 +640,7 @@
 							<label class="row-check">
 								<input type="checkbox" bind:checked={selected.projects[i]} />
 								{p.title}
+								{#if dup.projects[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 						</li>
 					{/each}
@@ -562,6 +658,7 @@
 							<label class="row-check">
 								<input type="checkbox" bind:checked={selected.certifications[i]} />
 								{c.name}{#if c.issuer} · {c.issuer}{/if}
+								{#if dup.certifications[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 						</li>
 					{/each}
@@ -579,6 +676,7 @@
 							<label class="row-check">
 								<input type="checkbox" bind:checked={selected.languages[i]} />
 								{l.language}{#if l.proficiency} · {l.proficiency}{/if}
+								{#if dup.languages[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
 						</li>
 					{/each}
@@ -590,9 +688,10 @@
 					{saving ? 'Saving…' : 'Save to library'}
 				</Button>
 				<Button
-					variant="ghost"
+					variant="secondary"
 					on:click={() => {
 						draft = null;
+						dup = emptyDupFlags();
 					}}
 				>
 					Start over
@@ -860,5 +959,15 @@
 	}
 	.saved-list a:hover {
 		color: var(--color-primary);
+	}
+	.dup-badge {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		padding: 0.1rem 0.4rem;
+		border-radius: 4px;
+		background: var(--color-bg);
+		color: var(--color-muted);
+		border: 1px solid var(--color-border);
+		white-space: nowrap;
 	}
 </style>

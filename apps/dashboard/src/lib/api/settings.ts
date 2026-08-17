@@ -12,6 +12,7 @@ export type ClearContentCounts = {
 	social_links: number;
 	applications: number;
 	blog_posts: number;
+	job_analyses?: number;
 };
 
 export type Settings = {

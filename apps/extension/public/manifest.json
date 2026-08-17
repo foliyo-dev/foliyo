@@ -1,11 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Foliyo",
-  "description": "Paste a JD or pick skills to tailor and download your Foliyo resume.",
-  "version": "0.4.1",
+  "description": "Tailor resumes to job descriptions from your library, and download .fio files.",
+  "version": "0.6.0",
   "action": {
     "default_title": "Foliyo",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "background": {
     "scripts": ["background.js"],
@@ -22,7 +34,10 @@
   "host_permissions": [
     "http://localhost:8080/*",
     "http://127.0.0.1:8080/*",
+    "http://localhost:5173/*",
     "https://*.foliyo.dev/*",
-    "https://foliyo.dev/*"
+    "https://foliyo.dev/*",
+    "https://api.foliyo.dev/*",
+    "https://app.foliyo.dev/*"
   ]
 }

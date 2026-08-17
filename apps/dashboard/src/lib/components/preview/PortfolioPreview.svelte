@@ -97,9 +97,12 @@
 	}
 </script>
 
-<aside class="pane desktop" aria-label="Private portfolio preview">
+<aside class="pane desktop" aria-label={draft || portfolioId ? `Previewing ${portfolioName}` : 'Portfolio preview'}>
 	<div class="toolbar">
-		<span class="title">Private preview</span>
+		<div class="heading">
+			<span class="kicker">Previewing</span>
+			<strong class="subject">{draft || portfolioId ? portfolioName : 'None selected'}</strong>
+		</div>
 		<div class="actions">
 			<button
 				type="button"
@@ -119,8 +122,7 @@
 	</div>
 	<p class="hint">
 		{#if draft || portfolioId}
-			Signed-in preview of {portfolioName}. Updates as you change theme and content
-			{draft ? ' (before save)' : ''}.
+			Updates as you change theme and content{draft ? ' (before save)' : ''}.
 		{:else}
 			Select <strong>Preview</strong> on a portfolio, or start creating one.
 		{/if}
@@ -138,13 +140,18 @@
 	</div>
 </aside>
 
-<button type="button" class="fab mobile" on:click={openDrawer}>Preview</button>
+<button type="button" class="fab mobile" on:click={openDrawer}>
+	Preview{#if draft || portfolioId}<span class="fab-name">{portfolioName}</span>{/if}
+</button>
 
 {#if drawerOpen}
 	<div class="overlay mobile" role="presentation" on:click={closeDrawer} on:keydown={() => {}}></div>
-	<aside class="drawer mobile" aria-label="Private portfolio preview">
+	<aside class="drawer mobile" aria-label={draft || portfolioId ? `Previewing ${portfolioName}` : 'Portfolio preview'}>
 		<div class="toolbar">
-			<span class="title">Private preview</span>
+			<div class="heading">
+				<span class="kicker">Previewing</span>
+				<strong class="subject">{draft || portfolioId ? portfolioName : 'None selected'}</strong>
+			</div>
 			<div class="actions">
 				<button
 					type="button"
@@ -165,7 +172,7 @@
 		</div>
 		<p class="hint">
 			{#if draft || portfolioId}
-				Signed-in preview of {portfolioName}.
+				Updates as you change theme and content{draft ? ' (before save)' : ''}.
 			{:else}
 				Select Preview on a portfolio first.
 			{/if}
@@ -203,12 +210,26 @@
 		justify-content: space-between;
 		gap: 0.5rem;
 	}
-	.title {
-		font-size: 0.8125rem;
+	.heading {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.kicker {
+		font-size: 0.6875rem;
 		font-weight: 700;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--color-muted);
+	}
+	.subject {
+		font-size: 0.9375rem;
+		font-weight: 600;
+		color: var(--color-text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.actions {
 		display: flex;
@@ -286,6 +307,8 @@
 		}
 		.fab {
 			display: inline-flex;
+			flex-direction: column;
+			align-items: flex-start;
 			position: fixed;
 			right: 1rem;
 			bottom: 1rem;
@@ -299,6 +322,17 @@
 			font-size: 0.875rem;
 			box-shadow: 0 8px 24px rgba(83, 74, 183, 0.35);
 			cursor: pointer;
+			max-width: min(90vw, 18rem);
+		}
+		.fab-name {
+			display: block;
+			font-size: 0.6875rem;
+			font-weight: 500;
+			opacity: 0.9;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			max-width: 12rem;
 		}
 		.overlay {
 			display: block;

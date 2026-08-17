@@ -239,9 +239,9 @@
 		if (ctx.resumes.length === 0) {
 			steps.push({
 				title: 'Create a resume',
-				detail: 'Reuse the same library and share a private link or export PDF.',
-				href: '/resume',
-				cta: 'Open resume'
+				detail: 'Paste a JD to tailor from your library, or copy a folio.',
+				href: '/resume/tailor',
+				cta: 'Tailor to a job'
 			});
 		}
 		if (!ctx.handle && isSaas) {
@@ -436,8 +436,8 @@
 			</div>
 			{#if resumes.length === 0}
 				<Card>
-					<p class="muted">No resumes yet. Build one from the same library and share a link.</p>
-					<a href="/resume">Create resume →</a>
+					<p class="muted">No resumes yet. Tailor one to a JD, or copy a folio.</p>
+					<a href="/resume/tailor">Tailor to a job →</a>
 				</Card>
 			{:else}
 				<ul class="list">
