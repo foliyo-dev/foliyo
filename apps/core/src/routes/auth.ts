@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Config } from "../config.js";
-import { checkPassword, hashPassword } from "../auth/password.js";
+import { checkPasswordTimed, hashPassword } from "../auth/password.js";
 import {
   bearerToken,
   createToken,
@@ -16,10 +16,12 @@ import {
   findUserByResetToken,
   sendPasswordResetEmail,
 } from "../email/password-reset.js";
+import { rateLimitResponse } from "../auth/limit.js";
+import { normalizeEmail } from "../auth/datetime.js";
 
 const loginSchema = z.object({
-  email: z.string().min(1),
-  password: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(1).max(72),
 });
 
 const forgotSchema = z.object({
@@ -28,12 +30,12 @@ const forgotSchema = z.object({
 
 const resetSchema = z.object({
   token: z.string().min(16),
-  password: z.string().min(8),
+  password: z.string().min(8).max(72),
 });
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
+  currentPassword: z.string().min(1).max(72),
+  newPassword: z.string().min(8).max(72),
 });
 
 export function authRoutes(db: FoliyoDb, config: Config) {
@@ -44,6 +46,10 @@ export function authRoutes(db: FoliyoDb, config: Config) {
     if (!body.success) {
       return c.json({ error: "invalid body" }, 400);
     }
+    const email = normalizeEmail(body.data.email);
+    const limited = rateLimitResponse(c, "login", email);
+    if (limited) return limited;
+
     const user = await queryOne<{
       id: string;
       email: string;
@@ -56,10 +62,11 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       mode: string;
     }>(
       db,
-      "SELECT id, email, password, plan, handle, handle_changed_at, onboarding_complete, email_verified, mode FROM users WHERE email = ?",
-      [body.data.email],
+      "SELECT id, email, password, plan, handle, handle_changed_at, onboarding_complete, email_verified, mode FROM users WHERE lower(email) = ?",
+      [email],
     );
-    if (!user || !checkPassword(user.password, body.data.password)) {
+    const passwordOk = checkPasswordTimed(user?.password, body.data.password);
+    if (!user || !passwordOk) {
       return c.json({ error: "invalid credentials" }, 401);
     }
     if (user.mode === "pending_delete") {
@@ -68,6 +75,15 @@ export function authRoutes(db: FoliyoDb, config: Config) {
           error: "pending_deletion",
           message:
             "This account is scheduled for deletion. Cancel deletion first, then sign in again.",
+        },
+        403,
+      );
+    }
+    if (!user.email_verified) {
+      return c.json(
+        {
+          error: "email_not_verified",
+          message: "Confirm your email and choose a password from the link we sent.",
         },
         403,
       );
@@ -82,7 +98,7 @@ export function authRoutes(db: FoliyoDb, config: Config) {
         handle: user.handle,
         handle_changed_at: user.handle_changed_at,
         onboarding_complete: user.onboarding_complete,
-        email_verified: user.email_verified ?? 1,
+        email_verified: user.email_verified ?? 0,
       },
     });
   });
@@ -115,7 +131,7 @@ export function authRoutes(db: FoliyoDb, config: Config) {
     return c.json({
       user: {
         ...user,
-        email_verified: user.email_verified ?? 1,
+        email_verified: user.email_verified ?? 0,
       },
     });
   });
@@ -125,13 +141,16 @@ export function authRoutes(db: FoliyoDb, config: Config) {
     if (!body.success) {
       return c.json({ error: "invalid body" }, 400);
     }
-    const email = body.data.email.trim().toLowerCase();
-    const user = await queryOne<{ id: string; email: string }>(
+    const email = normalizeEmail(body.data.email);
+    const limited = rateLimitResponse(c, "forgot", email);
+    if (limited) return limited;
+
+    const user = await queryOne<{ id: string; email: string; email_verified: number }>(
       db,
-      "SELECT id, email FROM users WHERE lower(email) = ?",
+      "SELECT id, email, email_verified FROM users WHERE lower(email) = ?",
       [email],
     );
-    if (user) {
+    if (user?.email_verified) {
       const token = await createPasswordResetToken(db, user.id);
       const resetUrl = `${config.dashboardUrl.replace(/\/$/, "")}/reset?token=${encodeURIComponent(token)}`;
       await sendPasswordResetEmail(config, { to: user.email, resetUrl });
@@ -150,12 +169,15 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       return c.json({ error: "invalid body" }, 400);
     }
 
-    const user = await queryOne<{ id: string; password: string }>(
+    const user = await queryOne<{ id: string; password: string; email_verified: number }>(
       db,
-      "SELECT id, password FROM users WHERE id = ?",
+      "SELECT id, password, email_verified FROM users WHERE id = ?",
       [userId],
     );
-    if (!user || !checkPassword(user.password, body.data.currentPassword)) {
+    if (!user || !user.email_verified) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+    if (!checkPasswordTimed(user.password, body.data.currentPassword)) {
       return c.json({ error: "incorrect current password" }, 401);
     }
 
@@ -163,7 +185,6 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       hashPassword(body.data.newPassword),
       userId,
     ]);
-    // Sign out other sessions/devices, but keep this one active.
     await deleteTokensForUser(db, userId, token);
 
     return c.json({ ok: true });
@@ -174,6 +195,9 @@ export function authRoutes(db: FoliyoDb, config: Config) {
     if (!body.success) {
       return c.json({ error: "invalid body" }, 400);
     }
+    const limited = rateLimitResponse(c, "reset");
+    if (limited) return limited;
+
     const user = await findUserByResetToken(db, body.data.token);
     if (!user) {
       return c.json({ error: "invalid or expired token" }, 400);

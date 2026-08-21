@@ -23,6 +23,9 @@
 			if (msg === 'pending_deletion') {
 				showToast('Account scheduled for deletion — cancel it first.', 'error');
 				goto('/cancel-delete');
+			} else if (msg === 'email_not_verified') {
+				showToast('Confirm your email from the link we sent, then choose a password.', 'error');
+				goto('/check-email');
 			} else {
 				showToast('Invalid email or password', 'error');
 			}

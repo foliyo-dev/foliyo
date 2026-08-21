@@ -3,17 +3,17 @@ import { queryOne, run, type FoliyoDb } from "../db.js";
 import type { Config } from "../config.js";
 import { p, renderTransactionalEmail } from "./layout.js";
 import { sendMail } from "./send.js";
+import { hashSecret } from "../auth/secret.js";
+import { sqlUtc, sqlUtcPlusHours } from "../auth/datetime.js";
 
 const RESET_HOURS = 1;
 
 export async function createPasswordResetToken(db: FoliyoDb, userId: string): Promise<string> {
   const token = nanoid(32);
-  const expires = new Date();
-  expires.setHours(expires.getHours() + RESET_HOURS);
   await run(
     db,
     `UPDATE users SET password_reset_token = ?, password_reset_expires = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-    [token, expires.toISOString(), userId],
+    [hashSecret(token), sqlUtcPlusHours(RESET_HOURS), userId],
   );
   return token;
 }
@@ -30,12 +30,14 @@ export async function findUserByResetToken(
   db: FoliyoDb,
   token: string,
 ): Promise<{ id: string; email: string } | null> {
+  const now = sqlUtc();
+  const hashed = hashSecret(token);
   return (
     (await queryOne<{ id: string; email: string }>(
       db,
       `SELECT id, email FROM users
-       WHERE password_reset_token = ? AND password_reset_expires > CURRENT_TIMESTAMP`,
-      [token],
+       WHERE (password_reset_token = ? OR password_reset_token = ?) AND password_reset_expires > ?`,
+      [hashed, token, now],
     )) ?? null
   );
 }

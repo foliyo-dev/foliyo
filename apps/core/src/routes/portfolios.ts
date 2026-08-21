@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import type { AppEnv } from "../middleware/auth.js";
 import type { Config } from "../config.js";
 import { queryAll, queryOne, run, withTransaction, type FoliyoDb, type SqlValue } from "../db.js";
+import { filterOwnedContent } from "../resume/content.js";
 import {
   FREE_PORTFOLIO_LIMIT,
   getEffectiveUserPlan,
@@ -75,7 +76,13 @@ async function getContentIds(db: FoliyoDb, portfolioId: string) {
   };
 }
 
-async function setContent(db: FoliyoDb, portfolioId: string, content: z.infer<typeof contentSchema>) {
+async function setContent(
+  db: FoliyoDb,
+  portfolioId: string,
+  userId: string,
+  content: z.infer<typeof contentSchema>,
+) {
+  const owned = await filterOwnedContent(db, userId, content);
   await withTransaction(db, async () => {
     await run(db, "DELETE FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId]);
@@ -83,31 +90,38 @@ async function setContent(db: FoliyoDb, portfolioId: string, content: z.infer<ty
     await run(db, "DELETE FROM portfolio_education WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId]);
-    for (const skillId of content.skill_ids) {
+    for (const skillId of owned.skill_ids) {
       await run(db, "INSERT INTO portfolio_skills (portfolio_id, skill_id) VALUES (?, ?)", [portfolioId, skillId]);
     }
-    for (const projectId of content.project_ids) {
+    for (const projectId of owned.project_ids) {
       await run(db, "INSERT INTO portfolio_projects (portfolio_id, project_id) VALUES (?, ?)", [portfolioId, projectId]);
     }
-    for (const experienceId of content.experience_ids) {
-      await run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id) VALUES (?, ?)", [portfolioId, experienceId]);
+    for (const experienceId of owned.experience_ids) {
+      await run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id) VALUES (?, ?)", [
+        portfolioId,
+        experienceId,
+      ]);
     }
-    for (const educationId of content.education_ids) {
-      await run(db, "INSERT INTO portfolio_education (portfolio_id, education_id) VALUES (?, ?)", [portfolioId, educationId]);
+    for (const educationId of owned.education_ids) {
+      await run(db, "INSERT INTO portfolio_education (portfolio_id, education_id) VALUES (?, ?)", [
+        portfolioId,
+        educationId,
+      ]);
     }
-    for (const certificationId of content.certification_ids) {
+    for (const certificationId of owned.certification_ids) {
       await run(db, "INSERT INTO portfolio_certifications (portfolio_id, certification_id) VALUES (?, ?)", [
         portfolioId,
         certificationId,
       ]);
     }
-    for (const languageId of content.language_ids) {
+    for (const languageId of owned.language_ids) {
       await run(db, "INSERT INTO portfolio_languages (portfolio_id, language_id) VALUES (?, ?)", [
         portfolioId,
         languageId,
       ]);
     }
   });
+  return owned;
 }
 
 export function portfoliosRoutes(db: FoliyoDb, config: Config) {
@@ -186,8 +200,8 @@ export function portfoliosRoutes(db: FoliyoDb, config: Config) {
     if (!portfolio) return c.json({ error: "not found" }, 404);
     const body = contentSchema.safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
-    await setContent(db, id, body.data);
-    return c.json({ ok: true, content: body.data });
+    const content = await setContent(db, id, userId, body.data);
+    return c.json({ ok: true, content });
   });
 
   r.get("/:id", async (c) => {

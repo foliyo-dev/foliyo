@@ -17,14 +17,11 @@ export function init() {
 		return;
 	}
 
-	const session =
-		url.searchParams.get('access_token') ?? url.searchParams.get('token');
+	const session = url.searchParams.get('access_token');
 	if (!session) return;
 
-	// Legacy `?token=` only on non-verify paths (dashboard handoff from older clients).
 	accessToken.set(session);
 	url.searchParams.delete('access_token');
-	url.searchParams.delete('token');
 	const clean = url.pathname + url.search + url.hash;
 	window.history.replaceState({}, '', clean);
 }

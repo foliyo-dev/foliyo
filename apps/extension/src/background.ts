@@ -19,7 +19,8 @@ export type ApiResponseMessage =
   | { ok: true; status: number; bodyText?: string; bodyBase64?: string; contentType?: string }
   | { ok: false; status: number; error: string };
 
-chrome.runtime.onMessage.addListener((message: ApiRequestMessage, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: ApiRequestMessage, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return false;
   if (!message || message.type !== "foliyo-api") return false;
 
   void (async () => {

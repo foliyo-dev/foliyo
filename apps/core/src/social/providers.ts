@@ -124,14 +124,15 @@ export function isSocialProvider(id: string): id is SocialProvider {
 export function resolveSocialUrl(provider: string, value: string): string {
   const v = value.trim();
   if (!v) return "";
-  if (/^https?:\/\//i.test(v)) return v;
+  if (/^https?:\/\//i.test(v)) return absoluteHttpUrl(v);
   // Resume import often stores `linkedin.com/in/foo` without a scheme.
   if (looksLikeBareHost(v) && (v.includes("/") || v.toLowerCase().startsWith("www."))) {
     return absoluteHttpUrl(v);
   }
   const def = getSocialProvider(provider);
   if (def?.urlFromValue) return def.urlFromValue(v.replace(/^@/, ""));
-  if (def && !def.usernameBased) return absoluteHttpUrl(v) || `https://${v}`;
+  if (def && !def.usernameBased) return absoluteHttpUrl(v);
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return absoluteHttpUrl(v);
   return absoluteHttpUrl(v) || v;
 }
 

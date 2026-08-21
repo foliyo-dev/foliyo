@@ -111,25 +111,35 @@ function linkLabel(raw: unknown, fallback: string): string {
 }
 
 function hrefOf(raw: unknown): string {
-  return esc(absoluteHttpUrl(String(raw ?? "")) || String(raw ?? "").trim());
+  const href = absoluteHttpUrl(String(raw ?? ""));
+  return href ? esc(href) : "";
 }
 
 function projectLinksSite(pr: Record<string, unknown>): string {
   const links: string[] = [];
   if (pr.url) {
-    links.push(
-      `<a href="${hrefOf(pr.url)}" rel="noopener noreferrer">${esc(linkLabel(pr.url_label, "Live"))}</a>`,
-    );
+    const href = hrefOf(pr.url);
+    if (href) {
+      links.push(
+        `<a href="${href}" rel="noopener noreferrer">${esc(linkLabel(pr.url_label, "Live"))}</a>`,
+      );
+    }
   }
   if (pr.repo_url) {
-    links.push(
-      `<a href="${hrefOf(pr.repo_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.repo_url_label, "Repo"))}</a>`,
-    );
+    const href = hrefOf(pr.repo_url);
+    if (href) {
+      links.push(
+        `<a href="${href}" rel="noopener noreferrer">${esc(linkLabel(pr.repo_url_label, "Repo"))}</a>`,
+      );
+    }
   }
   if (pr.article_url) {
-    links.push(
-      `<a href="${hrefOf(pr.article_url)}" rel="noopener noreferrer">${esc(linkLabel(pr.article_url_label, "View write-up"))}</a>`,
-    );
+    const href = hrefOf(pr.article_url);
+    if (href) {
+      links.push(
+        `<a href="${href}" rel="noopener noreferrer">${esc(linkLabel(pr.article_url_label, "View write-up"))}</a>`,
+      );
+    }
   }
   return links.length ? `<p class="links">${links.join(" · ")}</p>` : "";
 }
@@ -138,14 +148,14 @@ function projectLinksSite(pr: Record<string, unknown>): string {
 function projectLinksDocument(pr: Record<string, unknown>): string {
   const links: string[] = [];
   if (pr.url) {
-    const href = absoluteHttpUrl(String(pr.url)) || String(pr.url);
-    links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
+    const href = absoluteHttpUrl(String(pr.url));
+    if (href) links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   } else if (pr.repo_url) {
-    const href = absoluteHttpUrl(String(pr.repo_url)) || String(pr.repo_url);
-    links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
+    const href = absoluteHttpUrl(String(pr.repo_url));
+    if (href) links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   } else if (pr.article_url) {
-    const href = absoluteHttpUrl(String(pr.article_url)) || String(pr.article_url);
-    links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
+    const href = absoluteHttpUrl(String(pr.article_url));
+    if (href) links.push(`<a class="doc-link" href="${esc(href)}" rel="noopener noreferrer">${esc(href)}</a>`);
   }
   return links.length ? `<p class="links doc-links">${links.join("<br>")}</p>` : "";
 }

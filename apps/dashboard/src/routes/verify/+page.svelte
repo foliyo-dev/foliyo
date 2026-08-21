@@ -3,57 +3,91 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import Card from '$lib/components/ui/Card.svelte';
-	import { verifyEmail } from '$lib/api/cloud';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import { clearPendingSignupEmail, verifyEmail } from '$lib/api/cloud';
 	import { accessToken } from '$lib/stores/token';
 	import { postAuthPath, user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
-	let status: 'working' | 'ok' | 'error' = 'working';
-	let error = '';
+	let token = $state('');
+	let password = $state('');
+	let confirm = $state('');
+	let loading = $state(false);
+	let missing = $state(false);
 
-	onMount(async () => {
-		// Prefer live location — session bootstrap must not strip ?token= on /verify.
-		const token =
+	onMount(() => {
+		token =
 			new URL(window.location.href).searchParams.get('token') ??
-			$page.url.searchParams.get('token');
-		if (!token) {
-			status = 'error';
-			error = 'Missing verification token.';
+			$page.url.searchParams.get('token') ??
+			'';
+		missing = !token;
+	});
+
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		if (password.length < 8) {
+			showToast('Password must be at least 8 characters', 'error');
 			return;
 		}
+		if (password.length > 72) {
+			showToast('Password must be at most 72 characters', 'error');
+			return;
+		}
+		if (password !== confirm) {
+			showToast('Passwords do not match', 'error');
+			return;
+		}
+		loading = true;
 		try {
-			const data = await verifyEmail(token);
+			const data = await verifyEmail(token, password);
+			clearPendingSignupEmail();
 			accessToken.set(data.token);
 			user.set(data.user);
-			status = 'ok';
-			showToast('Email verified', 'success');
+			showToast('Account ready', 'success');
 			goto(postAuthPath(data.user));
 		} catch {
-			status = 'error';
-			error = 'This link is invalid or has expired.';
+			showToast('This link is invalid or has expired.', 'error');
+		} finally {
+			loading = false;
 		}
-	});
+	}
 </script>
 
 <svelte:head>
-	<title>Verify email · Foliyo</title>
+	<title>Choose a password · Foliyo</title>
 </svelte:head>
 
 <div class="auth-page">
 	<Card>
-		{#if status === 'working'}
-			<h1>Verifying…</h1>
-			<p class="muted">Confirming your email address.</p>
-		{:else if status === 'ok'}
-			<h1>Email verified</h1>
-			<p class="muted">Redirecting…</p>
-		{:else}
+		{#if missing}
 			<h1>Could not verify</h1>
-			<p class="error">{error}</p>
+			<p class="muted">This link is missing a token. Request a new one from sign up.</p>
 			<p class="footer muted">
-				<a href="/check-email">Resend verification</a>
+				<a href="/check-email">Resend</a>
 				· <a href="/login">Sign in</a>
 			</p>
+		{:else}
+			<h1>Choose a password</h1>
+			<p class="muted">Finish creating your account. Use at least 8 characters.</p>
+			<form onsubmit={handleSubmit}>
+				<Input
+					label="Password"
+					type="password"
+					name="password"
+					autocomplete="new-password"
+					bind:value={password}
+				/>
+				<Input
+					label="Confirm password"
+					type="password"
+					name="confirm"
+					autocomplete="new-password"
+					bind:value={confirm}
+				/>
+				<Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Create account'}</Button>
+			</form>
+			<p class="footer muted"><a href="/login">Sign in</a></p>
 		{/if}
 	</Card>
 </div>
@@ -74,8 +108,11 @@
 	.muted {
 		color: var(--color-muted);
 	}
-	.error {
-		color: var(--color-error, #dc2626);
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-top: 1rem;
 	}
 	.footer {
 		margin-top: 1.25rem;
