@@ -59,6 +59,8 @@ const resumeSchema = z.object({
   name: z.string().min(1),
   theme_slug: z.string().default("classic"),
   is_public: z.number().int().default(0),
+  headline: z.string().max(200).optional(),
+  bio: z.string().max(2000).optional(),
   /** When set, use this snapshot instead of copying the whole portfolio. */
   content: contentSchema.optional(),
 });
@@ -75,6 +77,8 @@ const tailorSchema = z
     portfolio_id: z.string().min(1),
     theme_slug: z.string().default("classic"),
     is_public: z.number().int().default(0),
+    headline: z.string().max(200).optional(),
+    bio: z.string().max(2000).optional(),
     skill_ids: z.array(z.string()).optional(),
     jd_text: z.string().optional(),
     include_matching: z.boolean().default(true),
@@ -157,10 +161,12 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     }
 
     const shareToken = nanoid(16);
+    const headline = (d.headline ?? "").trim();
+    const bio = (d.bio ?? "").trim();
     await run(
       db,
-      "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token) VALUES (?,?,?,?,?,?)",
-      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken],
+      "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token, headline, bio) VALUES (?,?,?,?,?,?,?,?)",
+      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
     );
 
     const resume = await queryOne<{ id: string }>(
@@ -213,10 +219,12 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     if (!portfolio) return c.json({ error: "portfolio not found" }, 404);
 
     const shareToken = nanoid(16);
+    const headline = (d.headline ?? "").trim();
+    const bio = (d.bio ?? "").trim();
     await run(
       db,
-      "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token) VALUES (?,?,?,?,?,?)",
-      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken],
+      "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token, headline, bio) VALUES (?,?,?,?,?,?,?,?)",
+      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
     );
 
     const created = await queryOne<{ id: string }>(

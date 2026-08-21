@@ -37,3 +37,27 @@ export const confirmSkill = (
 ) => api<Skill>(`/skills/${id}/confirm`, { method: 'POST', body: JSON.stringify(data ?? {}) });
 export const dismissSkill = (id: string) =>
   api<{ ok: boolean }>(`/skills/${id}/dismiss`, { method: 'POST', body: '{}' });
+
+export type BulkConfirmResult = {
+	confirmed: number;
+	missing: string[];
+	items: Skill[];
+};
+
+export type BulkDismissResult = {
+	dismissed: number;
+	missing: string[];
+	items: Skill[];
+};
+
+export const confirmSkillsBulk = (ids: string[]) =>
+	api<BulkConfirmResult>('/skills/confirm-bulk', {
+		method: 'POST',
+		body: JSON.stringify({ ids })
+	});
+
+export const dismissSkillsBulk = (ids: string[]) =>
+	api<BulkDismissResult>('/skills/dismiss-bulk', {
+		method: 'POST',
+		body: JSON.stringify({ ids })
+	});

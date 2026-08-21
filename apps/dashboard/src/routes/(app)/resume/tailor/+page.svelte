@@ -20,6 +20,7 @@
 		type JobAnalysisSummary
 	} from '$lib/api/jobs';
 	import JobAnalysisPanel from '$lib/components/jobs/JobAnalysisPanel.svelte';
+	import AiSummaryAssist from '$lib/components/AiSummaryAssist.svelte';
 	import { clearJdSession, loadJdSession, saveJdSession } from '$lib/utils/jdSession';
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
 	import { showToast } from '$lib/stores/toast';
@@ -46,6 +47,11 @@
 	$: pro = isProPlan(planInfo?.plan ?? 'free');
 	$: analyzeCost = aiUsage?.costs.analyze ?? 1;
 	$: outOfAiUnits = aiUsage != null && aiUsage.remaining < analyzeCost;
+	$: summarySkillNames = jobAnalysis
+		? jobAnalysis.matches
+				.filter((m) => m.band !== 'missing' && m.skill_name)
+				.map((m) => m.skill_name as string)
+		: [];
 
 	let name = '';
 	let nameTouched = false;
@@ -53,6 +59,8 @@
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
 	let jdText = '';
+	let headline = '';
+	let bio = '';
 	let includeMatching = true;
 	let createOpen = false;
 	let createDialog: HTMLDialogElement | undefined;
@@ -212,6 +220,8 @@
 		acceptedChanges = new Set();
 		savedAnalysisId = null;
 		matchedAnalysisId = null;
+		headline = '';
+		bio = '';
 		nameTouched = false;
 		createOpen = false;
 		clearJdSession();
@@ -331,6 +341,8 @@
 				jd_text: jdText.trim(),
 				include_matching: includeMatching,
 				is_public: isPublic ? 1 : 0,
+				headline: headline.trim() || undefined,
+				bio: bio.trim() || undefined,
 				approved
 			});
 			clearJdSession();
@@ -399,14 +411,28 @@
 							Daily AI budget used ({aiUsage.units}/{aiUsage.limit}). Heuristic parse is free —
 							try again tomorrow.
 						{:else}
-							{aiUsage.remaining} of {aiUsage.limit} AI units left today · rewrite 1 · import
-							{aiUsage.costs.import}
+							{aiUsage.remaining} of {aiUsage.limit} AI units left today · summary 1 · rewrite 1 ·
+							import {aiUsage.costs.import}
 						{/if}
 					</p>
 				{/if}
 			{/if}
 			{#if jobAnalysis}
 				<JobAnalysisPanel analysis={jobAnalysis} bind:accepted={acceptedChanges} />
+				<AiSummaryAssist
+					bind:headline
+					bind:bio
+					{jdText}
+					skillNames={summarySkillNames}
+					{pro}
+					outOfUnits={outOfAiUnits}
+					unitsHint={aiUsage
+						? `${aiUsage.remaining} of ${aiUsage.limit} AI units left today`
+						: ''}
+					disabled={analyzeBusy || saving}
+					on:upgrade={(e) => showToast(e.detail, 'error')}
+					on:generated={() => refreshAiUsage()}
+				/>
 			{/if}
 			<div class="page-actions">
 				<Button variant="secondary" disabled={analyzeBusy || saving} on:click={runAnalyze}>
@@ -494,6 +520,18 @@
 					<input type="checkbox" bind:checked={includeMatching} />
 					Include matching experience &amp; projects
 				</label>
+
+				{#if headline.trim() || bio.trim()}
+					<div class="summary-preview">
+						<span class="label">Resume summary</span>
+						{#if headline.trim()}
+							<p class="summary-headline">{headline.trim()}</p>
+						{/if}
+						{#if bio.trim()}
+							<p class="summary-bio">{bio.trim()}</p>
+						{/if}
+					</div>
+				{/if}
 			</div>
 			<div class="sheet-actions">
 				<Button variant="ghost" disabled={saving} on:click={closeCreateSheet}>Cancel</Button>
@@ -635,5 +673,27 @@
 		justify-content: flex-end;
 		gap: 0.5rem;
 		margin-top: 0.25rem;
+	}
+	.summary-preview {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		padding: 0.65rem 0.75rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.summary-headline {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text);
+	}
+	.summary-bio {
+		margin: 0;
+		font-size: 0.8125rem;
+		line-height: 1.45;
+		color: var(--color-muted);
+		white-space: pre-wrap;
 	}
 </style>

@@ -1,0 +1,21 @@
+meta {
+  name: Confirm skills bulk
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/skills/confirm-bulk
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "ids": ["{{skillId1}}", "{{skillId2}}"]
+  }
+}

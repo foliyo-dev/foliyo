@@ -7,6 +7,7 @@
     "dev": "VITE_API_BASE=http://localhost:8080 VITE_APP_BASE=http://localhost:5173 vite build --watch",
     "build": "VITE_API_BASE=http://localhost:8080 VITE_APP_BASE=http://localhost:5173 vite build",
     "build:prod": "VITE_API_BASE=https://api.foliyo.dev VITE_APP_BASE=https://app.foliyo.dev vite build",
+    "build:firefox": "FOLIYO_BROWSER=firefox VITE_API_BASE=https://api.foliyo.dev VITE_APP_BASE=https://app.foliyo.dev vite build",
     "clean": "rm -rf dist"
   },
   "dependencies": {

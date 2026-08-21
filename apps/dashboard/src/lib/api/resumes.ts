@@ -11,6 +11,8 @@ export type Resume = {
 	is_public: number;
 	share_token: string;
 	view_count: number;
+	headline?: string;
+	bio?: string;
 };
 
 export type ResumeContent = {
@@ -74,6 +76,8 @@ export function tailorResume(data: {
 	portfolio_id: string;
 	theme_slug?: string;
 	is_public?: number;
+	headline?: string;
+	bio?: string;
 	skill_ids?: string[];
 	jd_text?: string;
 	include_matching?: boolean;

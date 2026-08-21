@@ -29,6 +29,10 @@ const confirmSchema = z.object({
   recency: recency.optional(),
 });
 
+const bulkIdsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(200),
+});
+
 async function enrichSkills(db: FoliyoDb, rows: Record<string, unknown>[]) {
   const ids = rows.map((r) => String(r.id));
   const labels = await evidenceLabelsForSkills(db, ids);
@@ -59,6 +63,43 @@ async function listActiveSkills(db: FoliyoDb, userId: string, status?: string | 
   return queryAll(db, sql, params);
 }
 
+async function confirmOneSkill(
+  db: FoliyoDb,
+  userId: string,
+  id: string,
+  patch: { level?: string; category?: string; recency?: "current" | "past" } = {},
+): Promise<"ok" | "not_found"> {
+  const skill = await queryOne<{ id: string; status: string }>(
+    db,
+    "SELECT id, status FROM skills WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+    [id, userId],
+  );
+  if (!skill) return "not_found";
+
+  const hints = skill.status === "pending" ? await softHintsForSkill(db, id) : null;
+  const level = patch.level ?? hints?.level ?? "intermediate";
+  const rec = patch.recency ?? hints?.recency ?? "current";
+
+  const sets = [
+    "status='confirmed'",
+    "level=?",
+    "recency=?",
+    "updated_at=CURRENT_TIMESTAMP",
+  ];
+  const values: (string | number)[] = [level, rec];
+  if (patch.category) {
+    sets.push("category=?");
+    values.push(patch.category);
+  }
+  values.push(id, userId);
+  await run(
+    db,
+    `UPDATE skills SET ${sets.join(", ")} WHERE id=? AND user_id=? AND deleted_at IS NULL`,
+    values,
+  );
+  return "ok";
+}
+
 export function skillsRoutes(db: FoliyoDb) {
   const r = new Hono<AppEnv>();
 
@@ -81,36 +122,69 @@ export function skillsRoutes(db: FoliyoDb) {
     return c.json(result);
   });
 
+  /** Confirm many skills in one request (pending queue / restore). */
+  r.post("/confirm-bulk", async (c) => {
+    const userId = c.get("userId");
+    const body = bulkIdsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "invalid body", message: "Provide ids: string[]" }, 400);
+
+    let confirmed = 0;
+    const missing: string[] = [];
+    for (const id of body.data.ids) {
+      const result = await confirmOneSkill(db, userId, id);
+      if (result === "ok") confirmed += 1;
+      else missing.push(id);
+    }
+    const items = await listActiveSkills(db, userId, "all");
+    return c.json({
+      confirmed,
+      missing,
+      items: await enrichSkills(db, items),
+    });
+  });
+
+  /** Dismiss many suggested skills in one request. */
+  r.post("/dismiss-bulk", async (c) => {
+    const userId = c.get("userId");
+    const body = bulkIdsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "invalid body", message: "Provide ids: string[]" }, 400);
+
+    let dismissed = 0;
+    const missing: string[] = [];
+    for (const id of body.data.ids) {
+      const skill = await queryOne(
+        db,
+        "SELECT id FROM skills WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+        [id, userId],
+      );
+      if (!skill) {
+        missing.push(id);
+        continue;
+      }
+      await run(
+        db,
+        "UPDATE skills SET status='dismissed', updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND deleted_at IS NULL",
+        [id, userId],
+      );
+      dismissed += 1;
+    }
+    const items = await listActiveSkills(db, userId, "all");
+    return c.json({
+      dismissed,
+      missing,
+      items: await enrichSkills(db, items),
+    });
+  });
+
   r.post("/:id/confirm", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");
     const body = confirmSchema.safeParse(await c.req.json().catch(() => ({})));
     if (!body.success) return c.json({ error: "invalid body" }, 400);
 
-    const skill = await queryOne<{ id: string; status: string }>(
-      db,
-      "SELECT id, status FROM skills WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
-      [id, userId],
-    );
-    if (!skill) return c.json({ error: "not found" }, 404);
+    const result = await confirmOneSkill(db, userId, id, body.data);
+    if (result === "not_found") return c.json({ error: "not found" }, 404);
 
-    const hints = skill.status === "pending" ? await softHintsForSkill(db, id) : null;
-    const level = body.data.level ?? hints?.level ?? "intermediate";
-    const rec = body.data.recency ?? hints?.recency ?? "current";
-
-    const sets = [
-      "status='confirmed'",
-      "level=?",
-      "recency=?",
-      "updated_at=CURRENT_TIMESTAMP",
-    ];
-    const values: (string | number)[] = [level, rec];
-    if (body.data.category) {
-      sets.push("category=?");
-      values.push(body.data.category);
-    }
-    values.push(id, userId);
-    await run(db, `UPDATE skills SET ${sets.join(", ")} WHERE id=? AND user_id=? AND deleted_at IS NULL`, values);
     const updated = await queryOne(db, "SELECT * FROM skills WHERE id = ?", [id]);
     const [enriched] = await enrichSkills(db, updated ? [updated] : []);
     return c.json(enriched);

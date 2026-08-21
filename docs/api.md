@@ -20,6 +20,9 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 |--------|------|
 | GET, PUT | `/api/profile` |
 | GET, POST, PUT, DELETE | `/api/skills`, `/api/skills/:id` |
+| POST | `/api/skills/:id/confirm`, `/api/skills/:id/dismiss` |
+| POST | `/api/skills/confirm-bulk` — `{ ids: string[] }` → `{ confirmed, missing, items }` |
+| POST | `/api/skills/dismiss-bulk` — `{ ids: string[] }` → `{ dismissed, missing, items }` |
 | GET, POST, PUT, DELETE | `/api/projects`, `/api/projects/:id` |
 | GET, POST, PUT, DELETE | `/api/experience`, `/api/experience/:id` |
 | GET, POST, PUT, DELETE | `/api/education`, `/api/education/:id` |

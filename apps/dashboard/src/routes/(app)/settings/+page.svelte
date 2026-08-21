@@ -369,12 +369,14 @@
 			<p class="muted">
 				Daily AI budget:
 				<strong>{aiUsage.remaining} of {aiUsage.limit} units left</strong>
-				({aiUsage.units} used today). Smarter JD parse and rewrite cost {aiUsage.costs.analyze ?? 1} unit;
-				resume import costs {aiUsage.costs.import}. Resets midnight UTC.
+				({aiUsage.units} used today). JD parse, rewrite, and resume summary cost
+				{aiUsage.costs.analyze ?? 1} unit each; resume import costs {aiUsage.costs.import}. Resets
+				midnight UTC.
 			</p>
 		{:else if isSaas && !pro}
 			<p class="muted">
-				Pro includes a daily AI unit budget for smarter JD parse, rewrite, and resume import.
+				Pro includes a daily AI unit budget for smarter JD parse, rewrite, resume summary, and
+				resume import.
 			</p>
 		{/if}
 		{#if !pro && showDpdp}

@@ -149,6 +149,8 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     name: string;
     theme_slug: string;
     portfolio_id: string | null;
+    headline: string | null;
+    bio: string | null;
   }>(db, "SELECT * FROM resumes WHERE id = ?", [resumeId]);
   if (!resume) return null;
 
@@ -214,8 +216,15 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
       (s.status as string | undefined) !== "dismissed",
   );
 
+  const resumeHeadline = String(resume.headline ?? "").trim();
+  const resumeBio = String(resume.bio ?? "").trim();
+
   const portfolioShell: Record<string, unknown> = portfolio
-    ? { ...portfolio }
+    ? {
+        ...portfolio,
+        headline: resumeHeadline || String(portfolio.headline ?? ""),
+        bio: resumeBio || String(portfolio.bio ?? ""),
+      }
     : {
         id: `resume-shell-${resume.id}`,
         user_id: userId,
@@ -223,8 +232,8 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
         slug: "resume",
         description: "",
         theme_slug: "minimal",
-        headline: "",
-        bio: "",
+        headline: resumeHeadline,
+        bio: resumeBio,
         is_public: 0,
         is_default: 0,
         show_skills: 1,

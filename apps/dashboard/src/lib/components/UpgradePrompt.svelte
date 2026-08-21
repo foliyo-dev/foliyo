@@ -27,6 +27,7 @@
 		{ label: 'Remove Foliyo branding', ai: false },
 		{ label: 'Import resume — fill library from PDF/CV', ai: true },
 		{ label: 'AI rewrite — stronger / shorter / metrics', ai: true },
+		{ label: 'AI resume summary from JD + library', ai: true },
 		{ label: 'Daily AI unit budget', ai: true }
 	];
 
