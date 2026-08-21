@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import { queryOne, type FoliyoDb } from "../db.js";
+import { bearerToken, getTokenUserId } from "../auth/tokens.js";
 import { loadResumeContent } from "../public/pages.js";
 import {
   buildFoliyoResumeDocument,
@@ -41,6 +42,14 @@ export function specRoutes(db: FoliyoDb, config: Config) {
 
     if (!resume) {
       return c.json({ valid: false, error: "resume_not_found" }, 404);
+    }
+
+    if (resume.is_public !== 1) {
+      const session = bearerToken(c.req.header("Authorization"));
+      const userId = session ? await getTokenUserId(db, session) : null;
+      if (userId !== resume.user_id) {
+        return c.json({ valid: false, error: "resume_not_found" }, 404);
+      }
     }
 
     const data = await loadResumeContent(db, resume.id);

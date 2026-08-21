@@ -3,7 +3,10 @@
 	import { get } from 'svelte/store';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { resendVerification } from '$lib/api/cloud';
+	import {
+		getPendingSignupEmail,
+		resendVerification
+	} from '$lib/api/cloud';
 	import {
 		loadSession,
 		needsEmailVerification,
@@ -12,30 +15,34 @@
 	} from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 
-	let loading = true;
-	let resending = false;
-	let email = '';
+	let loading = $state(true);
+	let resending = $state(false);
+	let email = $state('');
 
 	async function init() {
 		const ok = await loadSession();
-		if (!ok) {
-			goto('/login');
-			return;
+		if (ok) {
+			const u = get(user);
+			if (!needsEmailVerification(u) && u) {
+				goto(postAuthPath(u));
+				return;
+			}
+			email = u?.email ?? getPendingSignupEmail();
+		} else {
+			email = getPendingSignupEmail();
 		}
-		const u = get(user);
-		if (!needsEmailVerification(u) && u) {
-			goto(postAuthPath(u));
-			return;
-		}
-		email = u?.email ?? '';
 		loading = false;
 	}
 
 	async function handleResend() {
+		if (!email) {
+			showToast('Enter your email on the sign-up page first.', 'error');
+			return;
+		}
 		resending = true;
 		try {
-			await resendVerification();
-			showToast('Verification email resent — check your inbox (and spam)', 'success');
+			await resendVerification(email);
+			showToast('If that email can be used, we sent a link. Check inbox and spam.', 'success');
 		} catch {
 			showToast('Could not resend email', 'error');
 		} finally {
@@ -57,9 +64,13 @@
 		{:else}
 			<h1>Check your email</h1>
 			<p class="muted">
-				We sent a verification link to <strong>{email}</strong>. Click it to unlock your account.
+				{#if email}
+					We sent a link to <strong>{email}</strong> to choose a password. It expires in 60 minutes.
+				{:else}
+					We sent a link to choose a password. It expires in 60 minutes.
+				{/if}
 			</p>
-			<Button disabled={resending} on:click={handleResend}>
+			<Button disabled={resending || !email} on:click={handleResend}>
 				{resending ? 'Sending…' : 'Resend email'}
 			</Button>
 			<p class="footer muted">

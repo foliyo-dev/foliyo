@@ -45,6 +45,9 @@ export async function login(email: string, password: string): Promise<User> {
 		if (err instanceof ApiError && err.message.includes('pending_deletion')) {
 			throw new Error('pending_deletion');
 		}
+		if (err instanceof ApiError && err.message.includes('email_not_verified')) {
+			throw new Error('email_not_verified');
+		}
 		throw err;
 	}
 }

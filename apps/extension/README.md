@@ -40,6 +40,13 @@ pnpm --filter @foliyo/extension build          # local dev URLs
 pnpm --filter @foliyo/extension build:prod     # production URLs
 ```
 
-API calls go through the background script (avoids popup CORS). Core also allows `chrome-extension://` / `moz-extension://` origins.
+API calls go through the background script (avoids popup CORS). In production set `FOLIYO_EXTENSION_ORIGINS` to your packed extension IDs (`chrome-extension://…`, `moz-extension://…`); local unpacked builds are allowed only in development.
 
-The background entry is dual-declared (`service_worker` + `scripts`) so Chromium and Firefox can both load it.
+The background entry is dual-declared (`service_worker` + `scripts`) so Chromium and Firefox can both load unpacked `dist`. AMO ignores `service_worker` — use the Firefox zip for store submission:
+
+```bash
+pnpm --filter @foliyo/extension build:firefox
+# zip apps/extension/dist (manifest has scripts only)
+```
+
+Firefox 140+ (desktop) / 142+ (Android) is required (built-in data-collection consent). The extension sends sign-in credentials, library/resume content, and pasted job-description text to Foliyo’s API — declared in `browser_specific_settings.gecko.data_collection_permissions`.

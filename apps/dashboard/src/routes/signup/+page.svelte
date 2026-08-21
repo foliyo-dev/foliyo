@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { user, postAuthPath } from '$lib/stores/auth';
-	import { accessToken } from '$lib/stores/token';
 	import { signup as signupApi } from '$lib/api/cloud';
 	import { showToast } from '$lib/stores/toast';
 	import { privacyUrl, publicHost } from '$lib/config';
@@ -9,49 +7,31 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 
-	let email = '';
-	let password = '';
-	let confirm = '';
-	let consent = false;
-	let loading = false;
+	let email = $state('');
+	let consent = $state(false);
+	let loading = $state(false);
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
-		if (password !== confirm) {
-			showToast('Passwords do not match', 'error');
-			return;
-		}
 		if (!consent) {
 			showToast('You must accept the privacy policy', 'error');
 			return;
 		}
 		loading = true;
 		try {
-			const data = await signupApi(email, password, consent);
-			accessToken.set(data.token);
-			user.set(data.user);
-			goto(postAuthPath(data.user));
+			await signupApi(email, consent);
+			goto('/check-email');
 		} catch (err) {
 			const raw = err instanceof Error ? err.message : '';
-			let msg = 'Could not create account.';
-			try {
-				const body = JSON.parse(raw) as { error?: string; message?: string };
-				if (body.error === 'email already registered') {
-					msg = 'That email is already registered. Try signing in.';
-				} else if (body.error === 'signup_unavailable' || body.message?.includes('foliyo-cloud')) {
-					msg =
-						'Signup needs the cloud API on :8080. Stop OSS core, then run: pnpm --filter @foliyo/cloud-api dev';
-				} else if (body.message) {
-					msg = body.message;
-				} else if (raw.includes('unauthorized') || raw.includes('401')) {
-					msg =
-						'Signup needs the cloud API on :8080 (OSS core is running instead). Stop foliyo core and start foliyo-cloud API.';
-				}
-			} catch {
-				if (raw.includes('unauthorized') || raw.includes('501') || raw.includes('signup_unavailable')) {
-					msg =
-						'Signup needs the cloud API on :8080. Stop OSS core, then start foliyo-cloud API.';
-				}
+			let msg = 'Could not send the verification email.';
+			if (raw.includes('rate_limited')) {
+				msg = 'Too many attempts. Try again later.';
+			} else if (raw.includes('signup_unavailable') || raw.includes('foliyo-cloud')) {
+				msg =
+					'Signup needs the cloud API on :8080. Stop OSS core, then run: pnpm --filter @foliyo/cloud-api dev';
+			} else if (raw.includes('unauthorized') || raw.includes('401') || raw.includes('501')) {
+				msg =
+					'Signup needs the cloud API on :8080 (OSS core is running instead). Stop foliyo core and start foliyo-cloud API.';
 			}
 			showToast(msg, 'error');
 		} finally {
@@ -68,29 +48,15 @@
 	<Card>
 		<h1>Create your account</h1>
 		<p class="muted">Start building your portfolio at {publicHost()}</p>
-		<form on:submit={handleSubmit}>
+		<form onsubmit={handleSubmit}>
 			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
-			<Input
-				label="Password"
-				type="password"
-				name="password"
-				autocomplete="new-password"
-				bind:value={password}
-			/>
-			<Input
-				label="Confirm password"
-				type="password"
-				name="confirm"
-				autocomplete="new-password"
-				bind:value={confirm}
-			/>
-			<p class="hint">At least 8 characters.</p>
+			<p class="hint">We’ll email a link to choose your password. It expires in 60 minutes.</p>
 			<label class="consent">
 				<input type="checkbox" bind:checked={consent} />
 				I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
 				(DPDP Act 2023)
 			</label>
-			<Button type="submit" disabled={loading}>{loading ? 'Creating…' : 'Create account'}</Button>
+			<Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Continue'}</Button>
 		</form>
 		<p class="footer muted">Already have an account? <a href="/login">Sign in</a></p>
 	</Card>

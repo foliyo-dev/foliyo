@@ -50,6 +50,20 @@ export function createFoliyoApp(
   const app = new Hono();
 
   app.use("*", logger());
+  app.use("*", async (c, next) => {
+    await next();
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("X-Frame-Options", "DENY");
+    c.header("Referrer-Policy", "no-referrer");
+    c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    c.header(
+      "Content-Security-Policy",
+      "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+    );
+    if (!config.dev) {
+      c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+  });
   app.use(
     "*",
     cors({
@@ -58,12 +72,13 @@ export function createFoliyoApp(
         if (!origin) return "*";
         if (config.corsOrigins.includes("*")) return origin;
         if (config.corsOrigins.includes(origin)) return origin;
-        // Browser extensions (popup / SW) — auth still required on API routes
         if (
           origin.startsWith("chrome-extension://") ||
           origin.startsWith("moz-extension://")
         ) {
-          return origin;
+          if (config.extensionOrigins.includes(origin)) return origin;
+          // Unpacked local extensions: allow any only in development.
+          if (config.dev && config.extensionOrigins.length === 0) return origin;
         }
         return null;
       },

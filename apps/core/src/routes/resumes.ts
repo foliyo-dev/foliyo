@@ -277,6 +277,13 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     if (!body.success) return c.json({ error: "invalid body" }, 400);
     const cols = Object.keys(body.data);
     if (cols.length === 0) return c.json({ ok: true });
+    if (body.data.portfolio_id) {
+      const owned = await queryOne(db, "SELECT id FROM portfolios WHERE id = ? AND user_id = ?", [
+        body.data.portfolio_id,
+        userId,
+      ]);
+      if (!owned) return c.json({ error: "portfolio not found" }, 404);
+    }
     const sets = cols.map((col) => `${col}=?`).join(", ");
     await run(db, `UPDATE resumes SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
       ...(Object.values(body.data) as SqlValue[]), id, userId,

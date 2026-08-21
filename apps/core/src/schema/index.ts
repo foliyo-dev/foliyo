@@ -12,12 +12,14 @@ import {
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import type { Config } from "../config.js";
-import { checkPassword } from "../auth/password.js";
+import { checkPasswordTimed } from "../auth/password.js";
 import { bearerToken, getTokenUserId } from "../auth/tokens.js";
 import { queryAll, queryOne, type FoliyoDb, type SqlValue } from "../db.js";
 import { applyRowFilters, createAccessOptions } from "./access.js";
 import { foliyoMeshAuthPlugin } from "./auth-plugin.js";
 import { foliyoSchema } from "./entities.js";
+import { rateLimitResponse } from "../auth/limit.js";
+import { normalizeEmail } from "../auth/datetime.js";
 
 export type CreateMeshRouterOptions = {
   /** Require signed Mesh queries (disables anonymous / Bearer-only mesh reads). */
@@ -79,17 +81,18 @@ async function authenticateForMesh(
     return { userId, sessionId: nanoid(24), role: "user" };
   }
 
-  const email = typeof body.email === "string" ? body.email : "";
+  const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
   const password = typeof body.password === "string" ? body.password : "";
   if (!email || !password) throw new Error("unauthorized");
 
-  const user = await queryOne<{ id: string; password: string; mode: string }>(
+  const user = await queryOne<{ id: string; password: string; mode: string; email_verified: number }>(
     db,
-    "SELECT id, password, mode FROM users WHERE email = ?",
+    "SELECT id, password, mode, email_verified FROM users WHERE lower(email) = ?",
     [email],
   );
-  if (!user || !checkPassword(user.password, password)) throw new Error("unauthorized");
+  if (!user || !checkPasswordTimed(user.password, password)) throw new Error("unauthorized");
   if (user.mode === "pending_delete") throw new Error("unauthorized");
+  if (!user.email_verified) throw new Error("unauthorized");
 
   return { userId: user.id, sessionId: nanoid(24), role: "user" };
 }
@@ -150,6 +153,10 @@ function buildMeshHonoApp(
     } catch {
       body = {};
     }
+
+    const email = typeof body.email === "string" ? body.email : undefined;
+    const limited = rateLimitResponse(c, "login", email);
+    if (limited) return limited;
 
     const foliyoTok = bearerToken(c.req.header("Authorization"));
     if (foliyoTok && !body.bearer && !body.email) {

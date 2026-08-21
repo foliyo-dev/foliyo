@@ -3,17 +3,32 @@ import { accessToken } from '$lib/stores/token';
 import { api, ApiError } from './client';
 import type { User } from '$lib/stores/auth';
 
+const PENDING_EMAIL_KEY = 'foliyo_pending_email';
+
+export function setPendingSignupEmail(email: string): void {
+	if (typeof sessionStorage === 'undefined') return;
+	sessionStorage.setItem(PENDING_EMAIL_KEY, email);
+}
+
+export function getPendingSignupEmail(): string {
+	if (typeof sessionStorage === 'undefined') return '';
+	return sessionStorage.getItem(PENDING_EMAIL_KEY) ?? '';
+}
+
+export function clearPendingSignupEmail(): void {
+	if (typeof sessionStorage === 'undefined') return;
+	sessionStorage.removeItem(PENDING_EMAIL_KEY);
+}
+
 export async function signup(
 	email: string,
-	password: string,
 	consentPrivacyPolicy: boolean
-): Promise<{ token: string; user: User; needs_verification?: boolean }> {
+): Promise<{ ok: boolean }> {
 	const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'}/auth/signup`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
 			email,
-			password,
 			consent_privacy_policy: consentPrivacyPolicy
 		})
 	});
@@ -21,6 +36,7 @@ export async function signup(
 		const text = await res.text();
 		throw new Error(text || res.statusText);
 	}
+	setPendingSignupEmail(email);
 	return res.json();
 }
 
@@ -96,15 +112,16 @@ export const requestDelete = () =>
 		body: JSON.stringify({ confirm: 'DELETE' })
 	});
 
-export const verifyEmail = (token: string) =>
+export const verifyEmail = (token: string, password: string) =>
 	api<{ token: string; user: User }>('/auth/verify', {
 		method: 'POST',
-		body: JSON.stringify({ token })
+		body: JSON.stringify({ token, password })
 	});
 
-export const resendVerification = () =>
+export const resendVerification = (email: string) =>
 	api<{ ok: boolean; already_verified?: boolean }>('/auth/resend-verification', {
-		method: 'POST'
+		method: 'POST',
+		body: JSON.stringify({ email })
 	});
 
 export const cancelAccountDeletion = (email: string, password: string) =>

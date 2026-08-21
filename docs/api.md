@@ -66,7 +66,9 @@ AI resume import (hosted **Pro** only): PDF/text is gated (magic bytes, size/pag
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/auth/signup` | Register + privacy consent |
+| POST | `/api/auth/signup` | `{ email, consent_privacy_policy: true }` — always `{ ok: true }`; pending 60m; password set on verify |
+| POST | `/api/auth/verify` | `{ token, password }` — creates the user, issues a session |
+| POST | `/api/auth/resend-verification` | `{ email }` — always `{ ok: true }` |
 | GET | `/api/account/consents` | Consent history (privacy policy) |
 | GET | `/api/account/export` | Sync JSON download of user data |
 | DELETE | `/api/account` | Body `{ "confirm": "DELETE" }` — 30-day grace, sessions revoked |

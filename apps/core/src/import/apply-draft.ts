@@ -232,8 +232,9 @@ export async function applyImportDraft(
       const def = getSocialProvider(provider);
       const value =
         !def?.usernameBased || raw.includes("/") || raw.toLowerCase().startsWith("www.")
-          ? absoluteHttpUrl(raw) || raw
+          ? absoluteHttpUrl(raw)
           : raw;
+      if (!value) continue;
       if (linkMatchesExisting(existing.links, provider, value)) {
         skipped.links += 1;
         continue;
