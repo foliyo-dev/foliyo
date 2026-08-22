@@ -61,6 +61,47 @@ export function ul(items: string[]): string {
   return `<ul style="margin:0 0 16px;padding-left:20px;">${lis}</ul>`;
 }
 
+export type SummaryRow = { label: string; value: string };
+
+/** Key/value rows — receipt details, invoice summary, etc. */
+export function summaryTable(rows: SummaryRow[]): string {
+  const trs = rows
+    .map(
+      (row, i) =>
+        `<tr>` +
+        `<td style="padding:${i === 0 ? "14px" : "10px"} 16px ${i === rows.length - 1 ? "14px" : "10px"};font-size:13px;line-height:1.4;color:${BRAND.muted};border-bottom:${i < rows.length - 1 ? `1px solid ${BRAND.border}` : "none"};">${escapeHtml(row.label)}</td>` +
+        `<td style="padding:${i === 0 ? "14px" : "10px"} 16px ${i === rows.length - 1 ? "14px" : "10px"};font-size:14px;line-height:1.4;font-weight:600;color:${BRAND.text};text-align:right;border-bottom:${i < rows.length - 1 ? `1px solid ${BRAND.border}` : "none"};">${escapeHtml(row.value)}</td>` +
+        `</tr>`,
+    )
+    .join("");
+  return (
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
+    `style="margin:0 0 20px;border-collapse:collapse;background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:10px;overflow:hidden;">` +
+    `${trs}</table>`
+  );
+}
+
+/** Highlighted amount paid / total due. */
+export function amountHero(caption: string, amount: string): string {
+  return (
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">` +
+    `<tr><td align="center" style="padding:22px 16px;background:${BRAND.primary};border-radius:10px;">` +
+    `<p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.82);">${escapeHtml(caption)}</p>` +
+    `<p style="margin:0;font-size:34px;font-weight:700;line-height:1.1;color:#ffffff;">${escapeHtml(amount)}</p>` +
+    `</td></tr></table>`
+  );
+}
+
+/** Soft info banner (e.g. GST invoice follows). */
+export function infoCallout(text: string): string {
+  return (
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;">` +
+    `<tr><td style="padding:12px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">` +
+    `<p style="margin:0;font-size:13px;line-height:1.5;color:#92400e;">${escapeHtml(text)}</p>` +
+    `</td></tr></table>`
+  );
+}
+
 function buttonHtml(cta: EmailCta): string {
   const bg = cta.variant === "danger" ? BRAND.danger : BRAND.primary;
   return (

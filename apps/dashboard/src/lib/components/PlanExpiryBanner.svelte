@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getPlan, type PlanInfo } from '$lib/api/plan';
+	import { parsePlanExpires } from '$lib/utils/planExpires';
 
 	let planInfo: PlanInfo | null = null;
 	let dismissedKey = '';
@@ -13,12 +14,7 @@
 		}
 	});
 
-	/** `plan_expires` is `YYYY-MM-DD HH:MM:SS` UTC (no timezone suffix). */
-	function parseUtc(stamp: string): Date {
-		return new Date(`${stamp.replace(' ', 'T')}Z`);
-	}
-
-	$: expiresAt = planInfo?.plan_expires ? parseUtc(planInfo.plan_expires) : null;
+	$: expiresAt = parsePlanExpires(planInfo?.plan_expires);
 	$: msLeft = expiresAt ? expiresAt.getTime() - Date.now() : null;
 	$: daysLeft = msLeft !== null ? Math.ceil(msLeft / 86_400_000) : null;
 	$: onTrial = Boolean(planInfo?.on_trial);

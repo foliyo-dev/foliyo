@@ -713,7 +713,9 @@ async function main(): Promise<void> {
   const db = await openDatabase(config);
   await runMigrations(db);
 
-  console.log(`Seeding demo data (force=${force}) into ${config.dbPath}`);
+  const where =
+    config.dbDriver === "postgres" ? `postgres ${config.dbUrl}` : `sqlite ${config.dbPath}`;
+  console.log(`Seeding demo data (force=${force}) into ${where}`);
 
   const adminEmail = config.adminEmail || "admin@localhost";
   const adminId = await ensureUser(db, {

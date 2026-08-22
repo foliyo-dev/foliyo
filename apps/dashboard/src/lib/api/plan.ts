@@ -20,6 +20,8 @@ export type PlanInfo = {
 	stored_plan?: string;
 	plan_expires: string | null;
 	billing_available: boolean;
+	/** Hosted: billing address on file for GST invoices. */
+	billing_complete?: boolean;
 	/** Hosted: true while on the unpaid personal Pro trial. */
 	on_trial?: boolean;
 	/** Hosted: unpaid personal trial has ended (now Free). */

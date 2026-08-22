@@ -106,12 +106,17 @@ migrate-fresh:
 seed-demo:
 	@cd apps/core && pnpm seed:demo $(ARGS)
 
-# Seed the cloud API sqlite (what :8080 uses when foliyo-cloud is running).
-# Always use absolute paths — relative FOLIYO_DB_PATH breaks because seed cwd is apps/core.
+# Seed the cloud API Postgres (same DB as stack `make cloud`).
+# Override with FOLIYO_DB_URL=...  ARGS=--force to reset demo libraries.
 seed-demo-cloud:
 	@mkdir -p "$(CLOUD_API_DATA)"
-	@echo "Seeding cloud DB → $(CLOUD_DB_PATH)"
-	@cd apps/core && FOLIYO_DB_PATH="$(CLOUD_DB_PATH)" FOLIYO_DATA_DIR="$(CLOUD_API_DATA)" pnpm seed:demo $(ARGS)
+	@echo "Seeding cloud Postgres"
+	@cd apps/core && \
+		env -u FOLIYO_DB_PATH \
+		FOLIYO_DB_DRIVER=postgres \
+		FOLIYO_DB_URL="$(if $(FOLIYO_DB_URL),$(FOLIYO_DB_URL),postgres://postgres:example@localhost:5432/foliyo)" \
+		FOLIYO_DATA_DIR="$(CLOUD_API_DATA)" \
+		pnpm exec tsx src/seed-demo.ts $(ARGS)
 
 health:
 	@curl -sf -o /dev/null $(CORE_URL)/welcome && echo "Core OK" || echo "Core DOWN"
@@ -128,7 +133,7 @@ help:
 	@echo "  make release      brand + dashboard + core bundle artifacts"
 	@echo "  make migrate      run SQL migrations"
 	@echo "  make seed-demo    fill OSS DB data/foliyo.db (ARGS=--force to reset)"
-	@echo "  make seed-demo-cloud  fill cloud DB (foliyo-cloud apps/api/data)"
+	@echo "  make seed-demo-cloud  fill cloud Postgres (FOLIYO_DB_URL, ARGS=--force)"
 	@echo "  make migrate-fresh wipe DB + migrate"
 
 .DEFAULT_GOAL := help

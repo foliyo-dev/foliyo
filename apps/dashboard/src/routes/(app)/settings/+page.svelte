@@ -6,7 +6,10 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
+	import BillingAddressForm from '$lib/components/BillingAddressForm.svelte';
+	import { getBilling, saveBilling, type BillingPayload, type BillingProfile, type IndianState } from '$lib/api/billing';
 	import { formatPlanLabel, getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { formatPlanExpiresLabel, parsePlanExpires } from '$lib/utils/planExpires';
 	import { getAiUsage, type AiUsage } from '$lib/api/ai';
 	import { isSaas, privacyUrl, publicHost, publicPortfolioPath } from '$lib/config';
 	import {
@@ -28,6 +31,9 @@
 	let privacyConsent: ConsentRow | null = null;
 	let accountPrivacy = false;
 	let deleteConfirm = '';
+	let billingProfile: BillingProfile | null = null;
+	let billingStates: IndianState[] = [];
+	let billingSaving = false;
 
 	/** Same rules as cloud `/api/handle`. */
 	const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/;
@@ -207,20 +213,11 @@
 	$: showDpdp =
 		isSaas || accountPrivacy || Boolean(planInfo && planInfo.plan !== 'selfhost');
 
-	/** `plan_expires` is `YYYY-MM-DD HH:MM:SS` UTC (no timezone suffix). */
-	function formatExpiry(stamp: string): string {
-		return new Date(`${stamp.replace(' ', 'T')}Z`).toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
-	$: planExpiresLabel = planInfo?.plan_expires ? formatExpiry(planInfo.plan_expires) : '';
-	$: daysUntilExpiry = planInfo?.plan_expires
-		? Math.ceil(
-				(new Date(`${planInfo.plan_expires.replace(' ', 'T')}Z`).getTime() - Date.now()) /
-					86_400_000
-			)
+	/** `plan_expires` may be SQL UTC or ISO — parse safely. */
+	$: planExpiresAt = parsePlanExpires(planInfo?.plan_expires);
+	$: planExpiresLabel = formatPlanExpiresLabel(planInfo?.plan_expires);
+	$: daysUntilExpiry = planExpiresAt
+		? Math.ceil((planExpiresAt.getTime() - Date.now()) / 86_400_000)
 		: null;
 	// Only monthly Pro carries an expiry; surface a renew action once it's close (or past) to
 	// avoid tempting an early renewal that would reset — rather than extend — the 30-day clock.
@@ -248,12 +245,41 @@
 				privacyConsent = null;
 				accountPrivacy = false;
 			}
+			if (planInfo?.billing_available) {
+				try {
+					const b = await getBilling();
+					billingProfile = b.profile;
+					billingStates = b.states;
+				} catch {
+					billingProfile = null;
+				}
+			}
 		} catch {
 			showToast('Failed to load settings', 'error');
 		} finally {
 			loading = false;
 		}
 	});
+
+	async function saveBillingAddress(e: CustomEvent<BillingPayload>) {
+		billingSaving = true;
+		try {
+			const res = await saveBilling(e.detail);
+			billingProfile = res.profile;
+			if (planInfo) planInfo = { ...planInfo, billing_complete: res.profile.complete };
+			showToast('Billing address saved.', 'success');
+		} catch (err) {
+			const text = err instanceof ApiError ? err.message : 'Could not save billing address.';
+			try {
+				const parsed = JSON.parse(text) as { message?: string };
+				showToast(parsed.message || text, 'error');
+			} catch {
+				showToast(text, 'error');
+			}
+		} finally {
+			billingSaving = false;
+		}
+	}
 
 	async function exportData() {
 		accountBusy = true;
@@ -390,6 +416,7 @@
 				title="Upgrade to Pro"
 				pricing={planInfo?.pricing ?? null}
 				billingAvailable={planInfo?.billing_available ?? false}
+				billingComplete={planInfo?.billing_complete ?? false}
 				on:upgraded={async (e) => {
 					planInfo = e.detail;
 					if (isSaas) {
@@ -398,6 +425,15 @@
 						} catch {
 							aiUsage = null;
 						}
+					}
+				}}
+				on:billingSaved={async () => {
+					try {
+						const b = await getBilling();
+						billingProfile = b.profile;
+						if (planInfo) planInfo = { ...planInfo, billing_complete: b.profile.complete };
+					} catch {
+						/* ignore */
 					}
 				}}
 			/>
@@ -451,8 +487,18 @@
 					showFeatures={!onTrial}
 					pricing={planInfo?.pricing ?? null}
 					billingAvailable={planInfo?.billing_available ?? false}
+					billingComplete={planInfo?.billing_complete ?? false}
 					on:upgraded={(e) => {
 						planInfo = e.detail;
+					}}
+					on:billingSaved={async () => {
+						try {
+							const b = await getBilling();
+							billingProfile = b.profile;
+							if (planInfo) planInfo = { ...planInfo, billing_complete: b.profile.complete };
+						} catch {
+							/* ignore */
+						}
 					}}
 				/>
 			{/if}
@@ -460,6 +506,27 @@
 			<p class="ok">Self-host — all features unlocked.</p>
 		{/if}
 	</Card>
+
+	{#if showDpdp && planInfo?.billing_available && billingProfile}
+		<Card>
+			<h2 class="section-title">Billing address</h2>
+			{#if billingProfile.complete}
+				<p class="muted ok-line">
+					On file for GST invoices — used automatically when you renew. Update here if you move.
+				</p>
+			{:else}
+				<p class="muted">
+					Add your billing address before checkout so we can issue a correct GST tax invoice.
+				</p>
+			{/if}
+			<BillingAddressForm
+				profile={billingProfile}
+				states={billingStates}
+				busy={billingSaving}
+				on:save={saveBillingAddress}
+			/>
+		</Card>
+	{/if}
 
 	<Card>
 		<h2 class="section-title">Password</h2>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import BillingAddressForm from '$lib/components/BillingAddressForm.svelte';
 	import {
 		createUpgradeOrder,
 		loadRazorpayCheckout,
@@ -7,19 +8,26 @@
 		type PlanInfo,
 		type UpgradeKind
 	} from '$lib/api/plan';
+	import {
+		getBilling,
+		saveBilling,
+		type BillingPayload,
+		type BillingProfile,
+		type IndianState
+	} from '$lib/api/billing';
+	import { ApiError } from '$lib/api/client';
 	import { loadSession, user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 	import { createEventDispatcher } from 'svelte';
 
 	export let title = 'Upgrade to Pro';
-	/** Optional short context above the feature list (e.g. limit messages). */
 	export let message = '';
 	export let pricing: PlanInfo['pricing'] | null = null;
 	export let billingAvailable = false;
-	/** When false, hide the default Pro feature checklist (context-only prompts). */
+	export let billingComplete = false;
 	export let showFeatures = true;
 
-	const dispatch = createEventDispatcher<{ upgraded: PlanInfo }>();
+	const dispatch = createEventDispatcher<{ upgraded: PlanInfo; billingSaved: void }>();
 
 	const features = [
 		{ label: 'Unlimited portfolios & resumes', ai: false },
@@ -32,15 +40,72 @@
 	];
 
 	let busy: UpgradeKind | null = null;
+	let billingDialog: HTMLDialogElement | undefined;
+	let billingProfile: BillingProfile | null = null;
+	let billingStates: IndianState[] = [];
+	let billingBusy = false;
+	let pendingKind: UpgradeKind | null = null;
 
 	$: monthly = pricing?.monthlyInr ?? 99;
 	$: lifetime = pricing?.lifetimeInr ?? 2999;
+
+	async function ensureBillingLoaded() {
+		if (billingProfile) return;
+		const res = await getBilling();
+		billingProfile = res.profile;
+		billingStates = res.states;
+		billingComplete = res.profile.complete;
+	}
+
+	async function openBillingModal(kind: UpgradeKind) {
+		pendingKind = kind;
+		try {
+			await ensureBillingLoaded();
+			billingDialog?.showModal();
+		} catch {
+			showToast('Could not load billing form.', 'error');
+			pendingKind = null;
+		}
+	}
+
+	async function onBillingSave(e: CustomEvent<BillingPayload>) {
+		billingBusy = true;
+		try {
+			const res = await saveBilling(e.detail);
+			billingProfile = res.profile;
+			billingComplete = res.profile.complete;
+			billingDialog?.close();
+			dispatch('billingSaved');
+			showToast('Billing address saved.', 'success');
+			const kind = pendingKind;
+			pendingKind = null;
+			if (kind) await runCheckout(kind);
+		} catch (err) {
+			const text = err instanceof ApiError ? err.message : 'Could not save billing address.';
+			try {
+				const parsed = JSON.parse(text) as { message?: string };
+				showToast(parsed.message || text, 'error');
+			} catch {
+				showToast(text, 'error');
+			}
+		} finally {
+			billingBusy = false;
+		}
+	}
 
 	async function checkout(kind: UpgradeKind) {
 		if (!billingAvailable) {
 			showToast('Billing is not configured yet.', 'error');
 			return;
 		}
+		if (!billingComplete) {
+			await openBillingModal(kind);
+			return;
+		}
+		await runCheckout(kind);
+	}
+
+	async function runCheckout(kind: UpgradeKind) {
 		busy = kind;
 		try {
 			await loadRazorpayCheckout();
@@ -91,7 +156,12 @@
 						? String((err as { message: string }).message)
 						: 'Checkout failed';
 			try {
-				const parsed = JSON.parse(text) as { message?: string };
+				const parsed = JSON.parse(text) as { message?: string; error?: string };
+				if (parsed.error === 'billing_required') {
+					billingComplete = false;
+					await openBillingModal(kind);
+					return;
+				}
 				showToast(parsed.message || text, 'error');
 			} catch {
 				showToast(text, 'error');
@@ -99,6 +169,11 @@
 		} finally {
 			busy = null;
 		}
+	}
+
+	function closeBillingModal() {
+		pendingKind = null;
+		billingDialog?.close();
 	}
 </script>
 
@@ -143,6 +218,25 @@
 	{/if}
 	<slot />
 </div>
+
+{#if billingProfile}
+	<dialog bind:this={billingDialog} class="billing-dialog" on:cancel|preventDefault={closeBillingModal}>
+		<h2>Billing address for invoice</h2>
+		<p class="dialog-intro">
+			We need this once for your GST tax invoice. It's saved on your account — renewals won't ask
+			again unless you change it in Settings.
+		</p>
+		<BillingAddressForm
+			compact
+			profile={billingProfile}
+			states={billingStates}
+			busy={billingBusy}
+			submitLabel="Save & continue to payment"
+			on:save={onBillingSave}
+		/>
+		<button type="button" class="dialog-close" on:click={closeBillingModal}>Cancel</button>
+	</dialog>
+{/if}
 
 <style>
 	.upgrade {
@@ -223,5 +317,37 @@
 	}
 	code {
 		font-size: 0.8125rem;
+	}
+	.billing-dialog {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		padding: 1.25rem 1.35rem 1rem;
+		max-width: min(28rem, calc(100vw - 2rem));
+		width: 100%;
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: 0 12px 40px rgba(26, 26, 46, 0.16);
+	}
+	.billing-dialog::backdrop {
+		background: rgba(15, 23, 42, 0.45);
+	}
+	.billing-dialog h2 {
+		margin: 0 0 0.35rem;
+		font-size: 1.05rem;
+	}
+	.dialog-intro {
+		margin: 0 0 1rem;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+		line-height: 1.45;
+	}
+	.dialog-close {
+		margin-top: 0.75rem;
+		border: none;
+		background: transparent;
+		color: var(--color-muted);
+		font-size: 0.8125rem;
+		cursor: pointer;
+		padding: 0.25rem 0;
 	}
 </style>
