@@ -37,11 +37,10 @@
 
 <style>
 	.item-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 1rem;
-		flex-wrap: wrap;
+		align-items: start;
 	}
 	.item-row.align-center {
 		align-items: center;
@@ -53,6 +52,7 @@
 		display: flex;
 		gap: 0.25rem;
 		flex-shrink: 0;
+		justify-self: end;
 	}
 	/* Shared presentation for item-detail markup that pages render into the default slot. */
 	.detail :global(.meta) {

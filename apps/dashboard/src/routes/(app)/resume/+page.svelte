@@ -4,6 +4,7 @@
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithResumePreview from '$lib/components/preview/EditorWithResumePreview.svelte';
 	import {
@@ -17,32 +18,76 @@
 		type Resume
 	} from '$lib/api/resumes';
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
+	import { getProfile, type Profile } from '$lib/api/profile';
 	import { showToast } from '$lib/stores/toast';
 	import { confirmDelete } from '$lib/stores/confirm';
 
 	let items: Resume[] = [];
 	let portfolios: Portfolio[] = [];
+	let profile: Profile | null = null;
 	let loading = true;
 	let saving = false;
 	let exportingId: string | null = null;
 	let editingId: string | null = null;
 	let previewingId: string | null = null;
+	let editorPreview: EditorWithResumePreview;
 
 	let name = '';
+	let headline = '';
+	let bio = '';
 	let portfolioId = '';
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
+	let customSummaryOpen = false;
 
 	$: previewResume = items.find((r) => r.id === previewingId) ?? null;
+	$: hasOwnSummary = Boolean(headline.trim() || bio.trim());
+	$: draftSummary =
+		editingId && (hasOwnSummary || customSummaryOpen)
+			? { headline, bio, theme_slug: themeSlug }
+			: null;
+	$: fallbackSummary = effectiveFallbackSummary(portfolioId, profile, portfolios);
+
+	function effectiveFallbackSummary(
+		linkedFolioId: string,
+		p: Profile | null,
+		folios: Portfolio[]
+	): { message: string; editHref: string; editLabel: string } | null {
+		const folio = linkedFolioId ? folios.find((f) => f.id === linkedFolioId) : null;
+		const folioHeadline = String(folio?.headline ?? '').trim();
+		const folioBio = String(folio?.bio ?? '').trim();
+		if (folioHeadline || folioBio) {
+			return {
+				message: `the linked folio “${folio?.name ?? 'Portfolio'}” headline and summary`,
+				editHref: `/portfolios/${linkedFolioId}`,
+				editLabel: 'folio'
+			};
+		}
+		const profileHeadline = String(p?.headline ?? '').trim();
+		const profileBio = String(p?.bio ?? '').trim();
+		if (profileHeadline || profileBio) {
+			return {
+				message: 'Basics headline and summary',
+				editHref: '/basics',
+				editLabel: 'Basics'
+			};
+		}
+		return null;
+	}
 
 	onMount(load);
 
 	async function load() {
 		loading = true;
 		try {
-			const [resumes, p] = await Promise.all([listResumes(), listPortfolios()]);
+			const [resumes, p, prof] = await Promise.all([
+				listResumes(),
+				listPortfolios(),
+				getProfile().catch(() => null)
+			]);
 			items = resumes;
 			portfolios = p;
+			profile = prof;
 			const fromUrl = $page.url.searchParams.get('preview');
 			if (fromUrl && items.some((r) => r.id === fromUrl)) previewingId = fromUrl;
 			if (previewingId && !items.some((r) => r.id === previewingId)) previewingId = null;
@@ -67,17 +112,34 @@
 	function resetEdit() {
 		editingId = null;
 		name = '';
+		headline = '';
+		bio = '';
+		portfolioId = '';
 		themeSlug = 'classic';
 		isPublic = false;
+		customSummaryOpen = false;
 	}
 
 	function startEdit(r: Resume) {
 		editingId = r.id;
 		name = r.name;
+		headline = r.headline ?? '';
+		bio = r.bio ?? '';
+		customSummaryOpen = Boolean(String(r.headline ?? '').trim() || String(r.bio ?? '').trim());
 		portfolioId = r.portfolio_id ?? '';
 		themeSlug = r.theme_slug as (typeof resumeThemes)[number];
 		isPublic = r.is_public === 1;
 		previewingId = r.id;
+	}
+
+	function openCustomSummary() {
+		customSummaryOpen = true;
+	}
+
+	function useFallbackSummary() {
+		headline = '';
+		bio = '';
+		customSummaryOpen = false;
 	}
 
 	async function saveEdit() {
@@ -88,15 +150,31 @@
 		}
 		saving = true;
 		try {
+			const trimmedHeadline = headline.trim();
+			const trimmedBio = bio.trim();
 			await updateResume(editingId, {
 				name: name.trim(),
-				portfolio_id: portfolioId,
+				headline: trimmedHeadline,
+				bio: trimmedBio,
+				portfolio_id: portfolioId || null,
 				theme_slug: themeSlug,
 				is_public: isPublic ? 1 : 0
 			});
-			await load();
+			items = items.map((r) =>
+				r.id === editingId
+					? {
+							...r,
+							name: name.trim(),
+							headline: trimmedHeadline,
+							bio: trimmedBio,
+							portfolio_id: portfolioId || null,
+							theme_slug: themeSlug,
+							is_public: isPublic ? 1 : 0
+						}
+					: r
+			);
+			await editorPreview?.refreshPreview();
 			showToast('Resume updated', 'success');
-			resetEdit();
 		} catch {
 			showToast('Failed to update resume', 'error');
 		} finally {
@@ -168,16 +246,14 @@
 	description="Preview, share, or export snapshots you’ve already made. Tailor a new one from a JD, or copy a folio."
 />
 
-{#if portfolios.length === 0}
-	<Card>
-		<p class="muted">
-			Create a <a href="/portfolios">portfolio</a> first — we’ll seed resumes from it.
-		</p>
-	</Card>
+{#if loading}
+	<p class="muted">Loading…</p>
 {:else}
 	<EditorWithResumePreview
+		bind:this={editorPreview}
 		resumeId={previewResume?.id ?? null}
 		resumeName={previewResume?.name ?? 'Resume'}
+		{draftSummary}
 	>
 		{#if editingId}
 			<Card>
@@ -187,13 +263,48 @@
 				</div>
 				<div class="fields">
 					<Input label="Name" bind:value={name} />
+					<div class="summary-section">
+						<h3 class="summary-title">Resume summary</h3>
+						{#if !customSummaryOpen && !hasOwnSummary && fallbackSummary}
+							<p class="summary-using">
+								This resume uses {fallbackSummary.message}.
+							</p>
+							<div class="summary-actions">
+								<Button variant="secondary" on:click={openCustomSummary}>
+									Add separate summary
+								</Button>
+								<a class="summary-link" href={fallbackSummary.editHref}>
+									Edit {fallbackSummary.editLabel}
+								</a>
+							</div>
+						{:else}
+							<Input
+								label="Headline"
+								bind:value={headline}
+								placeholder="e.g. Full-stack engineer focused on product delivery"
+							/>
+							<Textarea
+								label="Professional summary"
+								bind:value={bio}
+								rows={4}
+								placeholder="Short summary for this resume…"
+							/>
+							{#if fallbackSummary}
+								<button type="button" class="linkish" on:click={useFallbackSummary}>
+									Use {fallbackSummary.editLabel} instead
+								</button>
+							{/if}
+						{/if}
+					</div>
 					<label class="field">
-						<span class="label">Seeded from portfolio</span>
+						<span class="label">Linked folio (optional)</span>
 						<select bind:value={portfolioId}>
+							<option value="">None</option>
 							{#each portfolios as p}
 								<option value={p.id}>{p.name}</option>
 							{/each}
 						</select>
+						<p class="hint">Metadata only — does not change resume content.</p>
 					</label>
 					<label class="field">
 						<span class="label">Theme</span>
@@ -230,15 +341,13 @@
 			</Card>
 		{/if}
 
-		{#if loading}
-			<p class="muted">Loading…</p>
-		{:else if items.length === 0}
+		{#if items.length === 0}
 			<Card>
 				<p class="muted empty">No resumes yet.</p>
 				<p class="hint">
 					<a href="/resume/tailor">Tailor to a job</a>
 					or
-					<a href="/resume/new">copy a folio</a>.
+					<a href="/resume/new">pick from library</a>.
 				</p>
 			</Card>
 		{:else}
@@ -256,7 +365,7 @@
 											>{/if}
 									</h2>
 									<p class="meta">
-										From: {portfolioName(r.portfolio_id)} · {r.theme_slug} · {r.view_count}
+										{#if r.portfolio_id}Linked: {portfolioName(r.portfolio_id)} · {/if}{r.theme_slug} · {r.view_count}
 										views
 									</p>
 									{#if r.is_public}
@@ -329,6 +438,55 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+	.summary-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 0.85rem 0.9rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.summary-title {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+	.summary-using {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--color-muted);
+		line-height: 1.45;
+	}
+	.summary-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1rem;
+	}
+	.summary-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+	.summary-link:hover {
+		text-decoration: underline;
+	}
+	.linkish {
+		border: 0;
+		background: none;
+		padding: 0;
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-primary);
+		cursor: pointer;
+		text-align: left;
+	}
+	.linkish:hover {
+		text-decoration: underline;
 	}
 	.field {
 		display: flex;

@@ -5,7 +5,8 @@ export type JdSession = {
 	analysisId: string | null;
 	accepted: string[];
 	enhanceParse: boolean;
-	portfolioId: string;
+	/** '' = full library baseline; otherwise folio id for diff scope */
+	scopeId: string;
 };
 
 const KEY = 'foliyo.jd-session';
@@ -24,7 +25,12 @@ export function loadJdSession(): JdSession | null {
 			analysisId: typeof parsed.analysisId === 'string' ? parsed.analysisId : null,
 			accepted: Array.isArray(parsed.accepted) ? parsed.accepted.map(String) : [],
 			enhanceParse: Boolean(parsed.enhanceParse),
-			portfolioId: typeof parsed.portfolioId === 'string' ? parsed.portfolioId : ''
+			scopeId:
+				typeof parsed.scopeId === 'string'
+					? parsed.scopeId
+					: typeof parsed.portfolioId === 'string'
+						? parsed.portfolioId
+						: ''
 		};
 	} catch {
 		return null;

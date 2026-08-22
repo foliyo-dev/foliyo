@@ -7,7 +7,7 @@
 		{ href: '/resume/tailor', label: 'Tailor to a job', match: (p: string) => p.startsWith('/resume/tailor') },
 		{ href: '/resume/analyses', label: 'JD history', match: (p: string) => p.startsWith('/resume/analyses') },
 		{ href: '/resume', label: 'Your resumes', match: (p: string) => p === '/resume' },
-		{ href: '/resume/new', label: 'From folio', match: (p: string) => p.startsWith('/resume/new') }
+		{ href: '/resume/new', label: 'New resume', match: (p: string) => p.startsWith('/resume/new') }
 	];
 </script>
 

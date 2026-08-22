@@ -25,8 +25,9 @@ export type ResumeContent = {
 };
 
 export const listResumes = () => api<Resume[]>('/resumes');
-export const createResume = (data: Partial<Resume> & { content?: ResumeContent }) =>
-	api<Resume[]>('/resumes', { method: 'POST', body: JSON.stringify(data) });
+export const createResume = (
+	data: Partial<Resume> & { content?: ResumeContent; portfolio_id?: string | null }
+) => api<Resume[]>('/resumes', { method: 'POST', body: JSON.stringify(data) });
 export const updateResume = (id: string, data: Partial<Resume>) =>
 	api<{ ok: boolean }>(`/resumes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteResume = (id: string) => api<void>(`/resumes/${id}`, { method: 'DELETE' });
@@ -73,7 +74,7 @@ export type TailorResult = {
 
 export function tailorResume(data: {
 	name: string;
-	portfolio_id: string;
+	portfolio_id?: string | null;
 	theme_slug?: string;
 	is_public?: number;
 	headline?: string;

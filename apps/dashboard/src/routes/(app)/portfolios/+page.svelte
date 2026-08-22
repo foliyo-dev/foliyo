@@ -46,7 +46,6 @@
 
 	let name = '';
 	let slug = '';
-	let description = '';
 	let themeSlug: (typeof portfolioThemes)[number] = 'minimal';
 	let isPublic = false;
 	let slugTouched = false;
@@ -106,7 +105,7 @@
 	$: createDraft = (showCreateForm
 		? {
 				name: name.trim() || 'New portfolio',
-				description,
+				description: '',
 				theme_slug: themeSlug,
 				show_skills: showSkills ? 1 : 0,
 				show_projects: showProjects ? 1 : 0,
@@ -194,7 +193,6 @@
 	function resetForm() {
 		name = '';
 		slug = '';
-		description = '';
 		themeSlug = 'minimal';
 		isPublic = false;
 		slugTouched = false;
@@ -234,7 +232,7 @@
 			items = await createPortfolio({
 				name: name.trim(),
 				slug: createdSlug,
-				description,
+				description: '',
 				theme_slug: themeSlug,
 				is_public: isPublic ? 1 : 0,
 				is_default: wasFirstPortfolio ? 1 : 0,
@@ -481,7 +479,6 @@
 					<div class="fields">
 						<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
 						<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-						<Textarea label="Description" bind:value={description} rows={2} />
 						<label class="field">
 							<span class="label">Theme</span>
 							<select bind:value={themeSlug}>

@@ -527,7 +527,6 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
   const name = esc(displayName(data));
   const headline = esc(displayHeadline(data));
   const bio = esc(displayBio(data));
-  const desc = esc(String(data.portfolio.description ?? "").trim());
   const avatar = String(data.profile.avatar_url || "").trim();
   const avatarHtml = avatar
     ? `<img class="avatar" src="${esc(avatar)}" alt="" width="88" height="88" />`
@@ -547,6 +546,7 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
       <div>
         <h1>${name}</h1>
         ${headline ? `<p class="headline">${headline}</p>` : ""}
+        ${bio ? `<p class="bio">${bio}</p>` : ""}
         ${contact}
         ${social}
       </div>
@@ -559,7 +559,6 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
       <h1>${name}</h1>
       ${headline ? `<p class="headline">${headline}</p>` : ""}
       ${bio ? `<p class="bio">${bio}</p>` : ""}
-      ${desc ? `<p class="desc">${desc}</p>` : ""}
       ${social}
     </div>
   </header>`;

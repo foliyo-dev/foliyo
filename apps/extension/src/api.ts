@@ -253,7 +253,7 @@ export function patchJobAnalysisAccepted(id: string, accepted: string[], setting
 export function tailorResume(
   body: {
     name: string;
-    portfolio_id: string;
+    portfolio_id?: string | null;
     skill_ids?: string[];
     jd_text?: string;
     include_matching?: boolean;

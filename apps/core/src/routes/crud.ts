@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv } from "../middleware/auth.js";
 import { run, type FoliyoDb, type SqlValue } from "../db.js";
 import { suggestSkillsFromLibrary } from "../skills/evidence.js";
+import { syncJunctionSortFromLibrary } from "../content-order.js";
 import {
   listActive,
   listTrash,
@@ -29,7 +30,11 @@ export function projectsRoutes(db: FoliyoDb) {
       featured: z.number().int().default(0),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
+    {
+      afterWrite: (userId) => suggestSkillsFromLibrary(db, userId),
+      afterReorder: () => syncJunctionSortFromLibrary(db, "projects"),
+      orderBy: "sort_order",
+    },
   );
 }
 
@@ -51,7 +56,11 @@ export function experienceRoutes(db: FoliyoDb) {
       skills_developed: z.string().default("[]"),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
+    {
+      afterWrite: (userId) => suggestSkillsFromLibrary(db, userId),
+      afterReorder: () => syncJunctionSortFromLibrary(db, "experience"),
+      orderBy: "sort_order",
+    },
   );
 }
 
@@ -69,7 +78,11 @@ export function educationRoutes(db: FoliyoDb) {
       skills_developed: z.string().default("[]"),
       sort_order: z.number().int().default(0),
     }),
-    { afterWrite: (userId) => suggestSkillsFromLibrary(db, userId), orderBy: "sort_order" },
+    {
+      afterWrite: (userId) => suggestSkillsFromLibrary(db, userId),
+      afterReorder: () => syncJunctionSortFromLibrary(db, "education"),
+      orderBy: "sort_order",
+    },
   );
 }
 
@@ -135,6 +148,7 @@ function crudRoutes(
   schema: z.ZodObject<z.ZodRawShape>,
   opts?: {
     afterWrite?: (userId: string) => Promise<unknown>;
+    afterReorder?: () => Promise<unknown>;
     orderBy?: string;
   },
 ) {
@@ -221,6 +235,7 @@ function crudRoutes(
         [i, id, userId],
       );
     }
+    if (opts?.afterReorder) await opts.afterReorder();
     return c.json({ ok: true });
   });
 

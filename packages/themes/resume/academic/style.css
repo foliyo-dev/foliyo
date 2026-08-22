@@ -58,6 +58,13 @@ body.theme-academic {
   font-style: italic;
 }
 
+.theme-academic .bio {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
 .theme-academic .contact {
   margin: 0.55rem 0 0;
   padding-bottom: 0.65rem;

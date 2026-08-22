@@ -5,6 +5,7 @@ import type { AppEnv } from "../middleware/auth.js";
 import type { Config } from "../config.js";
 import { queryAll, queryOne, run, withTransaction, type FoliyoDb, type SqlValue } from "../db.js";
 import { filterOwnedContent } from "../resume/content.js";
+import { orderedJunctionIds, sortIdsByLibraryOrder } from "../content-order.js";
 import {
   FREE_PORTFOLIO_LIMIT,
   getEffectiveUserPlan,
@@ -48,24 +49,54 @@ const contentSchema = z.object({
 });
 
 async function getContentIds(db: FoliyoDb, portfolioId: string) {
-  const skills = (await queryAll<{ skill_id: string }>(
-    db, "SELECT skill_id FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.skill_id);
-  const projects = (await queryAll<{ project_id: string }>(
-    db, "SELECT project_id FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.project_id);
-  const experience = (await queryAll<{ experience_id: string }>(
-    db, "SELECT experience_id FROM portfolio_experience WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.experience_id);
-  const education = (await queryAll<{ education_id: string }>(
-    db, "SELECT education_id FROM portfolio_education WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.education_id);
-  const certifications = (await queryAll<{ certification_id: string }>(
-    db, "SELECT certification_id FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.certification_id);
-  const languages = (await queryAll<{ language_id: string }>(
-    db, "SELECT language_id FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.language_id);
+  const [skills, projects, experience, education, certifications, languages] = await Promise.all([
+    orderedJunctionIds(db, "portfolio_skills", "portfolio_id", portfolioId, "skill_id", "skills", false),
+    orderedJunctionIds(
+      db,
+      "portfolio_projects",
+      "portfolio_id",
+      portfolioId,
+      "project_id",
+      "projects",
+      true,
+    ),
+    orderedJunctionIds(
+      db,
+      "portfolio_experience",
+      "portfolio_id",
+      portfolioId,
+      "experience_id",
+      "experience",
+      true,
+    ),
+    orderedJunctionIds(
+      db,
+      "portfolio_education",
+      "portfolio_id",
+      portfolioId,
+      "education_id",
+      "education",
+      true,
+    ),
+    orderedJunctionIds(
+      db,
+      "portfolio_certifications",
+      "portfolio_id",
+      portfolioId,
+      "certification_id",
+      "certifications",
+      false,
+    ),
+    orderedJunctionIds(
+      db,
+      "portfolio_languages",
+      "portfolio_id",
+      portfolioId,
+      "language_id",
+      "languages",
+      false,
+    ),
+  ]);
   return {
     skill_ids: skills,
     project_ids: projects,
@@ -83,6 +114,13 @@ async function setContent(
   content: z.infer<typeof contentSchema>,
 ) {
   const owned = await filterOwnedContent(db, userId, content);
+  const skill_ids = await sortIdsByLibraryOrder(db, "skills", owned.skill_ids);
+  const project_ids = await sortIdsByLibraryOrder(db, "projects", owned.project_ids);
+  const experience_ids = await sortIdsByLibraryOrder(db, "experience", owned.experience_ids);
+  const education_ids = await sortIdsByLibraryOrder(db, "education", owned.education_ids);
+  const certification_ids = await sortIdsByLibraryOrder(db, "certifications", owned.certification_ids);
+  const language_ids = await sortIdsByLibraryOrder(db, "languages", owned.language_ids);
+
   await withTransaction(db, async () => {
     await run(db, "DELETE FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId]);
@@ -90,38 +128,51 @@ async function setContent(
     await run(db, "DELETE FROM portfolio_education WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId]);
-    for (const skillId of owned.skill_ids) {
+    for (const skillId of skill_ids) {
       await run(db, "INSERT INTO portfolio_skills (portfolio_id, skill_id) VALUES (?, ?)", [portfolioId, skillId]);
     }
-    for (const projectId of owned.project_ids) {
-      await run(db, "INSERT INTO portfolio_projects (portfolio_id, project_id) VALUES (?, ?)", [portfolioId, projectId]);
+    for (const [sortOrder, projectId] of project_ids.entries()) {
+      await run(db, "INSERT INTO portfolio_projects (portfolio_id, project_id, sort_order) VALUES (?, ?, ?)", [
+        portfolioId,
+        projectId,
+        sortOrder,
+      ]);
     }
-    for (const experienceId of owned.experience_ids) {
-      await run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id) VALUES (?, ?)", [
+    for (const [sortOrder, experienceId] of experience_ids.entries()) {
+      await run(db, "INSERT INTO portfolio_experience (portfolio_id, experience_id, sort_order) VALUES (?, ?, ?)", [
         portfolioId,
         experienceId,
+        sortOrder,
       ]);
     }
-    for (const educationId of owned.education_ids) {
-      await run(db, "INSERT INTO portfolio_education (portfolio_id, education_id) VALUES (?, ?)", [
+    for (const [sortOrder, educationId] of education_ids.entries()) {
+      await run(db, "INSERT INTO portfolio_education (portfolio_id, education_id, sort_order) VALUES (?, ?, ?)", [
         portfolioId,
         educationId,
+        sortOrder,
       ]);
     }
-    for (const certificationId of owned.certification_ids) {
+    for (const certificationId of certification_ids) {
       await run(db, "INSERT INTO portfolio_certifications (portfolio_id, certification_id) VALUES (?, ?)", [
         portfolioId,
         certificationId,
       ]);
     }
-    for (const languageId of owned.language_ids) {
+    for (const languageId of language_ids) {
       await run(db, "INSERT INTO portfolio_languages (portfolio_id, language_id) VALUES (?, ?)", [
         portfolioId,
         languageId,
       ]);
     }
   });
-  return owned;
+  return {
+    skill_ids,
+    project_ids,
+    experience_ids,
+    education_ids,
+    certification_ids,
+    language_ids,
+  };
 }
 
 export function portfoliosRoutes(db: FoliyoDb, config: Config) {

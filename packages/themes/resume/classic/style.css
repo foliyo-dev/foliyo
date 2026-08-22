@@ -54,6 +54,7 @@ body.theme-classic {
 }
 
 .theme-classic .headline { margin: 0.35rem 0 0; color: var(--muted); font-weight: 400; }
+.theme-classic .bio { margin: 0.65rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--ink); }
 .theme-classic .contact { margin: 0.45rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .theme-classic .contact a { color: var(--ink); }
 .theme-classic .social-links-doc { justify-content: center; }

@@ -1,52 +1,81 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { fetchResumePreviewHtml } from '$lib/api/preview';
+	import {
+		fetchResumeDraftPreviewHtml,
+		fetchResumePreviewHtml,
+		type ResumeDraftPreview
+	} from '$lib/api/preview';
 
 	/** Owner resume id — null shows an empty pane prompt. */
 	export let resumeId: string | null = null;
 	export let resumeName = 'Resume';
+	/** When set, preview uses unsaved edit-form summary / theme. */
+	export let draftSummary: ResumeDraftPreview | null = null;
 
 	let loading = false;
 	let error = '';
 	let drawerOpen = false;
 	let blobUrl = '';
-	let loadedFor = '';
+	let loadedPreviewKey = '';
+	let draftTimer: ReturnType<typeof setTimeout> | null = null;
 
-	$: if (resumeId !== loadedFor) {
-		if (resumeId) void refresh();
-		else clearPreview();
+	$: draftKey = draftSummary
+		? `${draftSummary.headline ?? ''}\0${draftSummary.bio ?? ''}\0${draftSummary.theme_slug ?? ''}`
+		: '';
+	$: previewKey = resumeId
+		? draftSummary
+			? `${resumeId}:draft:${draftKey}`
+			: `${resumeId}:saved`
+		: '';
+
+	$: if (previewKey && previewKey !== loadedPreviewKey) {
+		if (draftSummary) scheduleDraftLoad();
+		else void loadPreview();
+	} else if (!resumeId) {
+		clearPreview();
 	}
 
 	onDestroy(() => {
+		if (draftTimer) clearTimeout(draftTimer);
 		if (blobUrl) URL.revokeObjectURL(blobUrl);
 	});
 
 	function clearPreview() {
 		loading = false;
 		error = '';
-		loadedFor = '';
+		loadedPreviewKey = '';
 		if (blobUrl) {
 			URL.revokeObjectURL(blobUrl);
 			blobUrl = '';
 		}
 	}
 
-	export async function refresh(): Promise<void> {
+	function scheduleDraftLoad() {
+		if (draftTimer) clearTimeout(draftTimer);
+		draftTimer = setTimeout(() => {
+			void loadPreview();
+		}, 280);
+	}
+
+	async function loadPreview(): Promise<void> {
 		if (!resumeId) {
 			clearPreview();
 			return;
 		}
 		const id = resumeId;
+		const key = previewKey;
 		loading = true;
 		error = '';
 		try {
-			const html = await fetchResumePreviewHtml(id);
+			const html = draftSummary
+				? await fetchResumeDraftPreviewHtml(id, draftSummary)
+				: await fetchResumePreviewHtml(id);
 			if (blobUrl) URL.revokeObjectURL(blobUrl);
 			blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-			loadedFor = id;
+			loadedPreviewKey = key;
 		} catch {
 			error = 'Could not load private preview';
-			loadedFor = id;
+			loadedPreviewKey = key;
 			if (blobUrl) {
 				URL.revokeObjectURL(blobUrl);
 				blobUrl = '';
@@ -56,6 +85,11 @@
 		}
 	}
 
+	export async function refresh(): Promise<void> {
+		loadedPreviewKey = '';
+		await loadPreview();
+	}
+
 	function openInNewTab() {
 		if (!blobUrl) return;
 		window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -63,7 +97,7 @@
 
 	function openDrawer() {
 		drawerOpen = true;
-		if (resumeId && !blobUrl && !loading) void refresh();
+		if (resumeId && !blobUrl && !loading) void loadPreview();
 	}
 
 	function closeDrawer() {
@@ -89,7 +123,11 @@
 	</div>
 	<p class="hint">
 		{#if resumeId}
-			Stays private until you publish a share link.
+			{#if draftSummary}
+				Live preview — summary updates as you edit.
+			{:else}
+				Stays private until you publish a share link.
+			{/if}
 		{:else}
 			Select <strong>Preview</strong> on a resume to see it here.
 		{/if}
@@ -132,7 +170,11 @@
 		</div>
 		<p class="hint">
 			{#if resumeId}
-				Stays private until you publish a share link.
+				{#if draftSummary}
+					Live preview — summary updates as you edit.
+				{:else}
+					Stays private until you publish a share link.
+				{/if}
 			{:else}
 				Select Preview on a resume first.
 			{/if}

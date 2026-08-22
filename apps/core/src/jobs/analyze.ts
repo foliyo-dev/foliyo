@@ -135,34 +135,7 @@ async function resolveBaseline(
     }
   }
 
-  const defaultFolio = await queryOne<{ id: string; name: string }>(
-    db,
-    "SELECT id, name FROM portfolios WHERE user_id = ? ORDER BY is_default DESC, created_at ASC LIMIT 1",
-    [userId],
-  );
-  if (defaultFolio) {
-    return {
-      kind: "portfolio",
-      id: defaultFolio.id,
-      label: defaultFolio.name,
-      content: await getPortfolioContentIds(db, defaultFolio.id),
-    };
-  }
-
-  const latest = await queryOne<{ id: string; name: string }>(
-    db,
-    "SELECT id, name FROM resumes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
-    [userId],
-  );
-  if (latest) {
-    return {
-      kind: "resume",
-      id: latest.id,
-      label: latest.name,
-      content: await getResumeContentIds(db, latest.id),
-    };
-  }
-
+  /** No resume_id / portfolio_id → full-library baseline (empty selection). */
   return { kind: "none", id: null, label: null, content: emptyContent() };
 }
 

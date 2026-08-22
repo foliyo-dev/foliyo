@@ -80,13 +80,25 @@ export async function computeTailorSelection(
   }
 
   const education_ids = (
-    await queryAll<{ id: string }>(db, "SELECT id FROM education WHERE user_id = ?", [userId])
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM education WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
+      [userId],
+    )
   ).map((r) => r.id);
   const certification_ids = (
-    await queryAll<{ id: string }>(db, "SELECT id FROM certifications WHERE user_id = ?", [userId])
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM certifications WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
+      [userId],
+    )
   ).map((r) => r.id);
   const language_ids = (
-    await queryAll<{ id: string }>(db, "SELECT id FROM languages WHERE user_id = ?", [userId])
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM languages WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
+      [userId],
+    )
   ).map((r) => r.id);
 
   return {

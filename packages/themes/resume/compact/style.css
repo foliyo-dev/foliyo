@@ -58,6 +58,13 @@ body.theme-compact {
   font-size: 0.85rem;
 }
 
+.theme-compact .bio {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
 .theme-compact .contact {
   margin: 0.3rem 0 0;
   font-size: 0.75rem;

@@ -54,8 +54,10 @@ const contentSchema = z.object({
   language_ids: z.array(z.string()).default([]),
 });
 
+const portfolioIdSchema = z.union([z.string().min(1), z.null()]);
+
 const resumeSchema = z.object({
-  portfolio_id: z.string().min(1),
+  portfolio_id: portfolioIdSchema.optional(),
   name: z.string().min(1),
   theme_slug: z.string().default("classic"),
   is_public: z.number().int().default(0),
@@ -63,6 +65,25 @@ const resumeSchema = z.object({
   bio: z.string().max(2000).optional(),
   /** When set, use this snapshot instead of copying the whole portfolio. */
   content: contentSchema.optional(),
+});
+
+const createResumeSchema = resumeSchema.superRefine((d, ctx) => {
+  if (!d.content && !d.portfolio_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "portfolio_id is required when copying a whole folio",
+      path: ["portfolio_id"],
+    });
+  }
+});
+
+const resumeUpdateSchema = z.object({
+  portfolio_id: portfolioIdSchema.optional(),
+  name: z.string().min(1).optional(),
+  theme_slug: z.string().optional(),
+  is_public: z.number().int().optional(),
+  headline: z.string().max(200).optional(),
+  bio: z.string().max(2000).optional(),
 });
 
 const approvedSchema = z.object({
@@ -74,7 +95,8 @@ const approvedSchema = z.object({
 const tailorSchema = z
   .object({
     name: z.string().min(1),
-    portfolio_id: z.string().min(1),
+    /** Optional folio link (metadata only). Content comes from Library via approved. */
+    portfolio_id: portfolioIdSchema.optional(),
     theme_slug: z.string().default("classic"),
     is_public: z.number().int().default(0),
     headline: z.string().max(200).optional(),
@@ -117,11 +139,13 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     const blocked = await assertCanCreateResume(db, userId, config);
     if (blocked) return c.json(blocked, 402);
 
-    const portfolio = await queryOne(db, "SELECT id FROM portfolios WHERE id = ? AND user_id = ?", [
-      d.portfolio_id,
-      userId,
-    ]);
-    if (!portfolio) return c.json({ error: "portfolio not found" }, 404);
+    if (d.portfolio_id) {
+      const portfolio = await queryOne(db, "SELECT id FROM portfolios WHERE id = ? AND user_id = ?", [
+        d.portfolio_id,
+        userId,
+      ]);
+      if (!portfolio) return c.json({ error: "portfolio not found" }, 404);
+    }
 
     const confirmed = await queryAll<{ id: string; name: string }>(
       db,
@@ -163,10 +187,11 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     const shareToken = nanoid(16);
     const headline = (d.headline ?? "").trim();
     const bio = (d.bio ?? "").trim();
+    const linkedPortfolioId = d.portfolio_id ?? null;
     await run(
       db,
       "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token, headline, bio) VALUES (?,?,?,?,?,?,?,?)",
-      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
+      [linkedPortfolioId, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
     );
 
     const resume = await queryOne<{ id: string }>(
@@ -205,18 +230,20 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
 
   r.post("/", async (c) => {
     const userId = c.get("userId");
-    const body = resumeSchema.safeParse(await c.req.json());
-    if (!body.success) return c.json({ error: "invalid body" }, 400);
+    const body = createResumeSchema.safeParse(await c.req.json());
+    if (!body.success) return c.json({ error: "invalid body", details: body.error.flatten() }, 400);
     const d = body.data;
 
     const blocked = await assertCanCreateResume(db, userId, config);
     if (blocked) return c.json(blocked, 402);
 
-    const portfolio = await queryOne(db, "SELECT id FROM portfolios WHERE id = ? AND user_id = ?", [
-      d.portfolio_id,
-      userId,
-    ]);
-    if (!portfolio) return c.json({ error: "portfolio not found" }, 404);
+    if (d.portfolio_id) {
+      const portfolio = await queryOne(db, "SELECT id FROM portfolios WHERE id = ? AND user_id = ?", [
+        d.portfolio_id,
+        userId,
+      ]);
+      if (!portfolio) return c.json({ error: "portfolio not found" }, 404);
+    }
 
     const shareToken = nanoid(16);
     const headline = (d.headline ?? "").trim();
@@ -224,7 +251,7 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     await run(
       db,
       "INSERT INTO resumes (portfolio_id, user_id, name, theme_slug, is_public, share_token, headline, bio) VALUES (?,?,?,?,?,?,?,?)",
-      [d.portfolio_id, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
+      [d.portfolio_id ?? null, userId, d.name, d.theme_slug, d.is_public, shareToken, headline, bio],
     );
 
     const created = await queryOne<{ id: string }>(
@@ -250,7 +277,7 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
           );
         }
         await setResumeContent(db, created.id, owned);
-      } else {
+      } else if (d.portfolio_id) {
         await copyPortfolioContentToResume(db, created.id, d.portfolio_id);
       }
     }
@@ -281,7 +308,7 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
   r.put("/:id", async (c) => {
     const userId = c.get("userId");
     const id = c.req.param("id");
-    const body = resumeSchema.omit({ content: true }).partial().safeParse(await c.req.json());
+    const body = resumeUpdateSchema.partial().safeParse(await c.req.json());
     if (!body.success) return c.json({ error: "invalid body" }, 400);
     const cols = Object.keys(body.data);
     if (cols.length === 0) return c.json({ ok: true });
@@ -292,9 +319,15 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
       ]);
       if (!owned) return c.json({ error: "portfolio not found" }, 404);
     }
+    const values = cols.map((col) => {
+      if (col === "portfolio_id") return body.data.portfolio_id ?? null;
+      if (col === "headline") return String(body.data.headline ?? "").trim();
+      if (col === "bio") return String(body.data.bio ?? "").trim();
+      return (body.data as Record<string, SqlValue>)[col];
+    });
     const sets = cols.map((col) => `${col}=?`).join(", ");
     await run(db, `UPDATE resumes SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
-      ...(Object.values(body.data) as SqlValue[]), id, userId,
+      ...values, id, userId,
     ]);
     return c.json({ ok: true });
   });

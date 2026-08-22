@@ -77,11 +77,40 @@ export async function fetchPortfolioDraftPreviewHtml(
 	return res.text();
 }
 
+export type ResumeDraftPreview = {
+	headline?: string;
+	bio?: string;
+	theme_slug?: string;
+};
+
 /** Fetch private resume preview HTML for the logged-in owner (all plans). */
 export async function fetchResumePreviewHtml(resumeId: string): Promise<string> {
 	const token = get(accessToken);
 	const res = await fetch(`${API_BASE}/preview/resume/${encodeURIComponent(resumeId)}`, {
+		cache: 'no-store',
 		headers: token ? { Authorization: `Bearer ${token}` } : {}
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new ApiError(text || res.statusText, res.status);
+	}
+	return res.text();
+}
+
+/** Render unsaved resume summary / theme from the edit form. */
+export async function fetchResumeDraftPreviewHtml(
+	resumeId: string,
+	draft: ResumeDraftPreview
+): Promise<string> {
+	const token = get(accessToken);
+	const res = await fetch(`${API_BASE}/preview/resume/${encodeURIComponent(resumeId)}/draft`, {
+		method: 'POST',
+		cache: 'no-store',
+		headers: {
+			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {})
+		},
+		body: JSON.stringify(draft)
 	});
 	if (!res.ok) {
 		const text = await res.text();

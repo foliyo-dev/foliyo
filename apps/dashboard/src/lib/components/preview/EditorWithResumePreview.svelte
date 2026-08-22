@@ -1,8 +1,10 @@
 <script lang="ts">
 	import ResumePreview from './ResumePreview.svelte';
+	import type { ResumeDraftPreview } from '$lib/api/preview';
 
 	export let resumeId: string | null = null;
 	export let resumeName = 'Resume';
+	export let draftSummary: ResumeDraftPreview | null = null;
 
 	let preview: ResumePreview;
 	let root: HTMLDivElement;
@@ -30,7 +32,7 @@
 	<div class="editor">
 		<slot />
 	</div>
-	<ResumePreview bind:this={preview} {resumeId} {resumeName} />
+	<ResumePreview bind:this={preview} {resumeId} {resumeName} {draftSummary} />
 </div>
 
 <style>

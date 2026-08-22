@@ -54,7 +54,8 @@
   export let pendingAnalysisId: string | null = null;
   export let onPendingConsumed: () => void = () => undefined;
 
-  let portfolioId = "";
+  let scopeId = "";
+  let linkFolioId = "";
   let themeSlug: ResumeTheme = "classic";
   let jdText = "";
   let includeMatching = true;
@@ -196,8 +197,8 @@
     scheduleAcceptedPatch();
   }
 
-  async function onPortfolioChange() {
-    await onPrefsChange({ portfolioId });
+  async function onScopeChange() {
+    await onPrefsChange({ portfolioId: scopeId || undefined });
     await checkJdCache();
     heuristicSuggestion = null;
   }
@@ -207,14 +208,14 @@
   }
 
   async function checkJdCache() {
-    if (!jdText.trim() || !portfolioId) {
+    if (!jdText.trim()) {
       cachedSuggestion = null;
       return;
     }
     const hash = await hashJdText(jdText);
     const cache = await loadJdResumeCache();
     const entry = cache[hash];
-    if (entry && entry.portfolioId === portfolioId) {
+    if (entry && (!scopeId || entry.portfolioId === scopeId)) {
       cachedSuggestion = {
         resumeId: entry.resumeId,
         name: entry.name,
@@ -256,12 +257,12 @@
   $: canStartFresh = Boolean(jdText.trim() || analysis);
 
   async function runHeuristicMatch() {
-    if (!jdText.trim() || !portfolioId) return;
+    if (!jdText.trim()) return;
     const jdMatched = new Set(matchSkillIdsFromJd(jdText, skills));
     if (jdMatched.size === 0) return;
 
     const candidates = resumes
-      .filter((r) => r.portfolio_id === portfolioId)
+      .filter((r) => !scopeId || r.portfolio_id === scopeId)
       .slice(0, 5);
 
     let best: { resume: Resume; ratio: number } | null = null;
@@ -300,7 +301,7 @@
       analysis = await analyzeJob(
         {
           jd_text: jdText.trim(),
-          portfolio_id: portfolioId || undefined,
+          portfolio_id: scopeId || undefined,
           enhance: enhanceParse && pro && !outOfAiUnits,
         },
         settings,
@@ -336,6 +337,7 @@
       return;
     }
     error = "";
+    if (!linkFolioId && scopeId) linkFolioId = scopeId;
     createOpen = true;
   }
 
@@ -351,10 +353,6 @@
   async function createResume() {
     error = "";
     success = "";
-    if (!portfolioId) {
-      error = "Choose a portfolio.";
-      return;
-    }
     if (!jdText.trim()) {
       error = "Paste a job description.";
       return;
@@ -371,7 +369,7 @@
       const out = await tailorResume(
         {
           name: finalName,
-          portfolio_id: portfolioId,
+          portfolio_id: linkFolioId || undefined,
           theme_slug: themeSlug,
           jd_text: jdText.trim(),
           include_matching: includeMatching,
@@ -385,7 +383,7 @@
       const hash = await hashJdText(jdText);
       await saveJdResumeCacheEntry(hash, {
         resumeId: out.resume.id,
-        portfolioId,
+        portfolioId: linkFolioId || "",
         name: out.resume.name,
         createdAt: new Date().toISOString(),
       });
@@ -417,8 +415,7 @@
     }
   }
 
-  $: if (settings.portfolioId) portfolioId = settings.portfolioId;
-  else if (!portfolioId && portfolios[0]) portfolioId = portfolios[0].id;
+  $: if (settings.portfolioId) scopeId = settings.portfolioId;
   $: themeSlug = (settings.themeSlug as ResumeTheme) ?? "classic";
 </script>
 
@@ -432,6 +429,16 @@
   </p>
 
   <div class="fields">
+    <label class="field">
+      <span class="label">Compare against</span>
+      <select bind:value={scopeId} on:change={onScopeChange} disabled={analyzeBusy || createBusy}>
+        <option value="">Full library</option>
+        {#each portfolios as p (p.id)}
+          <option value={p.id}>{p.name} folio</option>
+        {/each}
+      </select>
+    </label>
+
     <div class="field">
       <div class="label-row">
         <span class="label">Job description</span>
@@ -543,16 +550,12 @@
   <div class="sheet-inner">
     <div class="sheet-handle" aria-hidden="true"></div>
     <h2 id="create-sheet-title">Create tailored resume</h2>
-    <p class="hint">Pick how to generate it — this does not change the analysis.</p>
+    <p class="hint">Content comes from your library — not a folio copy.</p>
     <div class="fields">
       <label class="field">
-        <span class="label">From folio</span>
-        <select
-          bind:value={portfolioId}
-          on:change={() => {
-            onPortfolioChange();
-          }}
-        >
+        <span class="label">Link folio (optional)</span>
+        <select bind:value={linkFolioId}>
+          <option value="">None</option>
           {#each portfolios as p (p.id)}
             <option value={p.id}>{p.name}</option>
           {/each}

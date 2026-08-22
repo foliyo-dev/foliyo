@@ -55,7 +55,10 @@
 
 	let name = '';
 	let nameTouched = false;
-	let portfolioId = '';
+	/** '' = full library baseline; folio id scopes diff proposals */
+	let scopeId = '';
+	/** Optional metadata link on created resume */
+	let linkFolioId = '';
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
 	let jdText = '';
@@ -80,9 +83,6 @@
 			const [p, plan] = await Promise.all([listPortfolios(), getPlan().catch(() => null)]);
 			portfolios = p;
 			planInfo = plan;
-			if (!portfolioId) {
-				portfolioId = portfolios.find((p) => p.is_default)?.id ?? portfolios[0]?.id ?? '';
-			}
 			await Promise.all([restoreJdSession(), refreshAiUsage()]);
 			const fromUrl = page.url.searchParams.get('analysis');
 			if (fromUrl) {
@@ -109,7 +109,7 @@
 			analysisId: savedAnalysisId,
 			accepted: [...acceptedChanges],
 			enhanceParse,
-			portfolioId
+			scopeId
 		});
 	}
 
@@ -140,8 +140,8 @@
 		if (!session) return;
 		jdText = session.jdText;
 		enhanceParse = session.enhanceParse;
-		if (session.portfolioId && portfolios.some((p) => p.id === session.portfolioId)) {
-			portfolioId = session.portfolioId;
+		if (session.scopeId && portfolios.some((p) => p.id === session.scopeId)) {
+			scopeId = session.scopeId;
 		}
 		if (session.analysisId) {
 			try {
@@ -246,7 +246,7 @@
 		try {
 			jobAnalysis = await analyzeJob({
 				jd_text: jdText.trim(),
-				portfolio_id: portfolioId || undefined,
+				portfolio_id: scopeId || undefined,
 				enhance: enhanceParse && pro && !outOfAiUnits
 			});
 			acceptedChanges = defaultAcceptedIds(jobAnalysis);
@@ -290,6 +290,7 @@
 			showToast('Analyze the JD first', 'error');
 			return;
 		}
+		if (!linkFolioId && scopeId) linkFolioId = scopeId;
 		createOpen = true;
 	}
 
@@ -305,10 +306,6 @@
 	async function createTailored() {
 		if (!jobAnalysis) {
 			showToast('Analyze the JD first', 'error');
-			return;
-		}
-		if (!portfolioId) {
-			showToast('Choose a folio', 'error');
 			return;
 		}
 		const finalName = (nameTouched ? name : suggestedName).trim() || suggestedName;
@@ -336,7 +333,7 @@
 			}
 			const result = await tailorResume({
 				name: finalName,
-				portfolio_id: portfolioId,
+				portfolio_id: linkFolioId || undefined,
 				theme_slug: themeSlug,
 				jd_text: jdText.trim(),
 				include_matching: includeMatching,
@@ -375,15 +372,24 @@
 
 {#if loading}
 	<p class="muted">Loading…</p>
-{:else if portfolios.length === 0}
-	<Card>
-		<p class="muted">
-			Create a <a href="/portfolios">portfolio</a> first — we’ll seed your resume from it.
-		</p>
-	</Card>
 {:else}
 	<Card>
 		<div class="fields">
+			<label class="field">
+				<span class="label">Compare against</span>
+				<select bind:value={scopeId} disabled={analyzeBusy || saving}>
+					<option value="">Full library</option>
+					{#each portfolios as p}
+						<option value={p.id}>{p.name} folio</option>
+					{/each}
+				</select>
+				<p class="hint">
+					Optional — scope diff proposals to a folio’s selection. JD matching always uses your
+					full library.
+					{#if jobAnalysis}(Re-analyze after changing scope.){/if}
+				</p>
+			</label>
+
 			<div class="jd-wrap">
 				<div class="jd-head">
 					<span class="jd-label">Job description</span>
@@ -461,15 +467,17 @@
 		<div class="sheet-inner">
 			<div class="sheet-handle" aria-hidden="true"></div>
 			<h2 id="create-sheet-title">Create tailored resume</h2>
-			<p class="hint">Pick how to generate it — this does not change the analysis.</p>
+			<p class="hint">Content comes from your library selections above — not from a folio copy.</p>
 			<div class="fields">
 				<label class="field">
-					<span class="label">From folio</span>
-					<select bind:value={portfolioId}>
+					<span class="label">Link folio (optional)</span>
+					<select bind:value={linkFolioId}>
+						<option value="">None</option>
 						{#each portfolios as p}
 							<option value={p.id}>{p.name}</option>
 						{/each}
 					</select>
+					<p class="hint">Metadata only — does not change resume content.</p>
 				</label>
 
 				<label class="field">

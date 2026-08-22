@@ -32,18 +32,20 @@
 	import { listCertifications, type Certification } from '$lib/api/certifications';
 	import { listLanguages, type Language } from '$lib/api/languages';
 	import { listResumes, type Resume } from '$lib/api/resumes';
+	import { getProfile, type Profile } from '$lib/api/profile';
 	import { showToast } from '$lib/stores/toast';
 	import { confirmDelete } from '$lib/stores/confirm';
 
 	let loading = true;
 	let saving = false;
 	let portfolio: PortfolioDetail | null = null;
+	let profile: Profile | null = null;
 
 	let name = '';
 	let slug = '';
-	let description = '';
 	let headline = '';
 	let bio = '';
+	let customSummaryOpen = false;
 	let themeSlug = 'minimal';
 	let isPublic = false;
 	let isDefault = false;
@@ -97,14 +99,18 @@
 		.join(' · ') || 'Nothing selected yet';
 
 	$: portfolioId = $page.params.id;
+	$: hasOwnSummary = Boolean(headline.trim() || bio.trim());
+	$: usesBasicsSummary =
+		!hasOwnSummary &&
+		Boolean(String(profile?.headline ?? '').trim() || String(profile?.bio ?? '').trim());
 
 	$: draft = (loading
 		? null
 		: {
 				name: name.trim() || 'Portfolio',
-				description,
-				headline,
-				bio,
+				description: '',
+				headline: customSummaryOpen || hasOwnSummary ? headline : '',
+				bio: customSummaryOpen || hasOwnSummary ? bio : '',
 				theme_slug: themeSlug,
 				show_skills: showSkills ? 1 : 0,
 				show_projects: showProjects ? 1 : 0,
@@ -144,7 +150,7 @@
 		}
 		loading = true;
 		try {
-			const [p, sk, pr, ex, ed, certs, langs, res] = await Promise.all([
+			const [p, sk, pr, ex, ed, certs, langs, res, prof] = await Promise.all([
 				getPortfolio(portfolioId),
 				listSkills('confirmed'),
 				listProjects(),
@@ -152,9 +158,11 @@
 				listEducation(),
 				listCertifications(),
 				listLanguages(),
-				listResumes()
+				listResumes(),
+				getProfile().catch(() => null)
 			]);
 			portfolio = p;
+			profile = prof;
 			skills = sk;
 			projects = pr;
 			experiences = ex;
@@ -174,9 +182,9 @@
 	function fillForm(p: PortfolioDetail) {
 		name = p.name;
 		slug = p.slug;
-		description = p.description;
 		headline = p.headline ?? '';
 		bio = p.bio ?? '';
+		customSummaryOpen = Boolean(String(p.headline ?? '').trim() || String(p.bio ?? '').trim());
 		themeSlug = p.theme_slug;
 		isPublic = p.is_public === 1;
 		isDefault = p.is_default === 1;
@@ -205,6 +213,16 @@
 
 	$: if (!slugTouched && name) slug = slugify(name);
 
+	function openCustomSummary() {
+		customSummaryOpen = true;
+	}
+
+	function useBasicsSummary() {
+		headline = '';
+		bio = '';
+		customSummaryOpen = false;
+	}
+
 	async function save() {
 		if (!portfolio || !name.trim() || !slug.trim()) return;
 		saving = true;
@@ -212,9 +230,9 @@
 			await updatePortfolio(portfolio.id, {
 				name: name.trim(),
 				slug: slug.trim(),
-				description,
-				headline,
-				bio,
+				description: '',
+				headline: headline.trim(),
+				bio: bio.trim(),
 				theme_slug: themeSlug,
 				is_public: isPublic ? 1 : 0,
 				is_default: isDefault ? 1 : 0,
@@ -309,7 +327,7 @@
 {:else if portfolio}
 	<PageHeader
 		title={portfolio.name}
-		description="Choose what visitors will see, set headline/bio overrides, theme, and publish."
+		description="Choose what visitors will see, theme, and publish."
 	/>
 
 	{#if isPublic && liveUrl}
@@ -335,18 +353,35 @@
 				<div class="fields">
 					<Input label="Name" bind:value={name} />
 					<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-					<Textarea label="Short description" bind:value={description} rows={2} />
-					<Input
-						label="Headline (optional override)"
-						bind:value={headline}
-						placeholder="Falls back to Basics if empty"
-					/>
-					<Textarea
-						label="Bio (optional override)"
-						bind:value={bio}
-						rows={4}
-						placeholder="Falls back to Basics if empty"
-					/>
+					<div class="summary-section">
+						<h3 class="summary-title">Folio summary</h3>
+						{#if !customSummaryOpen && !hasOwnSummary && usesBasicsSummary}
+							<p class="summary-using">This folio uses Basics headline and summary.</p>
+							<div class="summary-actions">
+								<Button variant="secondary" on:click={openCustomSummary}>
+									Add separate summary
+								</Button>
+								<a class="summary-link" href="/basics">Edit Basics</a>
+							</div>
+						{:else}
+							<Input
+								label="Headline"
+								bind:value={headline}
+								placeholder="e.g. Backend engineer · open to contract"
+							/>
+							<Textarea
+								label="Professional summary"
+								bind:value={bio}
+								rows={4}
+								placeholder="Short summary for this folio…"
+							/>
+							{#if usesBasicsSummary || customSummaryOpen}
+								<button type="button" class="linkish" on:click={useBasicsSummary}>
+									Use Basics instead
+								</button>
+							{/if}
+						{/if}
+					</div>
 					<label class="field">
 						<span class="label">Theme</span>
 						<select bind:value={themeSlug}>
@@ -499,6 +534,55 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+	.summary-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 0.85rem 0.9rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.summary-title {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+	.summary-using {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--color-muted);
+		line-height: 1.45;
+	}
+	.summary-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1rem;
+	}
+	.summary-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+	.summary-link:hover {
+		text-decoration: underline;
+	}
+	.linkish {
+		border: 0;
+		background: none;
+		padding: 0;
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-primary);
+		cursor: pointer;
+		text-align: left;
+	}
+	.linkish:hover {
+		text-decoration: underline;
 	}
 	.field {
 		display: flex;

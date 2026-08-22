@@ -3,6 +3,13 @@ import { join } from "node:path";
 import { resolveCoreTemplatesDir } from "../assets.js";
 import type { Config } from "../config.js";
 import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
+import {
+  fetchJunctionLibraryRows,
+  fetchRowsInIdOrder,
+  orderRowsByIds,
+  orderedJunctionIds,
+  sortIdsByLibraryOrder,
+} from "../content-order.js";
 import { renderPortfolioHtml } from "./themes.js";
 
 export type PublicPortfolio = {
@@ -28,17 +35,47 @@ function handleFromEmail(email: string): string {
   return local.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32) || "user";
 }
 
-async function fetchRowsByIds(
+async function fetchSkillsForParent(
   db: FoliyoDb,
-  table: string,
-  ids: string[],
+  junctionTable: string,
+  parentColumn: string,
+  parentId: string,
 ): Promise<Record<string, unknown>[]> {
-  if (!ids.length) return [];
-  return queryAll<Record<string, unknown>>(
+  const ids = await orderedJunctionIds(
     db,
-    `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
-    ids,
+    junctionTable,
+    parentColumn,
+    parentId,
+    "skill_id",
+    "skills",
+    false,
   );
+  let skills = await fetchRowsInIdOrder(db, "skills", ids);
+  return skills.filter(
+    (s) =>
+      (s.status as string | undefined) !== "pending" &&
+      (s.status as string | undefined) !== "dismissed",
+  );
+}
+
+async function fetchSimpleJunctionRows(
+  db: FoliyoDb,
+  junctionTable: string,
+  parentColumn: string,
+  parentId: string,
+  itemColumn: string,
+  libraryTable: string,
+): Promise<Record<string, unknown>[]> {
+  const ids = await orderedJunctionIds(
+    db,
+    junctionTable,
+    parentColumn,
+    parentId,
+    itemColumn,
+    libraryTable,
+    false,
+  );
+  return fetchRowsInIdOrder(db, libraryTable, ids);
 }
 
 /** Ensure every user has a handle (for /u/:handle URLs). */
@@ -75,35 +112,10 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
     [userId],
   );
 
-  const skillIds = (await queryAll<{ skill_id: string }>(
-    db, "SELECT skill_id FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.skill_id);
-  const projectIds = (await queryAll<{ project_id: string }>(
-    db, "SELECT project_id FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.project_id);
-  const experienceIds = (await queryAll<{ experience_id: string }>(
-    db, "SELECT experience_id FROM portfolio_experience WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.experience_id);
-  const educationIds = (await queryAll<{ education_id: string }>(
-    db, "SELECT education_id FROM portfolio_education WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.education_id);
-  const certificationIds = (await queryAll<{ certification_id: string }>(
-    db, "SELECT certification_id FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.certification_id);
-  const languageIds = (await queryAll<{ language_id: string }>(
-    db, "SELECT language_id FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId],
-  )).map((r) => r.language_id);
-
-  const fetchByIds = (table: string, ids: string[]) => fetchRowsByIds(db, table, ids);
-
-  let skills =
-    portfolio.show_skills === 1 ? await fetchByIds("skills", skillIds) : [];
-  // Public surfaces only show confirmed skills.
-  skills = skills.filter(
-    (s) =>
-      (s.status as string | undefined) !== "pending" &&
-      (s.status as string | undefined) !== "dismissed",
-  );
+  const skills =
+    portfolio.show_skills === 1
+      ? await fetchSkillsForParent(db, "portfolio_skills", "portfolio_id", portfolioId)
+      : [];
 
   let downloadResumeToken: string | null = null;
   const resumeId = portfolio.resume_id as string | null | undefined;
@@ -121,12 +133,61 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
     profile: profile ?? { name: "", headline: "", bio: "" },
     download_resume_token: downloadResumeToken,
     skills,
-    projects: portfolio.show_projects === 1 ? await fetchByIds("projects", projectIds) : [],
-    experience: portfolio.show_experience === 1 ? await fetchByIds("experience", experienceIds) : [],
-    education: portfolio.show_education === 1 ? await fetchByIds("education", educationIds) : [],
+    projects:
+      portfolio.show_projects === 1
+        ? await fetchJunctionLibraryRows(db, {
+            junctionTable: "portfolio_projects",
+            parentColumn: "portfolio_id",
+            parentId: portfolioId,
+            itemColumn: "project_id",
+            libraryTable: "projects",
+            junctionSort: true,
+          })
+        : [],
+    experience:
+      portfolio.show_experience === 1
+        ? await fetchJunctionLibraryRows(db, {
+            junctionTable: "portfolio_experience",
+            parentColumn: "portfolio_id",
+            parentId: portfolioId,
+            itemColumn: "experience_id",
+            libraryTable: "experience",
+            junctionSort: true,
+          })
+        : [],
+    education:
+      portfolio.show_education === 1
+        ? await fetchJunctionLibraryRows(db, {
+            junctionTable: "portfolio_education",
+            parentColumn: "portfolio_id",
+            parentId: portfolioId,
+            itemColumn: "education_id",
+            libraryTable: "education",
+            junctionSort: true,
+          })
+        : [],
     certifications:
-      portfolio.show_certifications === 1 ? await fetchByIds("certifications", certificationIds) : [],
-    languages: portfolio.show_languages === 1 ? await fetchByIds("languages", languageIds) : [],
+      portfolio.show_certifications === 1
+        ? await fetchSimpleJunctionRows(
+            db,
+            "portfolio_certifications",
+            "portfolio_id",
+            portfolioId,
+            "certification_id",
+            "certifications",
+          )
+        : [],
+    languages:
+      portfolio.show_languages === 1
+        ? await fetchSimpleJunctionRows(
+            db,
+            "portfolio_languages",
+            "portfolio_id",
+            portfolioId,
+            "language_id",
+            "languages",
+          )
+        : [],
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
@@ -166,56 +227,6 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     ? await queryOne(db, "SELECT * FROM portfolios WHERE id = ?", [resume.portfolio_id])
     : null;
 
-  const skillIds = (
-    await queryAll<{ skill_id: string }>(db, "SELECT skill_id FROM resume_skills WHERE resume_id = ?", [
-      resumeId,
-    ])
-  ).map((r) => r.skill_id);
-  const projectIds = (
-    await queryAll<{ project_id: string }>(
-      db,
-      "SELECT project_id FROM resume_projects WHERE resume_id = ?",
-      [resumeId],
-    )
-  ).map((r) => r.project_id);
-  const experienceIds = (
-    await queryAll<{ experience_id: string }>(
-      db,
-      "SELECT experience_id FROM resume_experience WHERE resume_id = ?",
-      [resumeId],
-    )
-  ).map((r) => r.experience_id);
-  const educationIds = (
-    await queryAll<{ education_id: string }>(
-      db,
-      "SELECT education_id FROM resume_education WHERE resume_id = ?",
-      [resumeId],
-    )
-  ).map((r) => r.education_id);
-  const certificationIds = (
-    await queryAll<{ certification_id: string }>(
-      db,
-      "SELECT certification_id FROM resume_certifications WHERE resume_id = ?",
-      [resumeId],
-    )
-  ).map((r) => r.certification_id);
-  const languageIds = (
-    await queryAll<{ language_id: string }>(
-      db,
-      "SELECT language_id FROM resume_languages WHERE resume_id = ?",
-      [resumeId],
-    )
-  ).map((r) => r.language_id);
-
-  const fetchByIds = (table: string, ids: string[]) => fetchRowsByIds(db, table, ids);
-
-  let skills = await fetchByIds("skills", skillIds);
-  skills = skills.filter(
-    (s) =>
-      (s.status as string | undefined) !== "pending" &&
-      (s.status as string | undefined) !== "dismissed",
-  );
-
   const resumeHeadline = String(resume.headline ?? "").trim();
   const resumeBio = String(resume.bio ?? "").trim();
 
@@ -247,12 +258,47 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
   return {
     portfolio: portfolioShell,
     profile: profile ?? { name: "", headline: "", bio: "" },
-    skills,
-    projects: await fetchByIds("projects", projectIds),
-    experience: await fetchByIds("experience", experienceIds),
-    education: await fetchByIds("education", educationIds),
-    certifications: await fetchByIds("certifications", certificationIds),
-    languages: await fetchByIds("languages", languageIds),
+    skills: await fetchSkillsForParent(db, "resume_skills", "resume_id", resumeId),
+    projects: await fetchJunctionLibraryRows(db, {
+      junctionTable: "resume_projects",
+      parentColumn: "resume_id",
+      parentId: resumeId,
+      itemColumn: "project_id",
+      libraryTable: "projects",
+      junctionSort: true,
+    }),
+    experience: await fetchJunctionLibraryRows(db, {
+      junctionTable: "resume_experience",
+      parentColumn: "resume_id",
+      parentId: resumeId,
+      itemColumn: "experience_id",
+      libraryTable: "experience",
+      junctionSort: true,
+    }),
+    education: await fetchJunctionLibraryRows(db, {
+      junctionTable: "resume_education",
+      parentColumn: "resume_id",
+      parentId: resumeId,
+      itemColumn: "education_id",
+      libraryTable: "education",
+      junctionSort: true,
+    }),
+    certifications: await fetchSimpleJunctionRows(
+      db,
+      "resume_certifications",
+      "resume_id",
+      resumeId,
+      "certification_id",
+      "certifications",
+    ),
+    languages: await fetchSimpleJunctionRows(
+      db,
+      "resume_languages",
+      "resume_id",
+      resumeId,
+      "language_id",
+      "languages",
+    ),
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
@@ -436,12 +482,14 @@ export async function loadPortfolioDraftPreview(
   const show = (v: number | undefined, fallback = 1) => (v === 0 || v === 1 ? v : fallback);
 
   const fetchOwned = async (table: string, ids: string[]) => {
-    if (!ids.length) return [];
-    return queryAll<Record<string, unknown>>(
+    const ordered = await sortIdsByLibraryOrder(db, table, ids);
+    if (!ordered.length) return [];
+    const rows = await queryAll<Record<string, unknown>>(
       db,
-      `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL ORDER BY sort_order`,
-      [userId, ...ids],
+      `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ordered.map(() => "?").join(",")}) AND deleted_at IS NULL`,
+      [userId, ...ordered],
     );
+    return orderRowsByIds(rows, ordered);
   };
 
   let skills =

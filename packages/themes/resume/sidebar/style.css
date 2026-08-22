@@ -76,6 +76,13 @@ body.theme-sidebar {
   font-size: 0.9rem;
 }
 
+.theme-sidebar .bio {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--rail-muted);
+}
+
 .theme-sidebar .contact {
   margin: 0.55rem 0 0;
   font-size: 0.8rem;

@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import { createResume, resumeThemes, type Resume } from '$lib/api/resumes';
@@ -16,7 +18,7 @@
 	import { showToast } from '$lib/stores/toast';
 	import { ApiError } from '$lib/api/client';
 
-	type BuildMode = 'portfolio' | 'custom';
+	type BuildMode = 'library' | 'folio';
 
 	let portfolios: Portfolio[] = [];
 	let skills: Skill[] = [];
@@ -31,10 +33,14 @@
 
 	let name = '';
 	let nameTouched = false;
-	let portfolioId = '';
+	let headline = '';
+	let bio = '';
+	let folioId = '';
+	let seedFolioId = '';
+	let linkFolioId = '';
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
-	let buildMode: BuildMode = 'portfolio';
+	let buildMode: BuildMode = 'library';
 	let showAdvanced = false;
 
 	let selectedSkills = new Set<string>();
@@ -53,6 +59,8 @@
 		selectedLanguages.size;
 	$: suggestedName = buildSuggestedName();
 	$: if (!nameTouched) name = suggestedName;
+	$: canCreateLibrary = customCount > 0;
+	$: canCreateFolio = portfolios.length > 0 && Boolean(folioId);
 
 	onMount(load);
 
@@ -75,8 +83,7 @@
 			educations = ed;
 			certifications = cert;
 			languages = lang;
-			if (!portfolioId && portfolios[0]) portfolioId = portfolios[0].id;
-			name = buildSuggestedName();
+			if (!folioId && portfolios[0]) folioId = portfolios[0].id;
 		} catch {
 			showToast('Failed to load library', 'error');
 		} finally {
@@ -89,13 +96,13 @@
 	}
 
 	function buildSuggestedName(): string {
-		const folio = portfolios.find((p) => p.id === portfolioId)?.name ?? 'Resume';
 		const when = monthYear();
-		if (buildMode === 'custom') {
+		if (buildMode === 'library') {
 			return customCount > 0
-				? `${folio} · Custom (${customCount}) — ${when}`
-				: `${folio} · Custom — ${when}`;
+				? `Library · ${customCount} item(s) — ${when}`
+				: `Library resume — ${when}`;
 		}
+		const folio = portfolios.find((p) => p.id === folioId)?.name ?? 'Folio';
 		return `${folio} — ${when}`;
 	}
 
@@ -108,7 +115,7 @@
 		selectedLanguages = new Set();
 	}
 
-	async function seedCustomFromPortfolio(pid: string) {
+	async function seedFromFolio(pid: string) {
 		if (!pid) {
 			clearCustomSelection();
 			return;
@@ -124,7 +131,7 @@
 			selectedLanguages = new Set(detail.content.language_ids);
 		} catch {
 			clearCustomSelection();
-			showToast('Could not load portfolio content for Custom', 'error');
+			showToast('Could not load folio selection', 'error');
 		} finally {
 			seedingCustom = false;
 		}
@@ -132,38 +139,45 @@
 
 	async function setBuildMode(mode: BuildMode) {
 		buildMode = mode;
-		if (mode === 'portfolio') clearCustomSelection();
-		if (mode === 'custom') await seedCustomFromPortfolio(portfolioId);
+		if (mode === 'library') clearCustomSelection();
 	}
 
-	async function onPortfolioChange() {
-		if (buildMode === 'custom') await seedCustomFromPortfolio(portfolioId);
+	async function onSeedFolioChange() {
+		if (buildMode === 'library') await seedFromFolio(seedFolioId);
 	}
 
 	async function createNew() {
-		if (!portfolioId) {
-			showToast('Choose a portfolio', 'error');
-			return;
-		}
 		const finalName = (nameTouched ? name : suggestedName).trim() || suggestedName;
 		if (!finalName) {
 			showToast('Resume name is required', 'error');
 			return;
 		}
-		if (buildMode === 'custom' && customCount === 0) {
+		if (buildMode === 'library' && customCount === 0) {
 			showToast('Select at least one library item', 'error');
+			return;
+		}
+		if (buildMode === 'folio' && !folioId) {
+			showToast('Choose a folio to copy', 'error');
 			return;
 		}
 
 		saving = true;
 		try {
+			const trimmedHeadline = headline.trim();
+			const trimmedBio = bio.trim();
+			const base = {
+				name: finalName,
+				theme_slug: themeSlug,
+				is_public: isPublic ? 1 : 0,
+				...(trimmedHeadline ? { headline: trimmedHeadline } : {}),
+				...(trimmedBio ? { bio: trimmedBio } : {})
+			};
+
 			let items: Resume[];
-			if (buildMode === 'custom') {
+			if (buildMode === 'library') {
 				items = await createResume({
-					name: finalName,
-					portfolio_id: portfolioId,
-					theme_slug: themeSlug,
-					is_public: isPublic ? 1 : 0,
+					...base,
+					portfolio_id: linkFolioId || null,
 					content: {
 						skill_ids: [...selectedSkills],
 						project_ids: [...selectedProjects],
@@ -173,15 +187,13 @@
 						language_ids: [...selectedLanguages]
 					}
 				});
-				showToast(`Custom resume created · ${customCount} item(s)`, 'success');
+				showToast(`Resume created · ${customCount} item(s)`, 'success');
 			} else {
 				items = await createResume({
-					name: finalName,
-					portfolio_id: portfolioId,
-					theme_slug: themeSlug,
-					is_public: isPublic ? 1 : 0
+					...base,
+					portfolio_id: folioId
 				});
-				showToast('Resume created', 'success');
+				showToast('Resume created from folio', 'success');
 			}
 			const newest = items[0];
 			await goto(newest ? `/resume?preview=${newest.id}` : '/resume');
@@ -203,30 +215,97 @@
 </script>
 
 <PageHeader
-	title="From folio"
-	description="Copy a whole folio into a resume, or pick items by hand. Your public folio stays unchanged."
+	title="New resume"
+	description="Pick library items directly, or copy a whole folio. Your library and public folios stay unchanged."
 />
 
 {#if loading}
 	<p class="muted">Loading…</p>
-{:else if portfolios.length === 0}
-	<Card>
-		<p class="muted">
-			Create a <a href="/portfolios">portfolio</a> first — we’ll seed your resume from it.
-		</p>
-	</Card>
 {:else}
 	<Card>
 		<div class="fields">
-			<label class="field">
-				<span class="label">From portfolio</span>
-				<select bind:value={portfolioId} on:change={() => onPortfolioChange()}>
-					{#each portfolios as p}
-						<option value={p.id}>{p.name}</option>
-					{/each}
-				</select>
-				<p class="hint">Copies this folio’s content into a private resume snapshot.</p>
-			</label>
+			<div class="mode" role="group" aria-label="How to build content">
+				<button
+					type="button"
+					class="mode-option"
+					class:on={buildMode === 'library'}
+					on:click={() => setBuildMode('library')}
+				>
+					From library
+				</button>
+				<button
+					type="button"
+					class="mode-option"
+					class:on={buildMode === 'folio'}
+					disabled={portfolios.length === 0}
+					on:click={() => setBuildMode('folio')}
+				>
+					Whole folio
+				</button>
+			</div>
+
+			{#if buildMode === 'folio'}
+				{#if portfolios.length === 0}
+					<p class="hint">
+						Create a <a href="/portfolios">folio</a> first to copy one wholesale, or use
+						<strong>From library</strong> instead.
+					</p>
+				{:else}
+					<label class="field">
+						<span class="label">Copy folio</span>
+						<select bind:value={folioId}>
+							{#each portfolios as p}
+								<option value={p.id}>{p.name}</option>
+							{/each}
+						</select>
+						<p class="hint">Copies this folio’s library selection into a private resume snapshot.</p>
+					</label>
+				{/if}
+			{:else}
+				<label class="field">
+					<span class="label">Seed from folio (optional)</span>
+					<select bind:value={seedFolioId} on:change={onSeedFolioChange}>
+						<option value="">Start empty</option>
+						{#each portfolios as p}
+							<option value={p.id}>{p.name}</option>
+						{/each}
+					</select>
+					<p class="hint">Pre-selects items from a folio — you can still add or remove library items.</p>
+				</label>
+
+				<label class="field">
+					<span class="label">Link folio (optional)</span>
+					<select bind:value={linkFolioId}>
+						<option value="">None</option>
+						{#each portfolios as p}
+							<option value={p.id}>{p.name}</option>
+						{/each}
+					</select>
+					<p class="hint">Metadata only — does not change resume content.</p>
+				</label>
+
+				{#if seedingCustom}
+					<p class="hint">Loading folio selection…</p>
+				{:else}
+					<PortfolioLibraryPicker
+						{skills}
+						{projects}
+						{experiences}
+						{educations}
+						{certifications}
+						{languages}
+						bind:selectedSkills
+						bind:selectedProjects
+						bind:selectedExperience
+						bind:selectedEducation
+						bind:selectedCertifications
+						bind:selectedLanguages
+						showSectionVisibility={false}
+						title="Build this resume"
+						hint="Choose from your library. Foliyo stores a snapshot — library edits won’t auto-sync."
+					/>
+				{/if}
+			{/if}
 
 			<label class="field">
 				<span class="label">Resume name</span>
@@ -243,6 +322,25 @@
 					<p class="hint">Suggested: {suggestedName}</p>
 				{/if}
 			</label>
+
+			<div class="summary-section">
+				<h3 class="summary-title">Resume summary (optional)</h3>
+				<p class="hint">
+					Leave blank to fall back to linked folio, then Basics. Set here only when this resume
+					needs its own headline or summary.
+				</p>
+				<Input
+					label="Headline"
+					bind:value={headline}
+					placeholder="e.g. Full-stack engineer focused on product delivery"
+				/>
+				<Textarea
+					label="Professional summary"
+					bind:value={bio}
+					rows={4}
+					placeholder="Short summary for this resume…"
+				/>
+			</div>
 
 			<div class="mode" role="group" aria-label="Visibility">
 				<button
@@ -268,49 +366,6 @@
 					: 'Only you can see it until you make it public.'}
 			</p>
 
-			<div class="mode" role="group" aria-label="How to build content">
-				<button
-					type="button"
-					class="mode-option"
-					class:on={buildMode === 'portfolio'}
-					on:click={() => setBuildMode('portfolio')}
-				>
-					Whole folio
-				</button>
-				<button
-					type="button"
-					class="mode-option"
-					class:on={buildMode === 'custom'}
-					on:click={() => setBuildMode('custom')}
-				>
-					Custom
-				</button>
-			</div>
-
-			{#if buildMode === 'custom'}
-				{#if seedingCustom}
-					<p class="hint">Loading folio selection…</p>
-				{:else}
-					<PortfolioLibraryPicker
-						{skills}
-						{projects}
-						{experiences}
-						{educations}
-						{certifications}
-						{languages}
-						bind:selectedSkills
-						bind:selectedProjects
-						bind:selectedExperience
-						bind:selectedEducation
-						bind:selectedCertifications
-						bind:selectedLanguages
-						showSectionVisibility={false}
-						title="Build this resume"
-						hint="Starts from the selected folio — trim or add items. Library stays unchanged."
-					/>
-				{/if}
-			{/if}
-
 			<button
 				type="button"
 				class="linkish advanced-toggle"
@@ -332,7 +387,12 @@
 		</div>
 
 		<div class="form-actions">
-			<Button disabled={saving} on:click={createNew}>
+			<Button
+				disabled={saving ||
+					(buildMode === 'library' && !canCreateLibrary) ||
+					(buildMode === 'folio' && !canCreateFolio)}
+				on:click={createNew}
+			>
 				{saving ? 'Creating…' : 'Create resume'}
 			</Button>
 		</div>
@@ -369,6 +429,20 @@
 		color: var(--color-muted);
 		line-height: 1.4;
 	}
+	.summary-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 0.85rem 0.9rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+	}
+	.summary-title {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
 	.mode {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
@@ -388,6 +462,10 @@
 		font-weight: 500;
 		color: var(--color-muted);
 		cursor: pointer;
+	}
+	.mode-option:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 	.mode-option.on {
 		background: var(--color-surface);

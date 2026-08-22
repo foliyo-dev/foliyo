@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/core",
-  "version": "0.6.12",
+  "version": "0.6.13",
   "private": true,
   "type": "module",
   "description": "Foliyo API + public pages (Hono + MeshQL). Released as foliyo-core-*.tgz on GitHub Releases; npm later.",
@@ -9,7 +9,7 @@
     "build": "tsc --noEmit",
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
-    "test": "tsx --test src/jobs/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts",
+    "test": "tsx --test src/jobs/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts",
     "clean": "rm -rf dist",
     "seed:ats": "tsx src/seed-ats-partner.ts"
   },
