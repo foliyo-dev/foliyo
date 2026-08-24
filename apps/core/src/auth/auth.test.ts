@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { normalizeEmail, sqlUtc, sqlUtcPlusHours } from "./datetime.js";
 import { hashSecret } from "./secret.js";
-import { allowRateLimit, resetRateLimits } from "./rate-limit.js";
+import { allowRateLimit, clientIp, resetRateLimits, userAgentKey } from "./rate-limit.js";
 
 describe("sqlUtc", () => {
   it("matches SQLite CURRENT_TIMESTAMP shape", () => {
@@ -44,5 +44,36 @@ describe("allowRateLimit", () => {
     const blocked = allowRateLimit(key, 3, 60_000, 1_000);
     assert.equal(blocked.ok, false);
     if (!blocked.ok) assert.ok(blocked.retryAfterSec >= 1);
+  });
+});
+
+describe("clientIp", () => {
+  it("prefers Cloudflare, then x-real-ip, then forwarded-for", () => {
+    assert.equal(
+      clientIp({ header: (n) => (n === "cf-connecting-ip" ? "1.1.1.1" : "9.9.9.9") }),
+      "1.1.1.1",
+    );
+    assert.equal(
+      clientIp({
+        header: (n) => (n === "x-real-ip" ? "2.2.2.2" : n === "x-forwarded-for" ? "3.3.3.3" : undefined),
+      }),
+      "2.2.2.2",
+    );
+    assert.equal(
+      clientIp({ header: (n) => (n === "x-forwarded-for" ? "4.4.4.4, 5.5.5.5" : undefined) }),
+      "4.4.4.4",
+    );
+    assert.equal(clientIp({ header: () => undefined }), "unknown");
+  });
+});
+
+describe("userAgentKey", () => {
+  it("is stable and differs by UA", () => {
+    const a = userAgentKey({ header: (n) => (n === "user-agent" ? "Mozilla/5.0 Chrome" : undefined) });
+    const b = userAgentKey({ header: (n) => (n === "user-agent" ? "Mozilla/5.0 Chrome" : undefined) });
+    const c = userAgentKey({ header: (n) => (n === "user-agent" ? "Mozilla/5.0 Firefox" : undefined) });
+    assert.equal(a, b);
+    assert.notEqual(a, c);
+    assert.equal(userAgentKey({ header: () => undefined }), "none");
   });
 });

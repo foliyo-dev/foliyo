@@ -13,7 +13,7 @@
 
 <li>
 	<Card>
-		<div class="item-row" class:align-center={align === 'center'}>
+		<div class="item-row">
 			<div class="detail">
 				<slot />
 			</div>
@@ -37,22 +37,18 @@
 
 <style>
 	.item-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 1rem;
-		align-items: start;
-	}
-	.item-row.align-center {
-		align-items: center;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.75rem;
 	}
 	.detail {
 		min-width: 0;
 	}
 	.row-actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.25rem;
-		flex-shrink: 0;
-		justify-self: end;
 	}
 	/* Shared presentation for item-detail markup that pages render into the default slot. */
 	.detail :global(.meta) {
