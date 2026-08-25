@@ -415,7 +415,14 @@
     }
   }
 
-  $: if (settings.portfolioId) scopeId = settings.portfolioId;
+  $: if (
+    settings.portfolioId &&
+    portfolios.some((p) => p.id === settings.portfolioId)
+  ) {
+    scopeId = settings.portfolioId;
+  } else if (scopeId && portfolios.length > 0 && !portfolios.some((p) => p.id === scopeId)) {
+    scopeId = "";
+  }
   $: themeSlug = (settings.themeSlug as ResumeTheme) ?? "classic";
 </script>
 

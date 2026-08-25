@@ -157,6 +157,21 @@ async function enforceLimit(db: FoliyoDb, userId: string): Promise<void> {
   }
 }
 
+async function ownedFkId(
+  db: FoliyoDb,
+  table: "portfolios" | "resumes",
+  userId: string,
+  id: string | null | undefined,
+): Promise<string | null> {
+  if (!id) return null;
+  const row = await queryOne<{ id: string }>(
+    db,
+    `SELECT id FROM ${table} WHERE id = ? AND user_id = ?`,
+    [id, userId],
+  );
+  return row?.id ?? null;
+}
+
 export async function saveJobAnalysis(
   db: FoliyoDb,
   userId: string,
@@ -176,6 +191,25 @@ export async function saveJobAnalysis(
     db,
     "SELECT id FROM job_analyses WHERE user_id = ? AND jd_hash = ?",
     [userId, jd_hash],
+  );
+
+  // Prefer the resolved baseline (already validated). Fall back to request IDs only
+  // when they still exist — stale deleted folios must not 500 the analyze path.
+  const portfolio_id = await ownedFkId(
+    db,
+    "portfolios",
+    userId,
+    input.analysis.baseline.kind === "portfolio"
+      ? input.analysis.baseline.id
+      : (input.portfolioId ?? null),
+  );
+  const resume_id = await ownedFkId(
+    db,
+    "resumes",
+    userId,
+    input.analysis.baseline.kind === "resume"
+      ? input.analysis.baseline.id
+      : (input.resumeId ?? null),
   );
 
   const id = existing?.id ?? nanoid();
@@ -199,8 +233,8 @@ export async function saveJobAnalysis(
         input.analysis.coverage.required_total,
         input.analysis.coverage.required_in_library,
         input.analysis.coverage.required_on_resume,
-        input.portfolioId ?? (input.analysis.baseline.kind === "portfolio" ? input.analysis.baseline.id : null),
-        input.resumeId ?? (input.analysis.baseline.kind === "resume" ? input.analysis.baseline.id : null),
+        portfolio_id,
+        resume_id,
         analysisJson,
         acceptedJson,
         id,
@@ -229,8 +263,8 @@ export async function saveJobAnalysis(
         input.analysis.coverage.required_total,
         input.analysis.coverage.required_in_library,
         input.analysis.coverage.required_on_resume,
-        input.portfolioId ?? (input.analysis.baseline.kind === "portfolio" ? input.analysis.baseline.id : null),
-        input.resumeId ?? (input.analysis.baseline.kind === "resume" ? input.analysis.baseline.id : null),
+        portfolio_id,
+        resume_id,
         analysisJson,
         acceptedJson,
       ],
