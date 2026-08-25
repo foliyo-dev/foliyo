@@ -130,7 +130,7 @@ help:
 	@echo "  make sync-brand   copy @foliyo/brand assets into static dirs"
 	@echo "  make build        turbo build"
 	@echo "  make bundle-core  Node release bundle → dist/foliyo-core.tar.gz"
-	@echo "  make release      brand + dashboard + core bundle artifacts"
+	@echo "  make release      brand + dashboard + core + extension + lib artifacts"
 	@echo "  make migrate      run SQL migrations"
 	@echo "  make seed-demo    fill OSS DB data/foliyo.db (ARGS=--force to reset)"
 	@echo "  make seed-demo-cloud  fill cloud Postgres (FOLIYO_DB_URL, ARGS=--force)"

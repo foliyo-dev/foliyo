@@ -14,7 +14,7 @@ Public packages ship on **GitHub Releases** as `.tgz` assets (npm later; names s
 
 1. Bump `version` in `apps/core` + `packages/{brand,ui,themes,jobs-client}` (and root) together.
 2. Push to `main`, then tag: `git tag v0.5.0 && git push origin v0.5.0`
-3. [Release workflow](../.github/workflows/release.yml) attaches self-host bundles **and** the library tarballs.
+3. [Release workflow](../.github/workflows/release.yml) attaches self-host bundles, **browser extension zips**, and the library tarballs.
 
 Local pack only:
 

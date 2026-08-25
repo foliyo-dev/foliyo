@@ -30,6 +30,10 @@ jobs:
         run: |
           chmod +x ./scripts/pack-libs.sh
           ./scripts/pack-libs.sh
+      - name: Pack browser extension
+        run: |
+          chmod +x ./scripts/pack-extension.sh
+          ./scripts/pack-extension.sh "${GITHUB_REF_NAME}"
       - name: Smoke start
         run: |
           set -euo pipefail
@@ -66,6 +70,11 @@ jobs:
             echo ""
             echo "Install: \`curl -sSL https://foliyo.dev/install.sh | bash\`"
             echo ""
+            echo "## Browser extension"
+            echo ""
+            echo "- \`foliyo-extension-chrome-${VER}.zip\` — Chrome / Edge (Load unpacked or Web Store)"
+            echo "- \`foliyo-extension-firefox-${VER}.zip\` — Firefox / AMO (scripts-only background)"
+            echo ""
             echo "## Libraries (\`@foliyo/*\` — npm later)"
             echo ""
             echo "Install from this release (example):"
@@ -85,6 +94,8 @@ jobs:
           files: |
             dist/foliyo-core.tar.gz
             dist/dashboard-build.tar.gz
+            dist/foliyo-extension-chrome-*.zip
+            dist/foliyo-extension-firefox-*.zip
             dist/packages/foliyo-core-*.tgz
             dist/packages/foliyo-brand-*.tgz
             dist/packages/foliyo-ui-*.tgz
@@ -99,4 +110,5 @@ jobs:
           path: |
             dist/foliyo-core.tar.gz
             dist/dashboard-build.tar.gz
+            dist/foliyo-extension-*.zip
             dist/packages/*.tgz

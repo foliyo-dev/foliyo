@@ -50,3 +50,20 @@ pnpm --filter @foliyo/extension build:firefox
 ```
 
 Firefox 140+ (desktop) / 142+ (Android) is required (built-in data-collection consent). The extension sends sign-in credentials, library/resume content, and pasted job-description text to Foliyo’s API — declared in `browser_specific_settings.gecko.data_collection_permissions`.
+
+## Release artifacts
+
+GitHub Releases attach versioned zips (prod API/app URLs; manifest `version` stamped from the tag):
+
+| Asset | Use |
+|-------|-----|
+| `foliyo-extension-chrome-<ver>.zip` | Chrome / Edge — unzip and Load unpacked, or upload to Web Store |
+| `foliyo-extension-firefox-<ver>.zip` | Firefox — AMO / temporary add-on (`service_worker` stripped) |
+
+Local pack only (same as CI):
+
+```bash
+./scripts/pack-extension.sh           # version from apps/core/package.json
+./scripts/pack-extension.sh v0.6.16   # or pass a tag / version
+# → dist/foliyo-extension-{chrome,firefox}-<ver>.zip
+```
