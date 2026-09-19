@@ -5,7 +5,7 @@
  *   cd apps/core && pnpm seed:demo -- --force   # wipe & reseed demo users + admin library
  *
  * Logins (password: changeme unless overridden):
- *   admin@localhost          — Free, backend-focused, 1 portfolio
+ *   admin@foliyo.dev         — Free, backend-focused, 1 portfolio
  *   priya@demo.foliyo        — Pro, multi-portfolio (backend + opensource)
  *   arjun@demo.foliyo        — Free, design / product folio
  */
@@ -62,6 +62,10 @@ async function ensureUser(
 ): Promise<string> {
   let user = await queryOne<{ id: string }>(db, "SELECT id FROM users WHERE email = ?", [opts.email]);
   if (!user) {
+    // Migrate seed handle when email changed (e.g. admin@localhost → admin@foliyo.dev).
+    user = await queryOne<{ id: string }>(db, "SELECT id FROM users WHERE handle = ?", [opts.handle]);
+  }
+  if (!user) {
     await run(
       db,
       `INSERT INTO users (email, password, handle, plan, onboarding_complete, email_verified)
@@ -72,8 +76,8 @@ async function ensureUser(
   } else {
     await run(
       db,
-      `UPDATE users SET handle=?, plan=?, onboarding_complete=1, email_verified=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [opts.handle, opts.plan, user.id],
+      `UPDATE users SET email=?, handle=?, plan=?, onboarding_complete=1, email_verified=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+      [opts.email, opts.handle, opts.plan, user.id],
     );
   }
   if (!user) throw new Error(`user ${opts.email} missing`);
@@ -717,7 +721,7 @@ async function main(): Promise<void> {
     config.dbDriver === "postgres" ? `postgres ${config.dbUrl}` : `sqlite ${config.dbPath}`;
   console.log(`Seeding demo data (force=${force}) into ${where}`);
 
-  const adminEmail = config.adminEmail || "admin@localhost";
+  const adminEmail = config.adminEmail || "admin@foliyo.dev";
   const adminId = await ensureUser(db, {
     email: adminEmail,
     handle: "admin",

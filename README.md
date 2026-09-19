@@ -28,7 +28,7 @@ make dev      # tmux: core + dashboard
 | MeshQL reads | http://localhost:8080/mesh |
 | Dashboard | http://localhost:5173 |
 
-Default login: `admin@localhost` / `changeme` (override with `FOLIYO_ADMIN_EMAIL` / `FOLIYO_ADMIN_PASSWORD`).
+Default login: `admin@foliyo.dev` / `changeme` (override with `FOLIYO_ADMIN_EMAIL` / `FOLIYO_ADMIN_PASSWORD`).
 
 ```bash
 make seed-demo            # fill admin + sample users (priya, arjun)

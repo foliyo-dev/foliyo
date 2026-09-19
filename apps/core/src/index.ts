@@ -3,6 +3,7 @@ import { loadConfig } from "./config.js";
 import { openDatabase } from "./db.js";
 import { runMigrations } from "./migrate.js";
 import { seedAdmin } from "./seed.js";
+import { seedSkillOntology } from "./skills/seed-ontology.js";
 import { ensureHandles } from "./public/pages.js";
 import { createFoliyoApp } from "./create-app.js";
 import { planRoutes } from "./routes/plan.js";
@@ -11,6 +12,12 @@ const config = loadConfig();
 const db = await openDatabase(config);
 await runMigrations(db);
 await seedAdmin(db, config);
+const ontologySeed = await seedSkillOntology(db);
+if (!ontologySeed.skipped) {
+  console.log(
+    `Skill ontology seed [${ontologySeed.packs.join(",")}]: +${ontologySeed.globals_created} globals, +${ontologySeed.aliases_created} aliases`,
+  );
+}
 await ensureHandles(db);
 
 const { app, api } = createFoliyoApp(db, config);

@@ -1,24 +1,13 @@
-import { hashJdText, normalizeJdText } from "@foliyo/jobs-client";
+import { hashJdText, matchSkillsFromJd, normalizeJdText } from "@foliyo/jobs-client";
 
-export { hashJdText, normalizeJdText };
+export { hashJdText, normalizeJdText, matchSkillsFromJd };
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** Client-side JD skill match (same word-boundary logic as core tailor). */
+/** @deprecated Use matchSkillsFromJd — kept name for existing imports. */
 export function matchSkillIdsFromJd(
   jdText: string,
   skills: Array<{ id: string; name: string }>,
 ): string[] {
-  const matched: string[] = [];
-  for (const skill of skills) {
-    const name = skill.name.trim();
-    if (!name) continue;
-    const re = new RegExp(`\\b${escapeRegex(name)}\\b`, "i");
-    if (re.test(jdText)) matched.push(skill.id);
-  }
-  return matched;
+  return matchSkillsFromJd(jdText, skills);
 }
 
 export function overlapRatio(a: Set<string>, b: Set<string>): number {

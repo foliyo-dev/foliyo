@@ -1,0 +1,219 @@
+alias,normalized_key
+.net,.net
+dotnet,.net
+airflow,airflow
+apache airflow,airflow
+android,android
+angular,angular
+ansible,ansible
+api design,api design
+asp.net,asp.net
+aspnet,asp.net
+amazon aws,aws
+amazon web services,aws
+aws,aws
+azure,azure
+microsoft azure,azure
+ms azure,azure
+bash,bash
+shell scripting,bash
+big query,bigquery
+bigquery,bigquery
+c sharp,c#
+c#,c#
+csharp,c#
+c++,c++
+cplusplus,c++
+cpp,c++
+cassandra,cassandra
+ci & cd,ci/cd
+ci and cd,ci/cd
+ci cd,ci/cd
+ci/cd,ci/cd
+cicd,ci/cd
+continuous delivery,ci/cd
+continuous deployment,ci/cd
+continuous integration,ci/cd
+continuous integration and continuous delivery,ci/cd
+continuous integration and continuous deployment,ci/cd
+continuous integration continuous delivery,ci/cd
+continuous integration continuous deployment,ci/cd
+clickhouse,clickhouse
+computer vision,computer vision
+cv,computer vision
+css,css
+css3,css
+cypress,cypress
+dart,dart
+datadog,datadog
+deep learning,deep learning
+django,django
+docker,docker
+dynamo db,dynamodb
+dynamodb,dynamodb
+elastic,elasticsearch
+elasticsearch,elasticsearch
+eda,event-driven architecture
+event driven,event-driven architecture
+event-driven architecture,event-driven architecture
+express,express
+express.js,express
+expressjs,express
+fast api,fastapi
+fastapi,fastapi
+figma,figma
+flask,flask
+flutter,flutter
+gcp,gcp
+google cloud,gcp
+google cloud platform,gcp
+git,git
+gh,github
+github,github
+github actions,github actions
+gitlab,gitlab
+gitlab ci,gitlab ci
+gitlab-ci,gitlab ci
+go,go
+golang,go
+grafana,grafana
+gql,graphql
+graphql,graphql
+grpc,grpc
+helm,helm
+html,html
+html5,html
+hf,hugging face
+hugging face,hugging face
+huggingface,hugging face
+ios,ios
+java,java
+javascript,javascript
+js,javascript
+jenkins,jenkins
+jest,jest
+jira,jira
+json web token,jwt
+jwt,jwt
+apache kafka,kafka
+kafka,kafka
+kotlin,kotlin
+aks,kubernetes
+eks,kubernetes
+gke,kubernetes
+k8,kubernetes
+k8s,kubernetes
+kube,kubernetes
+kubernetes,kubernetes
+kubernetes engine,kubernetes
+langchain,langchain
+laravel,laravel
+linux,linux
+large language models,llm
+llm,llm
+llms,llm
+machine learning,machine learning
+ml,machine learning
+microservice architecture,microservices
+microservices,microservices
+mongo,mongodb
+mongodb,mongodb
+mysql,mysql
+neo4j,neo4j
+nest.js,nestjs
+nestjs,nestjs
+new relic,new relic
+newrelic,new relic
+next js,next.js
+next.js,next.js
+nextjs,next.js
+nginx,nginx
+natural language processing,nlp
+nlp,nlp
+node,node.js
+node js,node.js
+node-js,node.js
+node.js,node.js
+nodejs,node.js
+numpy,numpy
+nuxt,nuxt
+nuxtjs,nuxt
+oauth,oauth
+oauth 2.0,oauth
+oauth2,oauth
+openai,openai
+open api,openapi
+openapi,openapi
+opentelemetry,opentelemetry
+otel,opentelemetry
+pandas,pandas
+php,php
+playwright,playwright
+postgres,postgresql
+postgresl,postgresql
+postgresql,postgresql
+psql,postgresql
+postman,postman
+powershell,powershell
+prometheus,prometheus
+pulumi,pulumi
+pytest,pytest
+python,python
+pytorch,pytorch
+torch,pytorch
+r,r
+rabbit mq,rabbitmq
+rabbitmq,rabbitmq
+react,react
+react.js,react
+reactjs,react
+react native,react native
+reactnative,react native
+redis,redis
+redshift,redshift
+rest,rest
+rest api,rest
+restful,rest
+restful api,rest
+ruby,ruby
+rails,ruby on rails
+ruby on rails,ruby on rails
+rust,rust
+scala,scala
+scikit,scikit-learn
+scikit-learn,scikit-learn
+sklearn,scikit-learn
+selenium,selenium
+sentry,sentry
+snowflake,snowflake
+apache spark,spark
+spark,spark
+spring,spring
+spring boot,spring boot
+springboot,spring boot
+sql,sql
+sqlite,sqlite
+svelte,svelte
+sveltekit,sveltekit
+swagger,swagger
+swift,swift
+system design,system design
+systems design,system design
+tailwind,tailwind css
+tailwind css,tailwind css
+tailwindcss,tailwind css
+tensorflow,tensorflow
+tf.keras,tensorflow
+terraform,terraform
+tf,terraform
+automated testing,test automation
+test automation,test automation
+ts,typescript
+typescript,typescript
+unit testing,unit testing
+unit tests,unit testing
+vite,vite
+vue,vue
+vue.js,vue
+vuejs,vue
+webpack,webpack

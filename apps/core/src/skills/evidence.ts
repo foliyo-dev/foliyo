@@ -1,4 +1,5 @@
 import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
+import { normalizeSkillKey } from "../jobs/aliases.js";
 
 export type SkillSourceType = "experience" | "project" | "education" | "certification";
 
@@ -25,10 +26,6 @@ function parseSkillsDeveloped(raw: unknown): string[] {
   } catch {
     return [];
   }
-}
-
-function normKey(name: string): string {
-  return name.trim().toLowerCase();
 }
 
 /** Collect skills_developed from the user's library entities. */
@@ -94,7 +91,8 @@ export async function suggestSkillsFromLibrary(
 
   const byKey = new Map<string, { name: string; sources: TagSource[] }>();
   for (const t of tags) {
-    const key = normKey(t.name);
+    const key = normalizeSkillKey(t.name);
+    if (!key) continue;
     const cur = byKey.get(key);
     if (cur) {
       cur.sources.push(t);
@@ -110,7 +108,7 @@ export async function suggestSkillsFromLibrary(
     source: string;
   }>(db, "SELECT id, name, status, source FROM skills WHERE user_id = ? AND deleted_at IS NULL", [userId]);
 
-  const byExistingKey = new Map(existing.map((s) => [normKey(s.name), s]));
+  const byExistingKey = new Map(existing.map((s) => [normalizeSkillKey(s.name), s]));
 
   let found = 0;
   let pending = 0;
@@ -131,8 +129,8 @@ export async function suggestSkillsFromLibrary(
       );
       const created = await queryOne<{ id: string; name: string; status: string; source: string }>(
         db,
-        "SELECT id, name, status, source FROM skills WHERE user_id = ? AND lower(name) = ? AND deleted_at IS NULL",
-        [userId, key],
+        "SELECT id, name, status, source FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND deleted_at IS NULL",
+        [userId, name],
       );
       if (!created) continue;
       skill = created;

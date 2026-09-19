@@ -13,6 +13,8 @@ export type ClearContentCounts = {
 	applications: number;
 	blog_posts: number;
 	job_analyses?: number;
+	import_snapshots?: number;
+	profile_reset?: boolean;
 };
 
 export type Settings = {
@@ -29,7 +31,7 @@ export const getSettings = () => api<Settings>('/settings');
 export const updateSettings = (data: Partial<Settings>) =>
 	api<Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) });
 
-/** Wipe library/resumes/portfolios. Keeps login + email_verified. Confirm must be CLEAR. */
+/** Wipe library/resumes/portfolios/profile. Keeps login + email_verified. Confirm must be CLEAR. */
 export const clearAllContent = () =>
 	api<{ ok: true; deleted: ClearContentCounts }>('/settings/clear-content', {
 		method: 'POST',

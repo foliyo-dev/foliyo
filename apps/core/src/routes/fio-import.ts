@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "../middleware/auth.js";
 import type { Config } from "../config.js";
 import type { FoliyoDb } from "../db.js";
+import { clearUserContent } from "../account/clear-content.js";
 import { parseAndVerifyFio, type FioImportDraft } from "../spec/fio.js";
 import { applyImportDraft } from "../import/apply-draft.js";
 import {
@@ -77,16 +78,31 @@ export function fioImportRoutes(db: FoliyoDb, config: Config) {
 
   /**
    * Apply a reviewed Foliyo Resume Spec draft (from AI extract or .fio parse)
-   * into the user's library. Snapshots library state first (up to 5 undo points).
+   * into the user's library. Snapshots library state first (up to 5 undo points)
+   * unless clear_all_content is set.
    * Never writes users.email or email_verified.
+   *
+   * clear_all_content: wipe library, portfolios, resumes, applications, job analyses,
+   * social links, import snapshots, and reset profile — then apply. Keeps login/auth.
    */
   r.post("/apply", async (c) => {
     const userId = c.get("userId");
     const payload = await c.req.json().catch(() => null);
-    const draft = (payload as { draft?: FioImportDraft; label?: string } | null)?.draft;
-    const labelRaw = (payload as { label?: string } | null)?.label;
+    const body = payload as {
+      draft?: FioImportDraft;
+      label?: string;
+      clear_all_content?: boolean;
+    } | null;
+    const draft = body?.draft;
+    const labelRaw = body?.label;
+    const clearAll = body?.clear_all_content === true;
     if (!draft || typeof draft !== "object") {
       return c.json({ error: "invalid body", message: "Send { draft } matching the Foliyo Resume Spec." }, 400);
+    }
+
+    let cleared: Awaited<ReturnType<typeof clearUserContent>> | null = null;
+    if (clearAll) {
+      cleared = await clearUserContent(db, userId, { config });
     }
 
     const when = new Date().toLocaleString(undefined, {
@@ -99,14 +115,18 @@ export function fioImportRoutes(db: FoliyoDb, config: Config) {
     const label =
       typeof labelRaw === "string" && labelRaw.trim()
         ? labelRaw.trim().slice(0, 120)
-        : `Before import · ${when}`;
+        : clearAll
+          ? `After clear · ${when}`
+          : `Before import · ${when}`;
 
     let snapshot: Awaited<ReturnType<typeof captureLibrarySnapshot>> = null;
-    try {
-      snapshot = await captureLibrarySnapshot(db, config, userId, label);
-    } catch (err) {
-      console.error("import snapshot failed:", err instanceof Error ? err.message : err);
-      // Still apply — snapshot is best-effort safety, not a hard gate.
+    // Skip pre-import snapshot when wiping — there is nothing useful to undo to.
+    if (!clearAll) {
+      try {
+        snapshot = await captureLibrarySnapshot(db, config, userId, label);
+      } catch (err) {
+        console.error("import snapshot failed:", err instanceof Error ? err.message : err);
+      }
     }
 
     const result = await applyImportDraft(db, userId, draft);
@@ -121,6 +141,7 @@ export function fioImportRoutes(db: FoliyoDb, config: Config) {
     return c.json(
       {
         ...result,
+        cleared,
         snapshot: snapshot
           ? { id: snapshot.id, label: snapshot.label, created_at: snapshot.created_at }
           : null,

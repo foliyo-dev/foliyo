@@ -143,7 +143,7 @@ export function createFoliyoApp(
   api.route("/applications", applicationsRoutes(db));
   api.route("/blog", blogRoutes(db));
   api.route("/upload", uploadRoutes(db, config));
-  api.route("/settings", settingsRoutes(db));
+  api.route("/settings", settingsRoutes(db, config));
   api.route("/import", fioImportRoutes(db, config));
   api.route("/preview", previewRoutes(db, config));
   // Cloud (and other hosts) must register here — not after createFoliyoApp returns.

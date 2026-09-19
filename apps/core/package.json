@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/core",
-  "version": "0.6.16",
+  "version": "0.6.17",
   "private": true,
   "type": "module",
   "description": "Foliyo API + public pages (Hono + MeshQL). Released as foliyo-core-*.tgz on GitHub Releases; npm later.",
@@ -9,11 +9,12 @@
     "build": "tsc --noEmit",
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
-    "test": "tsx --test src/jobs/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts",
+    "test": "tsx --test src/jobs/*.test.ts src/skills/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts",
     "clean": "rm -rf dist",
     "seed:ats": "tsx src/seed-ats-partner.ts"
   },
   "dependencies": {
+    "@foliyo/jobs-client": "workspace:*",
     "@hono/node-server": "^1.12.0",
     "bcryptjs": "^2.4.3",
     "fflate": "^0.8.2",
@@ -71,6 +72,9 @@
     "./social/providers": "./src/social/providers.ts",
     "./spec/resume": "./src/spec/resume.ts",
     "./spec/fio": "./src/spec/fio.ts",
-    "./jobs": "./src/jobs/index.ts"
+    "./jobs": "./src/jobs/index.ts",
+    "./account/clear-content": "./src/account/clear-content.ts",
+    "./skills/ontology": "./src/skills/ontology.ts",
+    "./skills/seed-ontology": "./src/skills/seed-ontology.ts"
   }
 }

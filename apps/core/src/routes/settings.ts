@@ -21,7 +21,7 @@ const clearSchema = z.object({
   confirm: z.literal("CLEAR"),
 });
 
-export function settingsRoutes(db: FoliyoDb) {
+export function settingsRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
 
   r.get("/", async (c) => {
@@ -64,7 +64,8 @@ export function settingsRoutes(db: FoliyoDb) {
   });
 
   /**
-   * Clear all portfolio/library content. Keeps login email, password, plan, email_verified, profile.
+   * Clear all portfolio/library content. Keeps login email, password, plan, email_verified, sessions.
+   * Resets profile fields; deletes import undo snapshots.
    */
   r.post("/clear-content", async (c) => {
     const userId = c.get("userId");
@@ -75,7 +76,7 @@ export function settingsRoutes(db: FoliyoDb) {
         400,
       );
     }
-    const deleted = await clearUserContent(db, userId);
+    const deleted = await clearUserContent(db, userId, { config });
     return c.json({ ok: true, deleted });
   });
 

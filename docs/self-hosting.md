@@ -41,6 +41,17 @@ export FOLIYO_ADMIN_PASSWORD=your-secure-password
 export FOLIYO_DATA_DIR=~/data
 ```
 
+## Database (SQLite vs Postgres)
+
+Default self-host uses **SQLite** (`FOLIYO_DB_DRIVER=sqlite`) — fine for most installs.
+
+**JD / skill matching:**
+
+- **SQLite** — alias-based matching only (Node.js ↔ NodeJS, K8s ↔ Kubernetes, etc.). Fully supported.
+- **Postgres** — preferred when you want **better semantic matching** (embedding fallback for unresolved phrases in JDs and resume import). Set `FOLIYO_DB_DRIVER=postgres` and `FOLIYO_DB_URL`, and enable `pgvector` on the database.
+
+See [JD skill matching approach](../../docs/JD_SKILL_MATCHING.md) for the full pipeline and why embeddings are Postgres-only in v1.
+
 ## Start services
 
 ```bash

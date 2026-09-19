@@ -1,0 +1,79 @@
+normalized_key,canonical_name,category
+a/b testing,A/B Testing,product
+accessibility,Accessibility,design
+adobe xd,Adobe XD,design
+agile,Agile,product
+amplitude,Amplitude,product
+backlog grooming,Backlog Grooming,product
+business intelligence,Business Intelligence,data
+capacity planning,Capacity Planning,ops
+change management,Change Management,ops
+coaching,Coaching,leadership
+communication,Communication,leadership
+conflict resolution,Conflict Resolution,leadership
+cross-functional collaboration,Cross-Functional Collaboration,leadership
+data analysis,Data Analysis,data
+data analytics,Data Analytics,data
+data engineering,Data Engineering,data
+data modeling,Data Modeling,data
+data visualization,Data Visualization,data
+data warehousing,Data Warehousing,data
+dbt,dbt,data
+design systems,Design Systems,design
+design thinking,Design Thinking,design
+devops,DevOps,ops
+engineering management,Engineering Management,leadership
+etl,ETL,data
+excel,Excel,data
+figjam,FigJam,design
+google analytics,Google Analytics,product
+google sheets,Google Sheets,data
+hiring,Hiring,leadership
+illustrator,Illustrator,design
+incident management,Incident Management,ops
+infrastructure as code,Infrastructure as Code,ops
+interaction design,Interaction Design,design
+it operations,IT Operations,ops
+itil,ITIL,ops
+kanban,Kanban,product
+kpi tracking,KPI Tracking,product
+looker,Looker,data
+mentoring,Mentoring,leadership
+mixpanel,Mixpanel,product
+monitoring,Monitoring,ops
+okrs,OKRs,product
+on-call,On-Call,ops
+people management,People Management,leadership
+performance management,Performance Management,leadership
+photoshop,Photoshop,design
+platform engineering,Platform Engineering,ops
+power bi,Power BI,data
+presentation skills,Presentation Skills,leadership
+problem solving,Problem Solving,leadership
+product analytics,Product Analytics,product
+product management,Product Management,product
+product strategy,Product Strategy,product
+program management,Program Management,leadership
+project management,Project Management,leadership
+prototyping,Prototyping,product
+roadmap planning,Roadmap Planning,product
+scrum,Scrum,product
+service desk,Service Desk,ops
+site reliability engineering,Site Reliability Engineering,ops
+sketch,Sketch,design
+sprint planning,Sprint Planning,product
+sre,SRE,ops
+stakeholder management,Stakeholder Management,product
+statistics,Statistics,data
+tableau,Tableau,data
+team leadership,Team Leadership,leadership
+time management,Time Management,leadership
+ui design,UI Design,design
+usability testing,Usability Testing,design
+user flows,User Flows,design
+user research,User Research,product
+user stories,User Stories,product
+ux design,UX Design,design
+visual design,Visual Design,design
+wcag,WCAG,design
+wireframing,Wireframing,product

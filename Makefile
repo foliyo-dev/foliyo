@@ -8,7 +8,7 @@ CORE_URL := http://localhost:8080
 DASHBOARD_URL := http://localhost:5173
 LANDING_URL := http://localhost:5175
 
-export FOLIYO_ADMIN_EMAIL ?= admin@localhost
+export FOLIYO_ADMIN_EMAIL ?= admin@foliyo.dev
 export FOLIYO_ADMIN_PASSWORD ?= changeme
 export FOLIYO_DATA_DIR ?= $(DATA_DIR)
 export FOLIYO_DB_PATH ?= $(DATA_DIR)/foliyo.db

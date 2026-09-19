@@ -1,5 +1,14 @@
 import { queryAll, queryOne, type FoliyoDb } from "../db.js";
 import { getResumeContentIds, type ResumeContentIds } from "../resume/content.js";
+import {
+  buildLibrarySkillIndex,
+  linkUserSkillCanonical,
+  loadSkillCatalog,
+  logSkillMatch,
+  resolveGlobalSkill,
+  resolveJdTermAgainstLibrary,
+  type LibrarySkillIndexRow,
+} from "../skills/ontology.js";
 import { displaySkillName, normalizeSkillKey } from "./aliases.js";
 import { parseJobDocument } from "./parse.js";
 import type {
@@ -10,6 +19,7 @@ import type {
   JobDocumentParser,
   MatchBand,
   ProposedChange,
+  Requirement,
   SkillMatch,
 } from "./types.js";
 import { buildVerdict } from "./verdict.js";
@@ -22,11 +32,7 @@ export type AnalyzeInput = {
   parser?: JobDocumentParser;
 };
 
-type LibrarySkill = {
-  id: string;
-  name: string;
-  recency: "current" | "past" | null;
-};
+type LibrarySkill = LibrarySkillIndexRow;
 
 function emptyContent(): ResumeContentIds {
   return {
@@ -139,7 +145,7 @@ async function resolveBaseline(
   return { kind: "none", id: null, label: null, content: emptyContent() };
 }
 
-function bandFor(skill: LibrarySkill | undefined, evidenceCount: number): MatchBand {
+function bandFor(skill: LibrarySkill | null | undefined, evidenceCount: number): MatchBand {
   if (!skill) return "missing";
   if (evidenceCount === 0) return "weak";
   if (skill.recency === "past") return "historical";
@@ -195,14 +201,16 @@ export async function runJobAnalyze(
 ): Promise<JobAnalysis> {
   const confirmed = await queryAll<LibrarySkill>(
     db,
-    `SELECT id, name, recency FROM skills
+    `SELECT id, name, recency, canonical_skill_id FROM skills
      WHERE user_id = ? AND status = 'confirmed' AND deleted_at IS NULL`,
     [userId],
   );
 
+  const catalog = await loadSkillCatalog(db);
   let job: JobDocument = parseJobDocument(
     input.jdText,
     confirmed.map((s) => s.name),
+    catalog,
   );
   let llm_skip_reason: JobAnalysis["llm_skip_reason"] = "not_requested";
 
@@ -213,14 +221,19 @@ export async function runJobAnalyze(
       enhance: Boolean(input.enhance),
     });
     if (parsed.ok && parsed.job.requirements.length > 0) {
+      const reqs = [];
+      for (const r of parsed.job.requirements) {
+        const global = await resolveGlobalSkill(db, r.name);
+        reqs.push({
+          ...r,
+          normalized: global?.normalized_key || normalizeSkillKey(r.name) || r.normalized,
+        });
+      }
       job = {
         ...parsed.job,
         rawText: input.jdText,
         parse: "llm",
-        requirements: parsed.job.requirements.map((r) => ({
-          ...r,
-          normalized: normalizeSkillKey(r.name) || r.normalized,
-        })),
+        requirements: reqs,
       };
       llm_skip_reason = undefined;
     } else if (!parsed.ok) {
@@ -232,15 +245,76 @@ export async function runJobAnalyze(
     llm_skip_reason = "unavailable";
   }
 
-  const byCanonical = new Map<string, LibrarySkill>();
-  for (const s of confirmed) {
-    const key = normalizeSkillKey(s.name);
-    if (!byCanonical.has(key)) byCanonical.set(key, s);
+  const libraryByKey = await buildLibrarySkillIndex(db, confirmed);
+  const skillReqs = job.requirements.filter((r) => r.type === "skill");
+
+  type ResolvedReq = {
+    requirement: Requirement;
+    skill: LibrarySkill | null;
+    matchType: SkillMatch["match_type"];
+  };
+
+  const resolvedReqs: ResolvedReq[] = [];
+  for (const requirement of skillReqs) {
+    const resolved = await resolveJdTermAgainstLibrary(db, requirement.name, libraryByKey);
+    let skill = resolved.library;
+    if (skill && resolved.global && !skill.canonical_skill_id) {
+      try {
+        await linkUserSkillCanonical(db, skill.id, resolved.global.id);
+        skill = { ...skill, canonical_skill_id: resolved.global.id };
+        // Keep index warm for later terms that share this global key.
+        if (!libraryByKey.has(resolved.global.normalized_key)) {
+          libraryByKey.set(resolved.global.normalized_key, skill);
+        }
+      } catch (err) {
+        console.error(
+          "[jobs:analyze] link canonical failed:",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    try {
+      await logSkillMatch(db, {
+        userId,
+        source: "jd",
+        rawTerm: requirement.name,
+        matchedSkillId: resolved.global?.id ?? null,
+        matchType: resolved.matchType,
+      });
+    } catch (err) {
+      console.error(
+        "[jobs:analyze] match_log failed:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    const displayName = skill?.name ?? resolved.global?.canonical_name ?? displaySkillName(requirement.name);
+    resolvedReqs.push({
+      requirement: {
+        ...requirement,
+        name: displayName,
+        normalized: resolved.normalized || requirement.normalized,
+      },
+      skill,
+      matchType: resolved.matchType,
+    });
   }
 
-  const skillReqs = job.requirements.filter((r) => r.type === "skill");
-  const matchSkillIds = skillReqs
-    .map((r) => byCanonical.get(r.normalized)?.id)
+  // Persist resolved keys back onto the job document for consumers.
+  const resolvedByOrig = new Map(
+    resolvedReqs.map((r, i) => [skillReqs[i]!, r.requirement] as const),
+  );
+  job = {
+    ...job,
+    requirements: job.requirements.map((r) => {
+      if (r.type !== "skill") return r;
+      return resolvedByOrig.get(r) ?? r;
+    }),
+  };
+
+  const matchSkillIds = resolvedReqs
+    .map((r) => r.skill?.id)
     .filter((id): id is string => Boolean(id));
 
   const evidenceBySkill = new Map<string, EvidenceRef[]>();
@@ -284,21 +358,18 @@ export async function runJobAnalyze(
   const baselineProjectSet = new Set(baseline.content.project_ids);
   const baselineExperienceSet = new Set(baseline.content.experience_ids);
 
-  const matches: SkillMatch[] = skillReqs.map((requirement) => {
-    const skill = byCanonical.get(requirement.normalized);
+  const matches: SkillMatch[] = resolvedReqs.map(({ requirement, skill, matchType }) => {
     const evidence = skill ? (evidenceBySkill.get(skill.id) ?? []) : [];
     const band = bandFor(skill, evidence.length);
     const recency = skill?.recency ?? null;
     return {
-      requirement: {
-        ...requirement,
-        name: skill?.name ?? displaySkillName(requirement.name),
-      },
+      requirement,
       band,
       skill_id: skill?.id ?? null,
       skill_name: skill?.name ?? null,
       recency,
       evidence,
+      match_type: matchType,
       explanation: explanationFor({
         band,
         skillName: skill?.name ?? null,
@@ -322,9 +393,15 @@ export async function runJobAnalyze(
 
   const verdict = buildVerdict(coverage, baseline.kind !== "none", baseline.kind, baseline.label);
 
-  const matchedCanonical = new Set(
-    matches.filter((m) => m.band !== "missing" && m.skill_id).map((m) => m.requirement.normalized),
-  );
+  const matchedCanonical = new Set<string>();
+  for (const m of matches) {
+    if (m.band === "missing" || !m.skill_id) continue;
+    if (m.requirement.normalized) matchedCanonical.add(m.requirement.normalized);
+    if (m.skill_name) {
+      const k = normalizeSkillKey(m.skill_name);
+      if (k) matchedCanonical.add(k);
+    }
+  }
 
   const proposed_changes: ProposedChange[] = [];
 
@@ -454,6 +531,7 @@ export function approvedFromChanges(
   skill_ids: string[];
   project_ids: string[];
   experience_ids: string[];
+  skill_labels?: Record<string, string>;
 } {
   const accepted = new Set(acceptedIds);
   const skill_ids = new Set<string>(analysis.keep.skill_ids);
@@ -485,9 +563,18 @@ export function approvedFromChanges(
     }
   }
 
+  const skill_labels: Record<string, string> = {};
+  for (const m of analysis.matches) {
+    if (!m.skill_id || m.band === "missing") continue;
+    if (!skill_ids.has(m.skill_id)) continue;
+    const jdName = m.requirement.name?.trim();
+    if (jdName) skill_labels[m.skill_id] = jdName;
+  }
+
   return {
     skill_ids: [...skill_ids],
     project_ids: [...project_ids],
     experience_ids: [...experience_ids],
+    ...(Object.keys(skill_labels).length ? { skill_labels } : {}),
   };
 }

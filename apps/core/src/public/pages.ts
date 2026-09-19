@@ -51,11 +51,28 @@ async function fetchSkillsForParent(
     false,
   );
   let skills = await fetchRowsInIdOrder(db, "skills", ids);
-  return skills.filter(
+  skills = skills.filter(
     (s) =>
       (s.status as string | undefined) !== "pending" &&
       (s.status as string | undefined) !== "dismissed",
   );
+
+  // Resume junctions may carry an ATS label (JD surface term).
+  if (junctionTable === "resume_skills" && skills.length > 0) {
+    const labels = await queryAll<{ skill_id: string; label: string }>(
+      db,
+      "SELECT skill_id, label FROM resume_skills WHERE resume_id = ?",
+      [parentId],
+    );
+    const byId = new Map(labels.map((r) => [r.skill_id, (r.label ?? "").trim()]));
+    skills = skills.map((s) => {
+      const label = byId.get(String(s.id));
+      if (label) return { ...s, name: label, library_name: s.name };
+      return s;
+    });
+  }
+
+  return skills;
 }
 
 async function fetchSimpleJunctionRows(

@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           SMOKE_DATA="$RUNNER_TEMP/foliyo-smoke"
           mkdir -p "$SMOKE_DATA"
-          FOLIYO_ADMIN_EMAIL=smoke@localhost \
+          FOLIYO_ADMIN_EMAIL=smoke@foliyo.dev \
           FOLIYO_ADMIN_PASSWORD=changeme \
           FOLIYO_DATA_DIR="$SMOKE_DATA" \
           FOLIYO_DB_PATH="$SMOKE_DATA/foliyo.db" \

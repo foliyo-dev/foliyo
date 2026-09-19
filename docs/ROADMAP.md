@@ -65,7 +65,7 @@ Do not block MVP on a blog CMS. Proof-of-work links on library items cover the r
 | DPDP export/delete/consent UX | Done (Settings + privacy page; 30-day delete grace) |
 | Deno single-binary release | Replaced by Node 22 bundle (`foliyo-core.tar.gz`) |
 
-**Local demo:** `make seed-demo ARGS=--force` → login `admin@localhost` / `changeme` → `/u/admin`, `/u/priya`, `/u/priya/opensource`, `/u/arjun`.
+**Local demo:** `make seed-demo ARGS=--force` → login `admin@foliyo.dev` / `changeme` → `/u/admin`, `/u/priya`, `/u/priya/opensource`, `/u/arjun`.
 
 ---
 

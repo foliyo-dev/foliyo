@@ -73,6 +73,8 @@
 	let snapshots: ImportSnapshot[] = [];
 	let snapshotLimit = 5;
 	let snapshotBusyId: string | null = null;
+	/** Wipe library/portfolios/resumes before applying this import. */
+	let clearAllContent = false;
 	let include: Record<SectionKey, boolean> = {
 		candidate: true,
 		skills: true,
@@ -394,17 +396,29 @@
 	async function saveDraft() {
 		const payload = filteredDraft();
 		if (!payload) return;
+		if (clearAllContent) {
+			const ok = await requestConfirm({
+				title: 'Replace everything with this import?',
+				message:
+					'This permanently deletes your current library, portfolios, resumes, applications, and import history, then saves the selected draft. Your login stays. This cannot be undone.',
+				confirmLabel: 'Wipe and save'
+			});
+			if (!ok) return;
+		}
 		saving = true;
 		try {
-			const res = await applyImportDraft(payload);
+			const res = await applyImportDraft(payload, { clear_all_content: clearAllContent });
 			if (res.failed.length === 0) {
 				savedResult = res;
 				draft = null;
 				dup = emptyDupFlags();
 				pasteText = '';
+				clearAllContent = false;
 				window.scrollTo({ top: 0, behavior: 'smooth' });
 				await Promise.all([loadSnapshots(), loadLibraryIndex()]);
-				if (res.saved.total === 0 && (res.skipped?.total ?? 0) > 0) {
+				if (res.cleared) {
+					showToast('Previous content cleared — draft saved to an empty library', 'success');
+				} else if (res.saved.total === 0 && (res.skipped?.total ?? 0) > 0) {
 					showToast('Nothing new — those items are already in your library', 'success');
 				} else if (res.snapshot) {
 					showToast('Library saved — undo point kept in Import history', 'success');
@@ -683,9 +697,19 @@
 				</ul>
 			{/if}
 
+			<div class="replace-opt">
+				<label class="row-check danger-check">
+					<input type="checkbox" bind:checked={clearAllContent} />
+					<span>
+						<strong>Replace everything</strong> — delete my current library, portfolios, and resumes
+						first, then save this draft. Login stays. Cannot be undone.
+					</span>
+				</label>
+			</div>
+
 			<div class="form-actions">
 				<Button disabled={saving} on:click={saveDraft}>
-					{saving ? 'Saving…' : 'Save to library'}
+					{saving ? 'Saving…' : clearAllContent ? 'Wipe and save' : 'Save to library'}
 				</Button>
 				<Button
 					variant="secondary"
@@ -969,5 +993,21 @@
 		color: var(--color-muted);
 		border: 1px solid var(--color-border);
 		white-space: nowrap;
+	}
+	.replace-opt {
+		margin: 1.25rem 0 0.5rem;
+		padding: 0.85rem 1rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		background: color-mix(in srgb, var(--color-error, #b91c1c) 6%, transparent);
+	}
+	.danger-check {
+		align-items: flex-start;
+		gap: 0.65rem;
+	}
+	.danger-check span {
+		font-size: 0.875rem;
+		line-height: 1.4;
+		color: var(--color-text);
 	}
 </style>

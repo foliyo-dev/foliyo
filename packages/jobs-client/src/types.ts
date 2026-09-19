@@ -26,6 +26,8 @@ export type EvidenceRef = {
   label: string;
 };
 
+export type SkillMatchType = "alias" | "embedding" | "llm" | "unresolved";
+
 export type SkillMatch = {
   requirement: Requirement;
   band: MatchBand;
@@ -34,6 +36,8 @@ export type SkillMatch = {
   recency: "current" | "past" | null;
   evidence: EvidenceRef[];
   explanation: string;
+  /** How the JD term resolved (ontology / future embedding / LLM). */
+  match_type?: SkillMatchType;
 };
 
 export type ProposedChange = {
@@ -75,6 +79,8 @@ export type ApprovedContent = {
   skill_ids: string[];
   project_ids: string[];
   experience_ids: string[];
+  /** JD surface terms for ATS (skill_id → label as written in the JD). */
+  skill_labels?: Record<string, string>;
 };
 
 export type JobAnalysisSummary = {

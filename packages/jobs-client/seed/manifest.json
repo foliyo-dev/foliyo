@@ -1,0 +1,4 @@
+{
+  "packs": ["tech_v1", "knowledge_v1", "business_v1"],
+  "description": "Wave 1 tech, Wave 2 knowledge-worker (product/design/data/ops/leadership), Wave 3 business (marketing/sales/hr/finance)."
+}

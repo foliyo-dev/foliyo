@@ -86,6 +86,7 @@ export function tailorResume(data: {
 		skill_ids: string[];
 		project_ids?: string[];
 		experience_ids?: string[];
+		skill_labels?: Record<string, string>;
 	};
 }) {
 	return api<TailorResult>('/resumes/tailor', { method: 'POST', body: JSON.stringify(data) });

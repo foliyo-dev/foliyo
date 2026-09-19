@@ -44,7 +44,8 @@ Opaque Bearer tokens (stored in `sessions` table, revocable on logout).
 | POST | `/api/import/fio` — unzip + verify `.fio` → library draft (no identity / email_verified restore) |
 | GET | `/api/plan` — plan, pricing, entitlements (`resume_limit`, `portfolio_limit`, …) |
 | GET, PUT | `/api/settings` |
-| POST | `/api/settings/clear-content` — wipe library/resumes/portfolios; keep account + `email_verified` |
+| POST | `/api/settings/clear-content` — wipe library/resumes/portfolios/profile/import snapshots; keep account + `email_verified` (`{ "confirm": "CLEAR" }`) |
+| POST | `/api/import/apply` — apply Foliyo Resume Spec draft; optional `clear_all_content: true` wipes content first then imports |
 
 ## Public (no auth)
 

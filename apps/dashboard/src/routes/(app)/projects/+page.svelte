@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import SkillTagsInput from '$lib/components/ui/SkillTagsInput.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
@@ -11,7 +12,7 @@
 	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
-	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
+	import { parseSkillsJson, skillsArrayToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listProjects,
 		createProject,
@@ -40,7 +41,7 @@
 	let repoUrlLabel = '';
 	let articleUrlLabel = '';
 	let imageUrl = '';
-	let skillsInput = '';
+	let skills: string[] = [];
 	let featured = false;
 	let sortOrder = '0';
 	let uploading = false;
@@ -83,7 +84,7 @@
 				repo_url_label: repoUrlLabel,
 				article_url_label: articleUrlLabel,
 				image_url: imageUrl,
-				skills_developed: skillsToJson(skillsInput),
+				skills_developed: skillsArrayToJson(skills),
 				featured: featured ? 1 : 0,
 				sort_order: Number(sortOrder) || 0
 			}),
@@ -98,7 +99,7 @@
 				articleUrlLabel = item.article_url_label ?? '';
 				imageUrl = item.image_url;
 				pasteImageUrl = /^https?:\/\//i.test(item.image_url ?? '');
-				skillsInput = skillsFromJson(item.skills_developed);
+				skills = parseSkillsJson(item.skills_developed ?? '[]');
 				featured = item.featured === 1;
 				sortOrder = String(item.sort_order);
 			},
@@ -113,7 +114,7 @@
 				articleUrlLabel = '';
 				imageUrl = '';
 				pasteImageUrl = false;
-				skillsInput = '';
+				skills = [];
 				featured = false;
 				sortOrder = String($items.length);
 			},
@@ -292,7 +293,7 @@
 						</button>
 					{/if}
 				</div>
-				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="React, Node.js" />
+				<SkillTagsInput label="Skills developed" bind:value={skills} placeholder="Type a skill and press Enter" />
 				<label class="checkbox">
 					<input type="checkbox" bind:checked={featured} />
 					Featured project

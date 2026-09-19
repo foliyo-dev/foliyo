@@ -1,9 +1,6 @@
 import { queryAll, queryOne, type FoliyoDb } from "../db.js";
 import { filterOwnedContent, type ResumeContentIds } from "../resume/content.js";
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+import { matchSkillsFromJd, normalizeSkillKey } from "../jobs/aliases.js";
 
 function parseTags(raw: unknown): string[] {
   if (typeof raw !== "string" || !raw.trim()) return [];
@@ -16,20 +13,7 @@ function parseTags(raw: unknown): string[] {
   }
 }
 
-/** Match confirmed skills whose names appear in JD text (word-boundary, case-insensitive). */
-export function matchSkillsFromJd(
-  jdText: string,
-  skills: Array<{ id: string; name: string }>,
-): string[] {
-  const matched: string[] = [];
-  for (const skill of skills) {
-    const name = skill.name.trim();
-    if (!name) continue;
-    const re = new RegExp(`\\b${escapeRegex(name)}\\b`, "i");
-    if (re.test(jdText)) matched.push(skill.id);
-  }
-  return matched;
-}
+export { matchSkillsFromJd };
 
 /**
  * Compute tailored content IDs from the library (does not mutate portfolio or resume).
@@ -48,14 +32,17 @@ export async function computeTailorSelection(
   );
   const allowed = new Set(ownedSkills.map((s) => s.id));
   const skill_ids = skillIds.filter((id) => allowed.has(id));
-  const skillNames = new Set(
-    ownedSkills.filter((s) => skill_ids.includes(s.id)).map((s) => s.name.trim().toLowerCase()),
+  const skillKeys = new Set(
+    ownedSkills
+      .filter((s) => skill_ids.includes(s.id))
+      .map((s) => normalizeSkillKey(s.name))
+      .filter(Boolean),
   );
 
   let project_ids: string[] = [];
   let experience_ids: string[] = [];
 
-  if (includeMatching && skillNames.size > 0) {
+  if (includeMatching && skillKeys.size > 0) {
     const projects = await queryAll<{ id: string; skills_developed: string }>(
       db,
       "SELECT id, skills_developed FROM projects WHERE user_id = ? AND deleted_at IS NULL",
@@ -63,7 +50,7 @@ export async function computeTailorSelection(
     );
     project_ids = projects
       .filter((p) =>
-        parseTags(p.skills_developed).some((t) => skillNames.has(t.toLowerCase())),
+        parseTags(p.skills_developed).some((t) => skillKeys.has(normalizeSkillKey(t))),
       )
       .map((p) => p.id);
 
@@ -74,7 +61,7 @@ export async function computeTailorSelection(
     );
     experience_ids = experiences
       .filter((e) =>
-        parseTags(e.skills_developed).some((t) => skillNames.has(t.toLowerCase())),
+        parseTags(e.skills_developed).some((t) => skillKeys.has(normalizeSkillKey(t))),
       )
       .map((e) => e.id);
   }

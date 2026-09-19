@@ -771,8 +771,6 @@
 		cursor: pointer;
 		padding: 0.55rem 0;
 		font-size: 0.875rem;
-		font-weight: 600;
-		list-style-position: outside;
 	}
 	.skill-rows {
 		list-style: none;

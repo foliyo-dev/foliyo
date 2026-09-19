@@ -27,6 +27,8 @@ export type EvidenceRef = {
   label: string;
 };
 
+export type SkillMatchType = "alias" | "embedding" | "llm" | "unresolved";
+
 export type SkillMatch = {
   requirement: Requirement;
   band: MatchBand;
@@ -35,6 +37,8 @@ export type SkillMatch = {
   recency: "current" | "past" | null;
   evidence: EvidenceRef[];
   explanation: string;
+  /** How the JD term resolved (ontology / future embedding / LLM). */
+  match_type?: SkillMatchType;
 };
 
 export type Coverage = {

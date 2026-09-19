@@ -23,6 +23,7 @@
 	import { ApiError } from '$lib/api/client';
 	import { changePassword, logout, user } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
+	import { clearAllContent } from '$lib/api/settings';
 
 	let loading = true;
 	let planInfo: PlanInfo | null = null;
@@ -31,6 +32,8 @@
 	let privacyConsent: ConsentRow | null = null;
 	let accountPrivacy = false;
 	let deleteConfirm = '';
+	let clearConfirm = '';
+	let clearBusy = false;
 	let billingProfile: BillingProfile | null = null;
 	let billingStates: IndianState[] = [];
 	let billingSaving = false;
@@ -311,6 +314,35 @@
 		}
 	}
 
+	async function clearContent() {
+		if (clearConfirm !== 'CLEAR') {
+			showToast('Type CLEAR to confirm', 'error');
+			return;
+		}
+		clearBusy = true;
+		try {
+			const res = await clearAllContent();
+			clearConfirm = '';
+			const n =
+				(res.deleted.skills ?? 0) +
+				(res.deleted.projects ?? 0) +
+				(res.deleted.experience ?? 0) +
+				(res.deleted.resumes ?? 0) +
+				(res.deleted.portfolios ?? 0);
+			showToast(
+				n > 0
+					? `Cleared your library, portfolios, and resumes (${n}+ items). Account login kept.`
+					: 'Nothing to clear — library was already empty.',
+				'success'
+			);
+		} catch (err) {
+			const detail = err instanceof ApiError ? err.message.slice(0, 200) : 'Failed to clear content';
+			showToast(detail, 'error');
+		} finally {
+			clearBusy = false;
+		}
+	}
+
 	function formatConsentDate(iso: string | undefined): string {
 		if (!iso) return '—';
 		try {
@@ -555,6 +587,31 @@
 			<Button disabled={!canChangePassword || passwordSaving} on:click={submitChangePassword}>
 				{passwordSaving ? 'Saving…' : 'Change password'}
 			</Button>
+		</div>
+	</Card>
+
+	<Card>
+		<h2 class="section-title">Clear library &amp; resumes</h2>
+		<p class="muted">
+			Delete all library content, portfolios, resumes, job analyses, applications, and import undo
+			snapshots. Resets profile fields (name, bio, links). Keeps your login, password, plan, and
+			email verification.
+		</p>
+		<div class="danger">
+			<p class="muted">
+				This cannot be undone. Type <strong>CLEAR</strong> to confirm. Prefer
+				<a href="/import">Import resume</a> with “Replace everything” if you are about to re-upload.
+			</p>
+			<Input label="Confirm clear" bind:value={clearConfirm} placeholder="CLEAR" />
+			<div class="actions account-actions">
+				<Button
+					variant="ghost"
+					disabled={clearBusy || clearConfirm !== 'CLEAR'}
+					on:click={clearContent}
+				>
+					{clearBusy ? 'Clearing…' : 'Clear all content'}
+				</Button>
+			</div>
 		</div>
 	</Card>
 

@@ -19,5 +19,19 @@ export default defineConfig({
 	ssr: {
 		// Compile workspace Svelte/CSS packages in the app bundle
 		noExternal: ['@foliyo/ui', '@foliyo/brand']
+	},
+	server: {
+		// Same-origin /api in dev (matches production nginx). Avoids 404s when the
+		// browser or tooling hits http://localhost:5173/api/... instead of :8080.
+		proxy: {
+			'/api': {
+				target: 'http://127.0.0.1:8080',
+				changeOrigin: true
+			},
+			'/uploads': {
+				target: 'http://127.0.0.1:8080',
+				changeOrigin: true
+			}
+		}
 	}
 });

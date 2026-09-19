@@ -8,6 +8,8 @@ export type ResumeContentIds = {
   education_ids: string[];
   certification_ids: string[];
   language_ids: string[];
+  /** Optional JD/ATS labels keyed by skill_id (resume_skills.label). */
+  skill_labels?: Record<string, string>;
 };
 
 export async function getResumeContentIds(db: FoliyoDb, resumeId: string): Promise<ResumeContentIds> {
@@ -125,7 +127,12 @@ export async function setResumeContent(
     await run(db, "DELETE FROM resume_languages WHERE resume_id = ?", [resumeId]);
 
     for (const id of skill_ids) {
-      await run(db, "INSERT INTO resume_skills (resume_id, skill_id) VALUES (?, ?)", [resumeId, id]);
+      const label = (content.skill_labels?.[id] ?? "").trim();
+      await run(db, "INSERT INTO resume_skills (resume_id, skill_id, label) VALUES (?, ?, ?)", [
+        resumeId,
+        id,
+        label,
+      ]);
     }
     for (const [sortOrder, id] of project_ids.entries()) {
       await run(db, "INSERT INTO resume_projects (resume_id, project_id, sort_order) VALUES (?, ?, ?)", [

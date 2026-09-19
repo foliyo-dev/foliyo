@@ -9,7 +9,7 @@ database:
 data_dir: ./data
 
 admin:
-  email: admin@localhost
+  email: admin@foliyo.dev
   # password: set via FOLIYO_ADMIN_PASSWORD env var
 
 session:

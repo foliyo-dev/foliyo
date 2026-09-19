@@ -1,9 +1,10 @@
 import {
-  CATALOG_SKILLS,
   displaySkillName,
   mentionedIn,
   mentionTermsFor,
   normalizeSkillKey,
+  resolveCanonicalKey,
+  type SkillCatalog,
 } from "./aliases.js";
 import type { JobDocument, Requirement, RequirementImportance } from "./types.js";
 
@@ -84,14 +85,13 @@ function importanceAt(text: string, index: number): RequirementImportance {
 
 function firstIndex(text: string, terms: string[]): number {
   let best = -1;
-  const lower = text;
   for (const term of terms) {
     if (!term.trim()) continue;
     const re = new RegExp(
       `(?:^|[^A-Za-z0-9+])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\./g, "\\.")}(?:[^A-Za-z0-9+]|$)`,
       "i",
     );
-    const m = re.exec(lower);
+    const m = re.exec(text);
     if (m && (best < 0 || m.index < best)) best = m.index;
   }
   return best;
@@ -99,9 +99,13 @@ function firstIndex(text: string, terms: string[]): number {
 
 /**
  * Heuristic JD → JobDocument. Library names are included so user-specific skills match.
- * Does not invent skills that are not mentioned in the text.
+ * Pass `catalog` from DB (`loadSkillCatalog`) so extraction uses ontology aliases.
  */
-export function parseJobDocument(rawText: string, librarySkillNames: string[] = []): JobDocument {
+export function parseJobDocument(
+  rawText: string,
+  librarySkillNames: string[] = [],
+  catalog?: SkillCatalog,
+): JobDocument {
   const title = firstTitleLine(rawText);
   const company = labeledLine(rawText, ["company", "employer", "organization"]);
   const location = labeledLine(rawText, ["location", "where", "city"]);
@@ -109,10 +113,11 @@ export function parseJobDocument(rawText: string, librarySkillNames: string[] = 
   const byCanonical = new Map<string, { terms: string[]; display: string }>();
 
   const add = (name: string, display?: string) => {
-    const key = normalizeSkillKey(name);
+    const key =
+      (catalog ? resolveCanonicalKey(name, catalog) : null) || normalizeSkillKey(name);
     if (!key || key.length < 2) return;
     const cur = byCanonical.get(key);
-    const terms = mentionTermsFor(key);
+    const terms = mentionTermsFor(name, catalog);
     terms.push(name);
     if (cur) {
       for (const t of terms) cur.terms.push(t);
@@ -120,11 +125,15 @@ export function parseJobDocument(rawText: string, librarySkillNames: string[] = 
     }
     byCanonical.set(key, {
       terms: [...new Set(terms.map((t) => t.trim()).filter(Boolean))],
-      display: display ?? displaySkillName(name),
+      display:
+        display ??
+        (catalog?.displayByCanonical.get(key) ?? displaySkillName(name, catalog)),
     });
   };
 
-  for (const token of CATALOG_SKILLS) add(token);
+  if (catalog) {
+    for (const token of catalog.catalogKeys) add(token);
+  }
   for (const name of librarySkillNames) add(name, name.trim());
 
   const requirements: Requirement[] = [];
@@ -155,4 +164,32 @@ export function parseJobDocument(rawText: string, librarySkillNames: string[] = 
     requirements,
     parse: "heuristic",
   };
+}
+
+/**
+ * Missing skill hints from JD-extracted requirements (not a fixed domain list).
+ */
+export function missingSkillHintsFromJd(
+  jdText: string,
+  librarySkillNames: string[],
+  limit = 12,
+  catalog?: SkillCatalog,
+): string[] {
+  const libraryKeys = new Set(
+    librarySkillNames
+      .map((n) => (catalog ? resolveCanonicalKey(n, catalog) : null) || normalizeSkillKey(n))
+      .filter(Boolean),
+  );
+  const { requirements } = parseJobDocument(jdText, librarySkillNames, catalog);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of requirements) {
+    if (r.type !== "skill" || !r.normalized) continue;
+    if (libraryKeys.has(r.normalized)) continue;
+    if (seen.has(r.normalized)) continue;
+    seen.add(r.normalized);
+    out.push(r.name);
+    if (out.length >= limit) break;
+  }
+  return out;
 }

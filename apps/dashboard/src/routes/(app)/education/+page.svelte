@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import SkillTagsInput from '$lib/components/ui/SkillTagsInput.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
@@ -10,7 +11,7 @@
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
 	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
-	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
+	import { parseSkillsJson, skillsArrayToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listEducation,
 		createEducation,
@@ -33,7 +34,7 @@
 	let startDate = '';
 	let endDate = '';
 	let description = '';
-	let skillsInput = '';
+	let skills: string[] = [];
 	let sortOrder = '0';
 
 	const crud = createCrudList<Education>(
@@ -46,7 +47,7 @@
 				start_date: startDate,
 				end_date: present ? null : endDate || null,
 				description,
-				skills_developed: skillsToJson(skillsInput),
+				skills_developed: skillsArrayToJson(skills),
 				sort_order: Number(sortOrder) || 0
 			}),
 			applyToForm: (item) => {
@@ -57,7 +58,7 @@
 				endDate = item.end_date ?? '';
 				present = !item.end_date;
 				description = item.description;
-				skillsInput = skillsFromJson(item.skills_developed ?? '[]');
+				skills = parseSkillsJson(item.skills_developed ?? '[]');
 				sortOrder = String(item.sort_order);
 			},
 			resetFields: () => {
@@ -67,7 +68,7 @@
 				startDate = '';
 				endDate = '';
 				description = '';
-				skillsInput = '';
+				skills = [];
 				present = false;
 				sortOrder = String($items.length);
 			},
@@ -130,7 +131,7 @@
 					Currently studying here
 				</label>
 				<Textarea label="Description" bind:value={description} rows={3} />
-				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Python, Data structures" />
+				<SkillTagsInput label="Skills developed" bind:value={skills} placeholder="Type a skill and press Enter" />
 			</svelte:fragment>
 			<svelte:fragment slot="actions">
 				{#if $editingId}

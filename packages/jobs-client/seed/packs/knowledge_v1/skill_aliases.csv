@@ -1,0 +1,162 @@
+alias,normalized_key
+a/b testing,a/b testing
+ab testing,a/b testing
+ab tests,a/b testing
+split testing,a/b testing
+a11y,accessibility
+accessibility,accessibility
+adobe xd,adobe xd
+xd,adobe xd
+agile,agile
+agile methodology,agile
+amplitude,amplitude
+backlog grooming,backlog grooming
+backlog refinement,backlog grooming
+bi,business intelligence
+business intelligence,business intelligence
+capacity planning,capacity planning
+change management,change management
+coaching,coaching
+communication,communication
+verbal communication,communication
+written communication,communication
+conflict resolution,conflict resolution
+collaboration,cross-functional collaboration
+cross functional,cross-functional collaboration
+cross-functional collaboration,cross-functional collaboration
+data analysis,data analysis
+data analyst,data analysis
+analytics,data analytics
+data analytics,data analytics
+data engineer,data engineering
+data engineering,data engineering
+data modeling,data modeling
+data visualization,data visualization
+data viz,data visualization
+dataviz,data visualization
+data warehouse,data warehousing
+data warehousing,data warehousing
+data build tool,dbt
+dbt,dbt
+design system,design systems
+design systems,design systems
+design thinking,design thinking
+dev ops,devops
+devops,devops
+em,engineering management
+eng manager,engineering management
+engineering management,engineering management
+engineering manager,engineering management
+etl,etl
+extract transform load,etl
+excel,excel
+microsoft excel,excel
+ms excel,excel
+figjam,figjam
+ga,google analytics
+ga4,google analytics
+google analytics,google analytics
+google sheets,google sheets
+spreadsheets,google sheets
+hiring,hiring
+interviewing,hiring
+adobe illustrator,illustrator
+illustrator,illustrator
+incident management,incident management
+incident response,incident management
+iac,infrastructure as code
+infrastructure as code,infrastructure as code
+interaction design,interaction design
+ixd,interaction design
+it operations,it operations
+it ops,it operations
+itops,it operations
+itil,itil
+kanban,kanban
+kpi,kpi tracking
+kpi tracking,kpi tracking
+kpis,kpi tracking
+looker,looker
+mentoring,mentoring
+mentorship,mentoring
+mixpanel,mixpanel
+monitoring,monitoring
+observability,monitoring
+objectives and key results,okrs
+okr,okrs
+okrs,okrs
+on call,on-call
+on-call,on-call
+oncall,on-call
+managing people,people management
+people management,people management
+people manager,people management
+people ops,people management
+performance management,performance management
+performance reviews,performance management
+adobe photoshop,photoshop
+photoshop,photoshop
+ps,photoshop
+platform eng,platform engineering
+platform engineering,platform engineering
+power bi,power bi
+powerbi,power bi
+presentation skills,presentation skills
+presentations,presentation skills
+public speaking,presentation skills
+problem solving,problem solving
+problem-solving,problem solving
+product analytics,product analytics
+pm,product management
+product management,product management
+product manager,product management
+product owner,product management
+product strategy,product strategy
+program management,program management
+program manager,program management
+project management,project management
+project manager,project management
+prototypes,prototyping
+prototyping,prototyping
+product roadmap,roadmap planning
+roadmap,roadmap planning
+roadmap planning,roadmap planning
+scrum,scrum
+help desk,service desk
+service desk,service desk
+site reliability engineering,site reliability engineering
+sketch,sketch
+sprint planning,sprint planning
+sprints,sprint planning
+site reliability,sre
+sre,sre
+stakeholder communication,stakeholder management
+stakeholder management,stakeholder management
+statistical analysis,statistics
+statistics,statistics
+tableau,tableau
+leadership,team leadership
+team lead,team leadership
+team leadership,team leadership
+tech lead,team leadership
+technical leadership,team leadership
+time management,time management
+ui,ui design
+ui design,ui design
+user interface design,ui design
+usability,usability testing
+usability testing,usability testing
+user flow,user flows
+user flows,user flows
+user research,user research
+ux research,user research
+user stories,user stories
+user story,user stories
+user experience,ux design
+user experience design,ux design
+ux,ux design
+ux design,ux design
+visual design,visual design
+wcag,wcag
+wireframes,wireframing
+wireframing,wireframing

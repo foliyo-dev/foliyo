@@ -15,7 +15,7 @@ API tests for `apps/core` (Hono + MeshQL).
 | Variable | local default |
 |----------|----------------|
 | `baseUrl` | `http://localhost:8080` |
-| `adminEmail` | `admin@localhost` |
+| `adminEmail` | `admin@foliyo.dev` |
 | `adminPassword` | `changeme` |
 | `token` | set by Login (secret) |
 
@@ -23,7 +23,7 @@ Start the API:
 
 ```bash
 cd apps/core
-export FOLIYO_ADMIN_EMAIL=admin@localhost
+export FOLIYO_ADMIN_EMAIL=admin@foliyo.dev
 export FOLIYO_ADMIN_PASSWORD=changeme
 go run ./cmd/server
 ```

@@ -4,6 +4,7 @@ import type { FioImportDraft } from "../spec/fio.js";
 import { isSocialProvider, getSocialProvider } from "../social/providers.js";
 import { upsertSkill } from "../skills/upsert.js";
 import { suggestSkillsFromLibrary } from "../skills/evidence.js";
+import { resolveImportedSkill } from "../skills/ontology.js";
 import {
   certificationKey,
   educationKey,
@@ -270,13 +271,14 @@ export async function applyImportDraft(
       }
       const levelRaw = str(skills[i]?.level);
       try {
-        await upsertSkill(db, userId, {
+        const { id: skillId } = await upsertSkill(db, userId, {
           name,
           level: LEVELS.has(levelRaw) ? levelRaw : "intermediate",
           category: str(skills[i]?.category) || "general",
           recency: "current",
           sort_order: i,
         });
+        await resolveImportedSkill(db, userId, skillId, name);
         existing.skills.add(key);
         saved.skills += 1;
       } catch (err) {

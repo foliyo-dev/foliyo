@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import SkillTagsInput from '$lib/components/ui/SkillTagsInput.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
@@ -11,7 +12,7 @@
 	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
-	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
+	import { parseSkillsJson, skillsArrayToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listExperience,
 		createExperience,
@@ -36,7 +37,7 @@
 	let description = '';
 	let articleUrl = '';
 	let articleUrlLabel = '';
-	let skillsInput = '';
+	let skills: string[] = [];
 	let sortOrder = '0';
 
 	const crud = createCrudList<Experience>(
@@ -51,7 +52,7 @@
 				description,
 				article_url: articleUrl,
 				article_url_label: articleUrlLabel,
-				skills_developed: skillsToJson(skillsInput),
+				skills_developed: skillsArrayToJson(skills),
 				sort_order: Number(sortOrder) || 0
 			}),
 			applyToForm: (item) => {
@@ -64,7 +65,7 @@
 				description = item.description;
 				articleUrl = item.article_url ?? '';
 				articleUrlLabel = item.article_url_label ?? '';
-				skillsInput = skillsFromJson(item.skills_developed ?? '[]');
+				skills = parseSkillsJson(item.skills_developed ?? '[]');
 				sortOrder = String(item.sort_order);
 			},
 			resetFields: () => {
@@ -76,7 +77,7 @@
 				description = '';
 				articleUrl = '';
 				articleUrlLabel = '';
-				skillsInput = '';
+				skills = [];
 				present = false;
 				sortOrder = String($items.length);
 			},
@@ -143,7 +144,7 @@
 				</label>
 				<Textarea label="Description" bind:value={description} rows={4} />
 				<AiRewriteAssist bind:value={description} disabled={$saving} />
-				<Input label="Skills developed (comma-separated)" bind:value={skillsInput} placeholder="Node.js, PostgreSQL" />
+				<SkillTagsInput label="Skills developed" bind:value={skills} placeholder="Type a skill and press Enter" />
 				<Input
 					label="Case study / write-up URL"
 					bind:value={articleUrl}

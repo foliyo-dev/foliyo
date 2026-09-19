@@ -39,10 +39,19 @@ export function approvedFromAnalysis(
     }
   }
 
+  const skill_labels: Record<string, string> = {};
+  for (const m of analysis.matches) {
+    if (!m.skill_id || m.band === "missing") continue;
+    if (!skill_ids.has(m.skill_id)) continue;
+    const jdName = m.requirement.name?.trim();
+    if (jdName) skill_labels[m.skill_id] = jdName;
+  }
+
   return {
     skill_ids: [...skill_ids],
     project_ids: [...project_ids],
     experience_ids: [...experience_ids],
+    ...(Object.keys(skill_labels).length ? { skill_labels } : {}),
   };
 }
 

@@ -183,6 +183,7 @@ export type ApplyImportResult = {
 	saved: ApplyImportCounts;
 	skipped: ApplyImportCounts;
 	failed: Array<{ section: string; index: number; error: string }>;
+	cleared?: ClearContentCounts | null;
 	snapshot?: { id: string; label: string; created_at: string } | null;
 	snapshot_limit?: number;
 };
@@ -197,9 +198,36 @@ export type ImportSnapshot = {
 	created_at: string;
 };
 
-/** Write a reviewed Foliyo Resume Spec draft into the library (one request). Snapshots library first. */
-export const applyImportDraft = (draft: ResumeImportDraft) =>
-	api<ApplyImportResult>('/import/apply', { method: 'POST', body: JSON.stringify({ draft }) });
+export type ClearContentCounts = {
+	resumes: number;
+	portfolios: number;
+	skills: number;
+	projects: number;
+	experience: number;
+	education: number;
+	certifications: number;
+	languages: number;
+	social_links: number;
+	applications: number;
+	blog_posts: number;
+	job_analyses: number;
+	import_snapshots: number;
+	profile_reset: boolean;
+};
+
+/** Write a reviewed Foliyo Resume Spec draft into the library (one request). */
+export const applyImportDraft = (
+	draft: ResumeImportDraft,
+	opts?: { clear_all_content?: boolean; label?: string }
+) =>
+	api<ApplyImportResult>('/import/apply', {
+		method: 'POST',
+		body: JSON.stringify({
+			draft,
+			...(opts?.clear_all_content ? { clear_all_content: true } : {}),
+			...(opts?.label ? { label: opts.label } : {})
+		})
+	});
 
 export const listImportSnapshots = () =>
 	api<{ items: ImportSnapshot[]; limit: number }>('/import/snapshots');

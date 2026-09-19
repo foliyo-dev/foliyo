@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import SkillTagsInput from '$lib/components/ui/SkillTagsInput.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
@@ -10,7 +11,7 @@
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
 	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import { createCrudList } from '$lib/utils/crudList';
-	import { skillsToJson, skillsFromJson } from '$lib/utils/skills';
+	import { parseSkillsJson, skillsArrayToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
 		listCertifications,
 		createCertification,
@@ -33,7 +34,7 @@
 	let expiresAt = '';
 	let noExpiry = true;
 	let description = '';
-	let skillsInput = '';
+	let skills: string[] = [];
 	let sortOrder = '0';
 
 	const crud = createCrudList<Certification>(
@@ -52,7 +53,7 @@
 				issued_at: issuedAt || null,
 				expires_at: noExpiry ? null : expiresAt || null,
 				description,
-				skills_developed: skillsToJson(skillsInput),
+				skills_developed: skillsArrayToJson(skills),
 				sort_order: Number(sortOrder) || 0
 			}),
 			applyToForm: (item) => {
@@ -64,7 +65,7 @@
 				expiresAt = item.expires_at ?? '';
 				noExpiry = !item.expires_at;
 				description = item.description;
-				skillsInput = skillsFromJson(item.skills_developed ?? '[]');
+				skills = parseSkillsJson(item.skills_developed ?? '[]');
 				sortOrder = String(item.sort_order);
 			},
 			resetFields: () => {
@@ -76,7 +77,7 @@
 				expiresAt = '';
 				noExpiry = true;
 				description = '';
-				skillsInput = '';
+				skills = [];
 				sortOrder = String($items.length);
 			},
 			getDeleteLabel: (item) => item.name?.trim() || 'this certification',
@@ -136,7 +137,7 @@
 					Does not expire
 				</label>
 				<Textarea label="Description" bind:value={description} rows={3} />
-				<Input label="Skills covered (comma-separated)" bind:value={skillsInput} placeholder="AWS, Cloud architecture" />
+				<SkillTagsInput label="Skills covered" bind:value={skills} placeholder="Type a skill and press Enter" />
 				<Input label="Sort order" bind:value={sortOrder} />
 			</svelte:fragment>
 			<svelte:fragment slot="actions">

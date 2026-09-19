@@ -1,0 +1,122 @@
+normalized_key,canonical_name,category
+.net,.NET,engineering
+airflow,Airflow,engineering
+android,Android,engineering
+angular,Angular,engineering
+ansible,Ansible,engineering
+api design,API Design,engineering
+asp.net,ASP.NET,engineering
+aws,AWS,engineering
+azure,Azure,engineering
+bash,Bash,engineering
+bigquery,BigQuery,engineering
+c#,C#,engineering
+c++,C++,engineering
+cassandra,Cassandra,engineering
+ci/cd,CI/CD,engineering
+clickhouse,ClickHouse,engineering
+computer vision,Computer Vision,engineering
+css,CSS,engineering
+cypress,Cypress,engineering
+dart,Dart,engineering
+datadog,Datadog,engineering
+deep learning,Deep Learning,engineering
+django,Django,engineering
+docker,Docker,engineering
+dynamodb,DynamoDB,engineering
+elasticsearch,Elasticsearch,engineering
+event-driven architecture,Event-Driven Architecture,engineering
+express,Express,engineering
+fastapi,FastAPI,engineering
+figma,Figma,engineering
+flask,Flask,engineering
+flutter,Flutter,engineering
+gcp,GCP,engineering
+git,Git,engineering
+github,GitHub,engineering
+github actions,GitHub Actions,engineering
+gitlab,GitLab,engineering
+gitlab ci,GitLab CI,engineering
+go,Go,engineering
+grafana,Grafana,engineering
+graphql,GraphQL,engineering
+grpc,gRPC,engineering
+helm,Helm,engineering
+html,HTML,engineering
+hugging face,Hugging Face,engineering
+ios,iOS,engineering
+java,Java,engineering
+javascript,JavaScript,engineering
+jenkins,Jenkins,engineering
+jest,Jest,engineering
+jira,Jira,engineering
+jwt,JWT,engineering
+kafka,Kafka,engineering
+kotlin,Kotlin,engineering
+kubernetes,Kubernetes,engineering
+langchain,LangChain,engineering
+laravel,Laravel,engineering
+linux,Linux,engineering
+llm,LLM,engineering
+machine learning,Machine Learning,engineering
+microservices,Microservices,engineering
+mongodb,MongoDB,engineering
+mysql,MySQL,engineering
+neo4j,Neo4j,engineering
+nestjs,NestJS,engineering
+new relic,New Relic,engineering
+next.js,Next.js,engineering
+nginx,Nginx,engineering
+nlp,NLP,engineering
+node.js,Node.js,engineering
+numpy,NumPy,engineering
+nuxt,Nuxt,engineering
+oauth,OAuth,engineering
+openai,OpenAI,engineering
+openapi,OpenAPI,engineering
+opentelemetry,OpenTelemetry,engineering
+pandas,Pandas,engineering
+php,PHP,engineering
+playwright,Playwright,engineering
+postgresql,PostgreSQL,engineering
+postman,Postman,engineering
+powershell,PowerShell,engineering
+prometheus,Prometheus,engineering
+pulumi,Pulumi,engineering
+pytest,Pytest,engineering
+python,Python,engineering
+pytorch,PyTorch,engineering
+r,R,engineering
+rabbitmq,RabbitMQ,engineering
+react,React,engineering
+react native,React Native,engineering
+redis,Redis,engineering
+redshift,Redshift,engineering
+rest,REST,engineering
+ruby,Ruby,engineering
+ruby on rails,Ruby on Rails,engineering
+rust,Rust,engineering
+scala,Scala,engineering
+scikit-learn,scikit-learn,engineering
+selenium,Selenium,engineering
+sentry,Sentry,engineering
+snowflake,Snowflake,engineering
+spark,Spark,engineering
+spring,Spring,engineering
+spring boot,Spring Boot,engineering
+sql,SQL,engineering
+sqlite,SQLite,engineering
+svelte,Svelte,engineering
+sveltekit,SvelteKit,engineering
+swagger,Swagger,engineering
+swift,Swift,engineering
+system design,System Design,engineering
+tailwind css,Tailwind CSS,engineering
+tensorflow,TensorFlow,engineering
+terraform,Terraform,engineering
+test automation,Test Automation,engineering
+typescript,TypeScript,engineering
+unit testing,Unit Testing,engineering
+vite,Vite,engineering
+vue,Vue,engineering
+webpack,Webpack,engineering

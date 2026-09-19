@@ -44,7 +44,31 @@ import {
   computeTailorSelection,
   matchSkillsFromJd,
 } from "../skills/tailor.js";
+import { atsLabelFromJd, type SkillCatalog } from "../jobs/aliases.js";
+import { loadSkillCatalog } from "../skills/ontology.js";
 
+function resolveSkillLabels(input: {
+  skillIds: string[];
+  confirmed: Array<{ id: string; name: string }>;
+  jdText?: string;
+  catalog?: SkillCatalog;
+  overrides?: Record<string, string>;
+}): Record<string, string> {
+  const out: Record<string, string> = {};
+  const byId = new Map(input.confirmed.map((s) => [s.id, s.name]));
+  for (const id of input.skillIds) {
+    const libName = byId.get(id);
+    if (!libName) continue;
+    const fromJd = input.jdText?.trim()
+      ? atsLabelFromJd(input.jdText, libName, input.catalog)
+      : null;
+    const override = input.overrides?.[id]?.trim();
+    // Prefer the form as written in the JD (best ATS hit); else analysis requirement name.
+    const label = (fromJd || override || "").trim();
+    if (label && label !== libName) out[id] = label;
+  }
+  return out;
+}
 const contentSchema = z.object({
   skill_ids: z.array(z.string()).default([]),
   project_ids: z.array(z.string()).default([]),
@@ -90,6 +114,7 @@ const approvedSchema = z.object({
   skill_ids: z.array(z.string()).min(1),
   project_ids: z.array(z.string()).optional(),
   experience_ids: z.array(z.string()).optional(),
+  skill_labels: z.record(z.string()).optional(),
 });
 
 const tailorSchema = z
@@ -156,7 +181,8 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
     const selectedIds = d.skill_ids ?? [];
     const hadJd = Boolean(d.jd_text?.trim());
     const hadSelection = selectedIds.length > 0;
-    const fromJd = hadJd ? matchSkillsFromJd(d.jd_text!, confirmed) : [];
+    const catalog = await loadSkillCatalog(db);
+    const fromJd = hadJd ? matchSkillsFromJd(d.jd_text!, confirmed, catalog) : [];
 
     let skillIds = [...new Set([...selectedIds, ...fromJd])];
     let content: Awaited<ReturnType<typeof computeTailorSelection>>;
@@ -183,6 +209,15 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
         400,
       );
     }
+
+    const skill_labels = resolveSkillLabels({
+      skillIds: content.skill_ids,
+      confirmed,
+      jdText: d.jd_text,
+      catalog,
+      overrides: d.approved?.skill_labels,
+    });
+    content = { ...content, skill_labels };
 
     const shareToken = nanoid(16);
     const headline = (d.headline ?? "").trim();

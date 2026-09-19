@@ -8,6 +8,11 @@ export type SkillUpsertInput = {
   sort_order: number;
 };
 
+export type SkillUpsertResult = {
+  id: string;
+  merged: boolean;
+};
+
 /**
  * Insert-or-confirm a single skill by name (case-insensitive dedupe against the
  * `skills_user_name_lower_active` constraint). A name collision usually means
@@ -18,7 +23,7 @@ export async function upsertSkill(
   db: FoliyoDb,
   userId: string,
   d: SkillUpsertInput,
-): Promise<{ merged: boolean }> {
+): Promise<SkillUpsertResult> {
   const existing = await queryOne<{ id: string }>(
     db,
     "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND status != 'dismissed' AND deleted_at IS NULL",
@@ -31,7 +36,7 @@ export async function upsertSkill(
        WHERE id=? AND user_id=?`,
       [d.name, d.level, d.category, d.recency, d.sort_order, existing.id, userId],
     );
-    return { merged: true };
+    return { id: existing.id, merged: true };
   }
   await run(
     db,
@@ -39,5 +44,13 @@ export async function upsertSkill(
      VALUES (?, ?, ?, ?, 'manual', 'confirmed', ?, ?)`,
     [userId, d.name, d.level, d.category, d.recency, d.sort_order],
   );
-  return { merged: false };
+  const inserted = await queryOne<{ id: string }>(
+    db,
+    "SELECT id FROM skills WHERE user_id = ? AND lower(name) = lower(?) AND deleted_at IS NULL",
+    [userId, d.name],
+  );
+  if (!inserted) {
+    throw new Error("skill upsert failed to return id");
+  }
+  return { id: inserted.id, merged: false };
 }
