@@ -35,6 +35,8 @@ echo "Copying runtime assets"
 cp -a "$ROOT/apps/core/src/migrations" "$ASSETS/core/migrations"
 cp -a "$ROOT/apps/core/src/templates" "$ASSETS/core/templates"
 cp -a "$ROOT/apps/core/public" "$ASSETS/core/public"
+# Ontology seed CSVs — loadSeedPacks resolves next to server.mjs (dist/core/seed)
+cp -a "$ROOT/packages/jobs-client/seed" "$OUT/seed"
 mkdir -p "$ASSETS/themes"
 cp -a "$ROOT/packages/themes/portfolio" "$ASSETS/themes/portfolio"
 cp -a "$ROOT/packages/themes/resume" "$ASSETS/themes/resume"

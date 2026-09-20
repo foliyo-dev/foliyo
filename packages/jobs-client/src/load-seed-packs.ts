@@ -32,8 +32,26 @@ export type LoadedSeedPacks = {
 };
 
 function seedRootDir(): string {
-  // src/load-seed-packs.ts → ../seed
-  return join(dirname(fileURLToPath(import.meta.url)), "..", "seed");
+  const fromEnv = process.env.FOLIYO_SEED_DIR?.trim();
+  if (fromEnv) return fromEnv;
+
+  const here = dirname(fileURLToPath(import.meta.url));
+  const assets = process.env.FOLIYO_ASSETS_DIR?.trim();
+  const candidates = [
+    // Bundled core: dist/core/server.mjs + dist/core/seed/
+    join(here, "seed"),
+    // Package layout: packages/jobs-client/src → ../seed
+    join(here, "..", "seed"),
+    // Bundle assets layout
+    assets ? join(assets, "seed") : "",
+    assets ? join(assets, "jobs-client", "seed") : "",
+  ].filter(Boolean);
+
+  for (const dir of candidates) {
+    if (existsSync(join(dir, "manifest.json"))) return dir;
+  }
+  // Prefer package-relative path for clearer errors when nothing is found.
+  return join(here, "..", "seed");
 }
 
 /** Minimal RFC4180-ish CSV parse (quoted fields, commas, newlines). */
@@ -178,7 +196,10 @@ export function loadSeedPacks(rootDir = seedRootDir()): LoadedSeedPacks {
     packIds = Array.isArray(raw.packs) ? raw.packs.map(String) : [];
   }
   if (!packIds.length) {
-    throw new Error(`No seed packs listed in ${manifestPath}`);
+    const hint = existsSync(manifestPath)
+      ? `empty packs[] in ${manifestPath}`
+      : `missing ${manifestPath} (set FOLIYO_SEED_DIR or ship seed/ next to the server bundle)`;
+    throw new Error(`No seed packs listed: ${hint}`);
   }
 
   const packs: SeedPack[] = [];
