@@ -40,6 +40,7 @@ export const RATE_LIMITS = {
   login: { ip: 80, client: 20, email: 12, windowMs: RATE_WINDOWS.fifteenMin },
   reset: { ip: 40, client: 15, email: 0, windowMs: RATE_WINDOWS.fifteenMin },
   verify: { ip: 40, client: 15, email: 0, windowMs: RATE_WINDOWS.fifteenMin },
+  oauth: { ip: 60, client: 20, email: 0, windowMs: RATE_WINDOWS.fifteenMin },
 } as const;
 
 type HeaderSource = { header: (name: string) => string | undefined };

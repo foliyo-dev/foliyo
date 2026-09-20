@@ -134,3 +134,23 @@ export const cancelAccountDeletion = (email: string, password: string) =>
 		if (!res.ok) throw new Error(data.error || res.statusText);
 		return data as { ok: boolean; message?: string };
 	});
+
+export type OAuthProviders = { google: boolean; github: boolean };
+
+/** Which social login providers are configured on the cloud API. */
+export async function fetchOAuthProviders(): Promise<OAuthProviders> {
+	try {
+		const res = await fetch(`${API_BASE}/auth/oauth/providers`);
+		if (!res.ok) return { google: false, github: false };
+		const data = (await res.json()) as Partial<OAuthProviders>;
+		return { google: Boolean(data.google), github: Boolean(data.github) };
+	} catch {
+		return { google: false, github: false };
+	}
+}
+
+/** Full-page navigate to cloud OAuth start (sets cookie on API origin). */
+export function startOAuth(provider: 'google' | 'github', opts?: { consent?: boolean }): void {
+	const q = opts?.consent ? '?consent=1' : '';
+	window.location.assign(`${API_BASE}/auth/oauth/${provider}/start${q}`);
+}

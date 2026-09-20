@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { normalizeEmail, sqlUtc, sqlUtcPlusHours } from "./datetime.js";
 import { hashSecret } from "./secret.js";
 import { allowRateLimit, clientIp, resetRateLimits, userAgentKey } from "./rate-limit.js";
+import { createPkcePair, openOAuthState, sealOAuthState } from "./oauth.js";
 
 describe("sqlUtc", () => {
   it("matches SQLite CURRENT_TIMESTAMP shape", () => {
@@ -31,6 +32,33 @@ describe("hashSecret", () => {
     assert.equal(a, b);
     assert.equal(a.length, 64);
     assert.notEqual(a, "abc");
+  });
+});
+
+describe("oauth state", () => {
+  it("round-trips sealed PKCE state", () => {
+    const { verifier } = createPkcePair();
+    const sealed = sealOAuthState("test-secret", {
+      verifier,
+      provider: "google",
+      consent: true,
+    });
+    const opened = openOAuthState("test-secret", sealed);
+    assert.ok(opened);
+    assert.equal(opened!.verifier, verifier);
+    assert.equal(opened!.provider, "google");
+    assert.equal(opened!.consent, true);
+  });
+
+  it("rejects tampered or wrong-secret state", () => {
+    const { verifier } = createPkcePair();
+    const sealed = sealOAuthState("test-secret", {
+      verifier,
+      provider: "github",
+      consent: false,
+    });
+    assert.equal(openOAuthState("other-secret", sealed), null);
+    assert.equal(openOAuthState("test-secret", sealed.slice(0, -2) + "xx"), null);
   });
 });
 

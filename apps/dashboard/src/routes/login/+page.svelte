@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { login, postAuthPath } from '$lib/stores/auth';
 	import { isSaas, siteUrl } from '$lib/config';
 	import { showToast } from '$lib/stores/toast';
@@ -7,10 +8,39 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import OAuthButtons from '$lib/components/auth/OAuthButtons.svelte';
 
-	let email = '';
-	let password = '';
-	let loading = false;
+	let email = $state('');
+	let password = $state('');
+	let loading = $state(false);
+
+	const oauthErrorMessages: Record<string, string> = {
+		email_unverified: 'Verify your email with Google or GitHub, then try again.',
+		consent_required: 'Create an account first to accept the privacy policy.',
+		pending_deletion: 'Account scheduled for deletion — cancel it first.',
+		rate_limited: 'Too many attempts. Try again later.',
+		invalid_state: 'Sign-in failed. Please try again.',
+		exchange_failed: 'Sign-in failed. Please try again.',
+		missing_code: 'Sign-in failed. Please try again.'
+	};
+
+	onMount(() => {
+		const url = new URL(window.location.href);
+		const oauthError = url.searchParams.get('oauth_error');
+		if (!oauthError) return;
+
+		const msg =
+			oauthErrorMessages[oauthError] ?? 'Could not sign in with that provider.';
+		showToast(msg, 'error');
+
+		if (oauthError === 'pending_deletion') {
+			goto('/cancel-delete');
+		}
+
+		url.searchParams.delete('oauth_error');
+		const clean = url.pathname + url.search + url.hash;
+		window.history.replaceState({}, '', clean);
+	});
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -49,7 +79,7 @@
 			height="53"
 		/>
 		<p class="muted intro">Sign in to manage your portfolio</p>
-		<form on:submit={handleSubmit}>
+		<form onsubmit={handleSubmit}>
 			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
 			<Input
 				label="Password"
@@ -62,6 +92,7 @@
 		</form>
 		<p class="forgot"><a href="/forgot">Forgot password?</a></p>
 		{#if isSaas}
+			<OAuthButtons />
 			<p class="footer muted">
 				New here? <a href="/signup">Create an account</a>
 			</p>

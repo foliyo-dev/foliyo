@@ -6,6 +6,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import OAuthButtons from '$lib/components/auth/OAuthButtons.svelte';
 
 	let email = $state('');
 	let consent = $state(false);
@@ -48,16 +49,17 @@
 	<Card>
 		<h1>Create your account</h1>
 		<p class="muted">Start building your portfolio at {publicHost()}</p>
+		<label class="consent">
+			<input type="checkbox" bind:checked={consent} />
+			I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
+			(DPDP Act 2023)
+		</label>
 		<form onsubmit={handleSubmit}>
 			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
 			<p class="hint">We’ll email a link to choose your password. It expires in 60 minutes.</p>
-			<label class="consent">
-				<input type="checkbox" bind:checked={consent} />
-				I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
-				(DPDP Act 2023)
-			</label>
-			<Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Continue'}</Button>
+			<Button type="submit" disabled={loading || !consent}>{loading ? 'Sending…' : 'Continue'}</Button>
 		</form>
+		<OAuthButtons consent={consent} disabled={!consent} />
 		<p class="footer muted">Already have an account? <a href="/login">Sign in</a></p>
 	</Card>
 </div>
@@ -90,6 +92,7 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: flex-start;
+		margin-top: 1rem;
 		font-size: 0.875rem;
 	}
 	.hint {

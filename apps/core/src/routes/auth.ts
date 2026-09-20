@@ -145,12 +145,18 @@ export function authRoutes(db: FoliyoDb, config: Config) {
     const limited = rateLimitResponse(c, "forgot", email);
     if (limited) return limited;
 
-    const user = await queryOne<{ id: string; email: string; email_verified: number }>(
+    const user = await queryOne<{
+      id: string;
+      email: string;
+      email_verified: number;
+      password: string | null;
+    }>(
       db,
-      "SELECT id, email, email_verified FROM users WHERE lower(email) = ?",
+      "SELECT id, email, email_verified, password FROM users WHERE lower(email) = ?",
       [email],
     );
-    if (user?.email_verified) {
+    // OAuth-only accounts have no password — skip reset email (still return ok).
+    if (user?.email_verified && user.password) {
       const token = await createPasswordResetToken(db, user.id);
       const resetUrl = `${config.dashboardUrl.replace(/\/$/, "")}/reset?token=${encodeURIComponent(token)}`;
       await sendPasswordResetEmail(config, { to: user.email, resetUrl });
@@ -169,13 +175,19 @@ export function authRoutes(db: FoliyoDb, config: Config) {
       return c.json({ error: "invalid body" }, 400);
     }
 
-    const user = await queryOne<{ id: string; password: string; email_verified: number }>(
+    const user = await queryOne<{ id: string; password: string | null; email_verified: number }>(
       db,
       "SELECT id, password, email_verified FROM users WHERE id = ?",
       [userId],
     );
     if (!user || !user.email_verified) {
       return c.json({ error: "unauthorized" }, 401);
+    }
+    if (!user.password) {
+      return c.json(
+        { error: "no_password", message: "This account uses social login. Set a password via reset after adding one, or continue with Google/GitHub." },
+        400,
+      );
     }
     if (!checkPasswordTimed(user.password, body.data.currentPassword)) {
       return c.json({ error: "incorrect current password" }, 401);
