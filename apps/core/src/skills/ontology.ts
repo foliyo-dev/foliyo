@@ -338,39 +338,91 @@ export async function listGlobalSkills(
   q?: string,
   limit = 100,
   offset = 0,
+  category?: string,
 ): Promise<GlobalSkillRow[]> {
   const term = (q ?? "").trim().toLowerCase();
-  if (!term) {
-    return queryAll<GlobalSkillRow>(
-      db,
-      `SELECT * FROM global_skills ORDER BY canonical_name ASC LIMIT ? OFFSET ?`,
-      [limit, offset],
-    );
+  const cat = (category ?? "").trim().toLowerCase();
+  const where: string[] = [];
+  const params: unknown[] = [];
+  if (term) {
+    where.push(`(lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?)`);
+    const like = `%${term}%`;
+    params.push(like, like);
   }
-  const like = `%${term}%`;
+  if (cat) {
+    where.push(`lower(category) = ?`);
+    params.push(cat);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   return queryAll<GlobalSkillRow>(
     db,
-    `SELECT * FROM global_skills
-     WHERE lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?
-     ORDER BY canonical_name ASC LIMIT ? OFFSET ?`,
-    [like, like, limit, offset],
+    `SELECT * FROM global_skills ${clause} ORDER BY canonical_name ASC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
   );
 }
 
-export async function countGlobalSkills(db: FoliyoDb, q?: string): Promise<number> {
+export async function countGlobalSkills(
+  db: FoliyoDb,
+  q?: string,
+  category?: string,
+): Promise<number> {
   const term = (q ?? "").trim().toLowerCase();
-  if (!term) {
-    const row = await queryOne<{ n: number }>(db, `SELECT COUNT(*) AS n FROM global_skills`, []);
-    return Number(row?.n ?? 0);
+  const cat = (category ?? "").trim().toLowerCase();
+  const where: string[] = [];
+  const params: unknown[] = [];
+  if (term) {
+    where.push(`(lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?)`);
+    const like = `%${term}%`;
+    params.push(like, like);
   }
-  const like = `%${term}%`;
+  if (cat) {
+    where.push(`lower(category) = ?`);
+    params.push(cat);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const row = await queryOne<{ n: number }>(
     db,
-    `SELECT COUNT(*) AS n FROM global_skills
-     WHERE lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?`,
-    [like, like],
+    `SELECT COUNT(*) AS n FROM global_skills ${clause}`,
+    params,
   );
   return Number(row?.n ?? 0);
+}
+
+export async function listSkillCategories(
+  db: FoliyoDb,
+): Promise<{ category: string; cnt: number }[]> {
+  const rows = await queryAll<{ category: string; cnt: number }>(
+    db,
+    `SELECT category, COUNT(*) AS cnt
+     FROM global_skills
+     GROUP BY category
+     ORDER BY category ASC`,
+    [],
+  );
+  return rows.map((r) => ({ category: r.category, cnt: Number(r.cnt) }));
+}
+
+/** Rename a category across all global skills. Returns rows updated. */
+export async function renameSkillCategory(
+  db: FoliyoDb,
+  from: string,
+  to: string,
+): Promise<number> {
+  const src = from.trim();
+  const dest = to.trim() || "general";
+  if (!src || src.toLowerCase() === dest.toLowerCase()) return 0;
+  const before = await queryOne<{ n: number }>(
+    db,
+    `SELECT COUNT(*) AS n FROM global_skills WHERE lower(category) = lower(?)`,
+    [src],
+  );
+  const n = Number(before?.n ?? 0);
+  if (n === 0) return 0;
+  await run(db, `UPDATE global_skills SET category = ? WHERE lower(category) = lower(?)`, [
+    dest,
+    src,
+  ]);
+  return n;
 }
 
 export async function listAliases(
