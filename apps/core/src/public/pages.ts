@@ -501,7 +501,7 @@ export async function loadPortfolioDraftPreview(
   const fetchOwned = async (table: string, ids: string[]) => {
     const ordered = await sortIdsByLibraryOrder(db, table, ids);
     if (!ordered.length) return [];
-    const rows = await queryAll<Record<string, unknown>>(
+    const rows = await queryAll<{ id: unknown } & Record<string, unknown>>(
       db,
       `SELECT * FROM ${table} WHERE user_id = ? AND id IN (${ordered.map(() => "?").join(",")}) AND deleted_at IS NULL`,
       [userId, ...ordered],

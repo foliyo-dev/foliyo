@@ -23,6 +23,27 @@ importers:
       '@hono/node-server':
         specifier: ^1.12.0
         version: 1.19.14(hono@4.12.30)
+      '@meshqljs/access':
+        specifier: ^0.2.14
+        version: 0.2.14
+      '@meshqljs/core':
+        specifier: ^0.11.2
+        version: 0.11.2
+      '@meshqljs/http':
+        specifier: ^0.8.5
+        version: 0.8.5(hono@4.12.30)
+      '@meshqljs/integrity':
+        specifier: ^0.5.14
+        version: 0.5.14(hono@4.12.30)
+      '@meshqljs/postgres':
+        specifier: ^0.6.6
+        version: 0.6.6
+      '@meshqljs/sqlite':
+        specifier: ^0.6.6
+        version: 0.6.6
+      '@meshqljs/upload':
+        specifier: ^0.5.12
+        version: 0.5.12
       '@types/pg':
         specifier: ^8.20.3
         version: 8.20.3
@@ -35,27 +56,6 @@ importers:
       hono:
         specifier: ^4.4.0
         version: 4.12.30
-      meshql-access:
-        specifier: ^0.2.6
-        version: 0.2.6
-      meshql-core:
-        specifier: ^0.7.1
-        version: 0.7.1
-      meshql-http:
-        specifier: ^0.6.1
-        version: 0.6.1(hono@4.12.30)
-      meshql-integrity:
-        specifier: ^0.5.5
-        version: 0.5.5(hono@4.12.30)
-      meshql-postgres:
-        specifier: 0.5.4
-        version: 0.5.4
-      meshql-sqlite:
-        specifier: ^0.5.4
-        version: 0.5.4
-      meshql-upload:
-        specifier: ^0.5.4
-        version: 0.5.4
       nanoid:
         specifier: ^5.0.7
         version: 5.1.16
@@ -99,9 +99,9 @@ importers:
       '@foliyo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      meshql-client:
-        specifier: ^0.6.0
-        version: 0.6.0
+      '@meshqljs/client':
+        specifier: ^0.8.5
+        version: 0.8.5
     devDependencies:
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
@@ -519,6 +519,62 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@meshqljs/access@0.2.14':
+    resolution: {integrity: sha512-Q5JfJ02q59xBt/NOL68q70gTbU3AhUudeMokHKsTuru5GizL+ATqGgtqbR1Erlp/DIlmVIciWDd0v+BWnTO2+w==}
+    engines: {node: '>=22'}
+
+  '@meshqljs/client@0.8.5':
+    resolution: {integrity: sha512-nZCleeHDkolK+WO8jClUisBv/ss0YrEJGhLosMxj6W28iTkyiiywaIPJsf6MLcaJF2vFzpLasDqqjaBQwq60zA==}
+    engines: {node: '>=22'}
+
+  '@meshqljs/core@0.11.2':
+    resolution: {integrity: sha512-p05wZO5q27DRL4oIKDOWRcba4guKkOWwNzIUs6b28eCQqWecZPOeGFi4i0mTTSiifAYJ4otFPbFv0z8ULr1bVA==}
+    engines: {node: '>=22'}
+
+  '@meshqljs/http@0.8.5':
+    resolution: {integrity: sha512-lxf6FUPQ8eUUTXyjnvnS9hbQTk6w4YnG+fo6byO5Ec2HesOc/Fq0ySUs3JZrSrakdbit9476kPfqc5LyWGh05A==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      express: ^4 || ^5
+      fastify: ^4 || ^5
+      hono: ^4
+    peerDependenciesMeta:
+      express:
+        optional: true
+      fastify:
+        optional: true
+      hono:
+        optional: true
+
+  '@meshqljs/integrity@0.5.14':
+    resolution: {integrity: sha512-iF5nlYr8Y0dr5euC3PApqju5vGRGbiSPcr0r8qd9RrS3CpbNGQtpDvYKetoE2yU47XV5sqF2J8o45WAxunlngQ==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      express: ^4 || ^5
+    peerDependenciesMeta:
+      express:
+        optional: true
+
+  '@meshqljs/postgres@0.6.6':
+    resolution: {integrity: sha512-dYDGosGQmsQ9v1idWqbWcf0vhZKrImodjhGqofqsWImyeAgUQOOHhsMDVHmeVBBTN0E4ZAdIKdHuuk1mSp8gsQ==}
+    engines: {node: '>=22'}
+
+  '@meshqljs/sqlite@0.6.6':
+    resolution: {integrity: sha512-D3PlCtIqujz+kOlq9aqdVr0KYZBTtGSflFPphajKkp+i/Z7r3vcKz2bBppBRXu1ZFosRcD4HMio/B9rlM7SFEw==}
+    engines: {node: '>=22'}
+
+  '@meshqljs/upload@0.5.12':
+    resolution: {integrity: sha512-KVT/s18jab/0RrDIy+EUnyB06nvKL4NdV+WLi989wYietflWgdw0WSIVSR1kmjR7wx2vV9DJrV/cbrCrTdmTzA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@aws-sdk/client-s3': ^3.0.0
+      '@aws-sdk/s3-request-presigner': ^3.0.0
+    peerDependenciesMeta:
+      '@aws-sdk/client-s3':
+        optional: true
+      '@aws-sdk/s3-request-presigner':
+        optional: true
+
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
     peerDependencies:
@@ -909,62 +965,6 @@ packages:
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
-
-  meshql-access@0.2.6:
-    resolution: {integrity: sha512-NPSJAs3indsuilEK/ZYJXFSOmVN/GFUvvUdhvbYOfllX35iqJJ4g0WD4MAm4aJu1DB9528QuM9nXw+TWl+6Buw==}
-    engines: {node: '>=22'}
-
-  meshql-client@0.6.0:
-    resolution: {integrity: sha512-4GjZmJhmx4msFkUf5dWraOfyIsrOfkfkj4Wg674IHL9Vufw2SRMWd5hhN6zsmsRGtyeS33+9kV82bCEq0yMVRg==}
-    engines: {node: '>=22'}
-
-  meshql-core@0.7.1:
-    resolution: {integrity: sha512-ZXGPkKCNKGdb/h6cGOlzp6Yawq+n3R/Oz7bGgj8CphbPF5R+vLl6YPmr4YJg8TQBlfBRZ0PF1m4Y+FQQRwbizQ==}
-    engines: {node: '>=22'}
-
-  meshql-http@0.6.1:
-    resolution: {integrity: sha512-qQTtAroGCsgHdmxO+MMtlHVCe/psiv9sQcTFkuuvsAZ2ZjPHi7Hkmc7vIsgzvTjkJE+++gDXs2IDW1esTM3Gdw==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      express: ^4 || ^5
-      fastify: ^4 || ^5
-      hono: ^4
-    peerDependenciesMeta:
-      express:
-        optional: true
-      fastify:
-        optional: true
-      hono:
-        optional: true
-
-  meshql-integrity@0.5.5:
-    resolution: {integrity: sha512-ObTPavFiyYuSIyL0BfdzPQ/IvWuIdHjv6JyRGtxQz3Li4dB2K6+o6BvGBuG4fVLQRa60jejRj55fQ4rV5FgnPw==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      express: ^4 || ^5
-    peerDependenciesMeta:
-      express:
-        optional: true
-
-  meshql-postgres@0.5.4:
-    resolution: {integrity: sha512-MSWKA/Bbb8oqvVGoQAWL9tZ2Nmiuw5DvlPMyXogfHAa6gWCeJZvb1qwlpEnnYKKh9OySWdZo5U7VDCkCL/49sQ==}
-    engines: {node: '>=22'}
-
-  meshql-sqlite@0.5.4:
-    resolution: {integrity: sha512-VjWwZmvs4XB2zQwgOSRRPpxhnWu04IfHQEbIF0ChtwCe98su1QFmVXi0lg/aJern7cRMfMdXciiEvA80+cZNqw==}
-    engines: {node: '>=22'}
-
-  meshql-upload@0.5.4:
-    resolution: {integrity: sha512-QdwXeqB1vjn12xtUEzFJXL59l2qIOeKJeN0IgTEk9gUFQ6g66B1Wq0CSVjSLQ9MNHafPfD8ZCYiQwjIOdX/FrQ==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      '@aws-sdk/client-s3': ^3.0.0
-      '@aws-sdk/s3-request-presigner': ^3.0.0
-    peerDependenciesMeta:
-      '@aws-sdk/client-s3':
-        optional: true
-      '@aws-sdk/s3-request-presigner':
-        optional: true
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -1396,6 +1396,43 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@meshqljs/access@0.2.14':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+
+  '@meshqljs/client@0.8.5':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+
+  '@meshqljs/core@0.11.2': {}
+
+  '@meshqljs/http@0.8.5(hono@4.12.30)':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+      busboy: 1.6.0
+    optionalDependencies:
+      hono: 4.12.30
+
+  '@meshqljs/integrity@0.5.14(hono@4.12.30)':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+      '@meshqljs/http': 0.8.5(hono@4.12.30)
+    transitivePeerDependencies:
+      - fastify
+      - hono
+
+  '@meshqljs/postgres@0.6.6':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+
+  '@meshqljs/sqlite@0.6.6':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+
+  '@meshqljs/upload@0.5.12':
+    dependencies:
+      '@meshqljs/core': 0.11.2
+
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
       '@emnapi/core': 1.11.1
@@ -1722,43 +1759,6 @@ snapshots:
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  meshql-access@0.2.6:
-    dependencies:
-      meshql-core: 0.7.1
-
-  meshql-client@0.6.0:
-    dependencies:
-      meshql-core: 0.7.1
-
-  meshql-core@0.7.1: {}
-
-  meshql-http@0.6.1(hono@4.12.30):
-    dependencies:
-      busboy: 1.6.0
-      meshql-core: 0.7.1
-    optionalDependencies:
-      hono: 4.12.30
-
-  meshql-integrity@0.5.5(hono@4.12.30):
-    dependencies:
-      meshql-core: 0.7.1
-      meshql-http: 0.6.1(hono@4.12.30)
-    transitivePeerDependencies:
-      - fastify
-      - hono
-
-  meshql-postgres@0.5.4:
-    dependencies:
-      meshql-core: 0.7.1
-
-  meshql-sqlite@0.5.4:
-    dependencies:
-      meshql-core: 0.7.1
-
-  meshql-upload@0.5.4:
-    dependencies:
-      meshql-core: 0.7.1
 
   mri@1.2.0: {}
 

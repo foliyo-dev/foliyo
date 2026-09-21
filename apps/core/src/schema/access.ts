@@ -1,5 +1,5 @@
-import type { Filter, JoinPlan, QueryContext } from "meshql-core";
-import type { AccessOptions } from "meshql-access";
+import type { Filter, JoinPlan, QueryContext } from "@meshqljs/core";
+import type { AccessOptions } from "@meshqljs/access";
 import { queryOne, type FoliyoDb } from "../db.js";
 
 /** Entities owned by a user (row scoped by user_id). */
@@ -24,7 +24,7 @@ function isAuthed(ctx: QueryContext): boolean {
   return Boolean(ctx.userId);
 }
 
-/** meshql-access field / entity / row rules. */
+/** @meshqljs/access field / entity / row rules. */
 export function createAccessOptions(db: FoliyoDb): AccessOptions {
   return {
     // Strip secrets from anonymous / non-owner responses
@@ -62,7 +62,7 @@ export function createAccessOptions(db: FoliyoDb): AccessOptions {
 
 /**
  * Inject SQL list filters so list queries cannot dump the whole table.
- * (meshql-access rowAccess only runs for point reads with entityId.)
+ * (@meshqljs/access rowAccess only runs for point reads with entityId.)
  */
 export function applyRowFilters(plan: JoinPlan): JoinPlan {
   const userId = plan.context.userId;

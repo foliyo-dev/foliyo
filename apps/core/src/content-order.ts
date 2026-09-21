@@ -38,7 +38,7 @@ export async function fetchRowsInIdOrder(
   ids: string[],
 ): Promise<Record<string, unknown>[]> {
   if (!ids.length) return [];
-  const rows = await queryAll<Record<string, unknown>>(
+  const rows = await queryAll<{ id: unknown } & Record<string, unknown>>(
     db,
     `SELECT * FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")}) AND deleted_at IS NULL`,
     ids,

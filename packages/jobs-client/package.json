@@ -1,16 +1,16 @@
 {
-  "name": "@foliyo/jobs-client",
-  "version": "0.6.20",
-  "private": true,
-  "description": "Shared job analysis types and client helpers for dashboard and extension",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./seed": "./src/seed.ts",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "src",
-    "seed"
-  ]
+	"name": "@foliyo/jobs-client",
+	"version": "0.6.21",
+	"private": true,
+	"description": "Shared job analysis types and client helpers for dashboard and extension",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./seed": "./src/seed.ts",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"src",
+		"seed"
+	]
 }

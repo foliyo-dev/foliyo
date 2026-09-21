@@ -3,14 +3,14 @@ import {
   type MeshPlugin,
   type PluginContext,
   verifyQuerySignature,
-} from "meshql-core";
+} from "@meshqljs/core";
 import {
   deriveSigningToken,
   injectAuthContext,
   isTokenExpired,
   parseWireToken,
   type IntegrityConfig,
-} from "meshql-integrity";
+} from "@meshqljs/integrity";
 import { bearerToken, getTokenUserId } from "../auth/tokens.js";
 import type { FoliyoDb } from "../db.js";
 
@@ -20,7 +20,7 @@ export type FoliyoMeshAuthOptions = {
   integrity?: IntegrityConfig;
   /**
    * When true, every Mesh query must carry a valid Mesh signature
-   * (dashboard meshql-client mode). Public unsigned reads are rejected.
+   * (dashboard @meshqljs/client mode). Public unsigned reads are rejected.
    * Default false — Foliyo Bearer or anonymous public reads still work.
    */
   requireSigned?: boolean;

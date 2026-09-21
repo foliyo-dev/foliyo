@@ -5,7 +5,7 @@ import {
   normalizeSkillKey,
   type SkillCatalog,
 } from "../jobs/aliases.js";
-import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
+import { queryAll, queryOne, run, type FoliyoDb, type SqlValue } from "../db.js";
 
 function newId(): string {
   return randomBytes(16).toString("hex");
@@ -343,7 +343,7 @@ export async function listGlobalSkills(
   const term = (q ?? "").trim().toLowerCase();
   const cat = (category ?? "").trim().toLowerCase();
   const where: string[] = [];
-  const params: unknown[] = [];
+  const params: SqlValue[] = [];
   if (term) {
     where.push(`(lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?)`);
     const like = `%${term}%`;
@@ -369,7 +369,7 @@ export async function countGlobalSkills(
   const term = (q ?? "").trim().toLowerCase();
   const cat = (category ?? "").trim().toLowerCase();
   const where: string[] = [];
-  const params: unknown[] = [];
+  const params: SqlValue[] = [];
   if (term) {
     where.push(`(lower(canonical_name) LIKE ? OR lower(normalized_key) LIKE ?)`);
     const like = `%${term}%`;

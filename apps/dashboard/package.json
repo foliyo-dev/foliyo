@@ -20,7 +20,7 @@
 		"@foliyo/brand": "workspace:*",
 		"@foliyo/jobs-client": "workspace:*",
 		"@foliyo/ui": "workspace:*",
-		"meshql-client": "^0.6.0"
+		"@meshqljs/client": "^0.8.5"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.10",

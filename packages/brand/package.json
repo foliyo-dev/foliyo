@@ -1,17 +1,17 @@
 {
-  "name": "@foliyo/brand",
-  "version": "0.6.20",
-  "private": true,
-  "description": "Shared Foliyo brand tokens and logo assets",
-  "type": "module",
-  "exports": {
-    ".": "./tokens.css",
-    "./tokens.css": "./tokens.css",
-    "./assets/*": "./assets/*",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "tokens.css",
-    "assets"
-  ]
+	"name": "@foliyo/brand",
+	"version": "0.6.21",
+	"private": true,
+	"description": "Shared Foliyo brand tokens and logo assets",
+	"type": "module",
+	"exports": {
+		".": "./tokens.css",
+		"./tokens.css": "./tokens.css",
+		"./assets/*": "./assets/*",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"tokens.css",
+		"assets"
+	]
 }

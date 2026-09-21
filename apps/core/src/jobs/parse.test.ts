@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { catalogFromSeedPacks } from "@foliyo/jobs-client/seed";
 import { missingSkillHintsFromJd, parseJobDocument } from "./parse.js";
 

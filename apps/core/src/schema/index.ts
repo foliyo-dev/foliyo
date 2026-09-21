@@ -1,14 +1,14 @@
-import { createMesh, type MeshSchema } from "meshql-core";
-import { buildSelectSql as buildSelectSqlSqlite } from "meshql-sqlite";
-import { buildSelectSql as buildSelectSqlPostgres } from "meshql-postgres";
-import { createHttpHandler, toErrorResponse } from "meshql-http";
-import { withAccess } from "meshql-access";
+import { createMesh, type MeshSchema } from "@meshqljs/core";
+import { buildSelectSql as buildSelectSqlSqlite } from "@meshqljs/sqlite";
+import { buildSelectSql as buildSelectSqlPostgres } from "@meshqljs/postgres";
+import { createHttpHandler, toErrorResponse } from "@meshqljs/http";
+import { withAccess } from "@meshqljs/access";
 import {
   createAuthHandler,
   InMemoryTokenStore,
   issueToken,
   type IntegrityConfig,
-} from "meshql-integrity";
+} from "@meshqljs/integrity";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import type { Config } from "../config.js";

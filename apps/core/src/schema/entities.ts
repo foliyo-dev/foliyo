@@ -1,9 +1,8 @@
-import type { MeshSchema } from "meshql-core";
+import type { MeshSchema } from "@meshqljs/core";
 
 export const foliyoSchema: MeshSchema = {
   entities: {
     profile: {
-      type: {},
       fields: [
         "id", "user_id", "name", "headline", "bio",
         "avatar_url", "location", "website",
@@ -12,14 +11,12 @@ export const foliyoSchema: MeshSchema = {
       table: "profile",
     },
     skill: {
-      type: {},
       fields: [
         "id", "user_id", "name", "level", "category", "source", "status", "recency", "sort_order",
       ],
       table: "skills",
     },
     project: {
-      type: {},
       fields: [
         "id", "user_id", "title", "description", "url",
         "repo_url", "article_url", "image_url",
@@ -29,7 +26,6 @@ export const foliyoSchema: MeshSchema = {
       table: "projects",
     },
     experience: {
-      type: {},
       fields: [
         "id", "user_id", "company", "role", "location",
         "start_date", "end_date", "description", "article_url", "article_url_label",
@@ -38,7 +34,6 @@ export const foliyoSchema: MeshSchema = {
       table: "experience",
     },
     education: {
-      type: {},
       fields: [
         "id", "user_id", "institution", "degree",
         "field", "start_date", "end_date", "description", "skills_developed", "sort_order",
@@ -46,7 +41,6 @@ export const foliyoSchema: MeshSchema = {
       table: "education",
     },
     certification: {
-      type: {},
       fields: [
         "id", "user_id", "name", "issuer", "credential_id", "credential_url",
         "issued_at", "expires_at", "description", "skills_developed", "sort_order",
@@ -54,17 +48,14 @@ export const foliyoSchema: MeshSchema = {
       table: "certifications",
     },
     language: {
-      type: {},
       fields: ["id", "user_id", "name", "proficiency", "sort_order"],
       table: "languages",
     },
     social_link: {
-      type: {},
       fields: ["id", "user_id", "provider", "label", "value", "sort_order"],
       table: "social_links",
     },
     portfolio: {
-      type: {},
       fields: [
         "id", "user_id", "name", "slug", "description",
         "theme_slug", "is_public", "is_default", "sort_order",
@@ -77,7 +68,6 @@ export const foliyoSchema: MeshSchema = {
       table: "portfolios",
     },
     resume: {
-      type: {},
       fields: [
         "id", "portfolio_id", "user_id", "name",
         "theme_slug", "is_public", "share_token", "view_count",
@@ -85,7 +75,6 @@ export const foliyoSchema: MeshSchema = {
       table: "resumes",
     },
     post: {
-      type: {},
       fields: [
         "id", "user_id", "title", "slug", "content",
         "excerpt", "cover_image", "tags",
