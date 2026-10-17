@@ -9,7 +9,7 @@
     "build": "tsc --noEmit",
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
-    "test": "tsx --test src/jobs/*.test.ts src/skills/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts",
+    "test": "tsx --test src/jobs/*.test.ts src/skills/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts src/markdown.test.ts",
     "clean": "rm -rf dist",
     "seed:ats": "tsx src/seed-ats-partner.ts"
   },
@@ -64,6 +64,7 @@
     "./auth/limit": "./src/auth/limit.ts",
     "./auth/pending-signup": "./src/auth/pending-signup.ts",
     "./auth/oauth": "./src/auth/oauth.ts",
+    "./routes/oauth": "./src/routes/oauth.ts",
     "./email/send": "./src/email/send.ts",
     "./email/verify": "./src/email/verify.ts",
     "./email/password-reset": "./src/email/password-reset.ts",

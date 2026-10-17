@@ -40,13 +40,13 @@
 		}
 	}
 	.error {
-		border-color: #fecaca;
-		background: #fef2f2;
+		border-color: color-mix(in srgb, var(--color-error) 35%, var(--color-border));
+		background: var(--color-error-bg);
 		color: var(--color-error);
 	}
 	.success {
-		border-color: #bbf7d0;
-		background: #f0fdf4;
-		color: var(--color-success);
+		border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+		background: var(--color-success-bg);
+		color: var(--color-success-text);
 	}
 </style>

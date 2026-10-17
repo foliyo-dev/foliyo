@@ -1,40 +1,63 @@
 <script lang="ts">
-	export let title = '';
-	export let description = '';
+	import type { Snippet } from 'svelte';
+	import { onDestroy } from 'svelte';
+	import { setPageChrome, clearPageChrome } from '$lib/stores/pageChrome';
+
+	type Props = {
+		title?: string;
+		description?: string;
+		children?: Snippet;
+		actions?: Snippet;
+	};
+
+	let { title = '', description = '', children, actions }: Props = $props();
+
+	$effect(() => {
+		setPageChrome(title, description);
+	});
+
+	onDestroy(() => {
+		clearPageChrome();
+	});
 </script>
 
 <svelte:head>
 	<title>{title ? `${title} · Foliyo` : 'Foliyo'}</title>
 </svelte:head>
 
-<div class="page-header">
-	<h1>{title}</h1>
-	{#if description}<p>{description}</p>{/if}
-</div>
+{#if children || actions}
+	<div class="page-toolbar">
+		{#if children}
+			<div class="toolbar-main">
+				{@render children()}
+			</div>
+		{/if}
+		{#if actions}
+			<div class="toolbar-actions">
+				{@render actions()}
+			</div>
+		{/if}
+	</div>
+{/if}
 
 <style>
-	.page-header {
-		margin-bottom: 1.5rem;
+	.page-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-4);
 	}
-	h1 {
-		margin: 0 0 0.25rem;
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: var(--color-text);
-		letter-spacing: -0.02em;
+	.toolbar-main {
+		min-width: 0;
+		flex: 1;
 	}
-	p {
-		margin: 0;
-		color: var(--color-muted);
-		font-size: 0.9375rem;
-	}
-
-	@media (max-width: 900px) {
-		.page-header {
-			margin-bottom: 1rem;
-		}
-		h1 {
-			font-size: 1.25rem;
-		}
+	.toolbar-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		flex-shrink: 0;
 	}
 </style>

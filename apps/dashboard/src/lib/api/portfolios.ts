@@ -17,12 +17,14 @@ export type Portfolio = {
 	show_education: number;
 	show_certifications: number;
 	show_languages: number;
+	show_posts?: number;
 	skills_title: string;
 	projects_title: string;
 	experience_title: string;
 	education_title: string;
 	certifications_title: string;
 	languages_title: string;
+	posts_title?: string;
 	sort_order: number;
 	resume_id: string | null;
 	access_token: string | null;
@@ -35,6 +37,7 @@ export type PortfolioContent = {
 	education_ids: string[];
 	certification_ids: string[];
 	language_ids: string[];
+	post_ids?: string[];
 };
 
 export type PortfolioDetail = Portfolio & { content: PortfolioContent };

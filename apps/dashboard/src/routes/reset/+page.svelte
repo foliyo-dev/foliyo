@@ -6,7 +6,7 @@
 	import { showToast } from '$lib/stores/toast';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
 
 	let password = '';
 	let confirm = '';
@@ -52,63 +52,32 @@
 	<title>Reset password · Foliyo</title>
 </svelte:head>
 
-<div class="auth-page">
-	<Card>
-		<h1>Choose a new password</h1>
-		{#if missing}
-			<p class="muted">This reset link is missing a token. Request a new one from the login page.</p>
-			<p class="footer muted"><a href="/forgot">Forgot password</a> · <a href="/login">Sign in</a></p>
-		{:else}
-			<p class="muted">Use at least 8 characters.</p>
-			<form on:submit={handleSubmit}>
-				<Input
-					label="New password"
-					type="password"
-					name="password"
-					autocomplete="new-password"
-					bind:value={password}
-				/>
-				<Input
-					label="Confirm password"
-					type="password"
-					name="confirm"
-					autocomplete="new-password"
-					bind:value={confirm}
-				/>
-				<Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Update password'}</Button>
-			</form>
-			<p class="footer muted"><a href="/login">Back to sign in</a></p>
-		{/if}
-	</Card>
-</div>
-
-<style>
-	.auth-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		background: linear-gradient(160deg, var(--color-primary-light) 0%, var(--color-bg) 45%);
-	}
-	h1 {
-		margin: 0 0 0.35rem;
-		font-size: 1.5rem;
-		text-align: center;
-	}
-	.muted {
-		color: var(--color-muted);
-		text-align: center;
-	}
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		margin-top: 1rem;
-	}
-	.footer {
-		margin-top: 1.25rem;
-		text-align: center;
-		font-size: 0.875rem;
-	}
-</style>
+{#if missing}
+	<AuthShell
+		title="Choose a new password"
+		description="This reset link is missing a token. Request a new one from the login page."
+	>
+		<p class="footer"><a href="/forgot">Forgot password</a> · <a href="/login">Sign in</a></p>
+	</AuthShell>
+{:else}
+	<AuthShell title="Choose a new password" description="Use at least 8 characters.">
+		<form on:submit={handleSubmit}>
+			<Input
+				label="New password"
+				type="password"
+				name="password"
+				autocomplete="new-password"
+				bind:value={password}
+			/>
+			<Input
+				label="Confirm password"
+				type="password"
+				name="confirm"
+				autocomplete="new-password"
+				bind:value={confirm}
+			/>
+			<Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Update password'}</Button>
+		</form>
+		<p class="footer"><a href="/login">Back to sign in</a></p>
+	</AuthShell>
+{/if}

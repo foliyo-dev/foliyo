@@ -132,6 +132,104 @@ body.theme-minimal {
 .theme-minimal .links a { color: var(--accent); }
 .theme-minimal .muted { color: var(--muted); font-size: 0.875rem; }
 
+.theme-minimal .post-cover {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  background: var(--line);
+}
+
+.theme-minimal .post-cover-hero {
+  margin: 0 0 1.75rem;
+}
+
+.theme-minimal .post-cover-list {
+  margin: 0 0 0.75rem;
+  max-height: 10rem;
+}
+
+.theme-minimal .prose {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.theme-minimal .prose > :first-child { margin-top: 0; }
+
+.theme-minimal .prose h1,
+.theme-minimal .prose h2,
+.theme-minimal .prose h3 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin: 1.75em 0 0.5em;
+}
+
+.theme-minimal .prose h1 { font-size: 1.75rem; }
+.theme-minimal .prose h2 { font-size: 1.375rem; }
+.theme-minimal .prose h3 { font-size: 1.125rem; }
+
+.theme-minimal .prose p,
+.theme-minimal .prose ul,
+.theme-minimal .prose ol,
+.theme-minimal .prose blockquote,
+.theme-minimal .prose pre {
+  margin: 0.85em 0;
+}
+
+.theme-minimal .prose ul,
+.theme-minimal .prose ol {
+  padding-left: 1.35rem;
+}
+
+.theme-minimal .prose li { margin: 0.25em 0; }
+
+.theme-minimal .prose a { color: var(--accent); }
+
+.theme-minimal .prose blockquote {
+  margin-left: 0;
+  padding: 0.15rem 0 0.15rem 1rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.theme-minimal .prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+
+.theme-minimal .prose pre {
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.theme-minimal .prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+.theme-minimal .prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.theme-minimal .prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2rem 0;
+}
+
 .theme-minimal .site-footer {
   text-align: center;
   padding: 2rem 1rem 3rem;

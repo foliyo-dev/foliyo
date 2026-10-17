@@ -23,6 +23,8 @@ export type PlanEntitlements = {
   ai_resume_import: boolean;
   /** Hosted Pro: AI rewrite / assist (unit-metered). Gap-check is free (no LLM). */
   ai_assist: boolean;
+  /** Pro / lifetime / selfhost: Foliyo-hosted user blog CMS. */
+  user_blog: boolean;
   portfolio_limit: number | null;
   /** null = unlimited; Free = FREE_RESUME_LIMIT. */
   resume_limit: number | null;
@@ -135,6 +137,7 @@ export function entitlementsFor(plan: string | null | undefined): PlanEntitlemen
     remove_branding: paid,
     ai_resume_import: paid,
     ai_assist: paid,
+    user_blog: paid,
     portfolio_limit: paid ? null : FREE_PORTFOLIO_LIMIT,
     resume_limit: paid ? null : FREE_RESUME_LIMIT,
   };

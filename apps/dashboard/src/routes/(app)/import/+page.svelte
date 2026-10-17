@@ -837,7 +837,7 @@
 		color: var(--color-primary);
 	}
 	.import-steps li.done {
-		color: #166534;
+		color: var(--color-success-text);
 	}
 	.history {
 		margin: 0 0 1.25rem;

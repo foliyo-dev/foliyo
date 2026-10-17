@@ -32,18 +32,21 @@ const draftSchema = z.object({
   show_education: z.number().int().min(0).max(1).optional(),
   show_certifications: z.number().int().min(0).max(1).optional(),
   show_languages: z.number().int().min(0).max(1).optional(),
+  show_posts: z.number().int().min(0).max(1).optional(),
   skills_title: z.string().max(40).optional(),
   projects_title: z.string().max(40).optional(),
   experience_title: z.string().max(40).optional(),
   education_title: z.string().max(40).optional(),
   certifications_title: z.string().max(40).optional(),
   languages_title: z.string().max(40).optional(),
+  posts_title: z.string().max(40).optional(),
   skill_ids: z.array(z.string()).optional(),
   project_ids: z.array(z.string()).optional(),
   experience_ids: z.array(z.string()).optional(),
   education_ids: z.array(z.string()).optional(),
   certification_ids: z.array(z.string()).optional(),
   language_ids: z.array(z.string()).optional(),
+  post_ids: z.array(z.string()).optional(),
 });
 
 const resumeDraftSchema = z.object({

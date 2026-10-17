@@ -4,20 +4,33 @@
 	export let disabled = false;
 	/** Sets `aria-pressed`, for toggle-style buttons. */
 	export let pressed: boolean | undefined = undefined;
+	export let size: 'sm' | 'md' = 'md';
 </script>
 
-<button {type} class={variant} {disabled} aria-pressed={pressed} on:click>
+<button {type} class="{variant} size-{size}" {disabled} aria-pressed={pressed} on:click>
 	<slot />
 </button>
 
 <style>
 	button {
-		padding: 0.5rem 1rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		min-height: var(--control-height);
+		padding: 0 var(--space-4);
 		border-radius: var(--radius);
 		border: 1px solid transparent;
 		cursor: pointer;
 		font-weight: 500;
-		transition: background 0.15s ease, border-color 0.15s ease;
+		font-size: 0.875rem;
+		line-height: 1.25;
+		transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+	}
+	.size-sm {
+		min-height: 1.875rem;
+		padding: 0 var(--space-3);
+		font-size: 0.8125rem;
 	}
 	button:disabled {
 		opacity: 0.5;
@@ -41,9 +54,9 @@
 		border-color: var(--color-accent-hover);
 	}
 	.ghost {
-		background: var(--color-primary-light);
-		border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
-		color: var(--color-primary);
+		background: var(--color-surface);
+		border-color: var(--color-border);
+		color: var(--color-text);
 	}
 	.ghost:hover:not(:disabled) {
 		border-color: var(--color-primary-muted);

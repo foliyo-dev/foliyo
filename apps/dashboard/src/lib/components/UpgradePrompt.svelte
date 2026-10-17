@@ -33,6 +33,7 @@
 		{ label: 'Unlimited portfolios & resumes', ai: false },
 		{ label: 'PDF export (print-ready)', ai: false },
 		{ label: 'Remove Foliyo branding', ai: false },
+		{ label: 'Write & publish a blog on your site', ai: false },
 		{ label: 'Import resume — fill library from PDF/CV', ai: true },
 		{ label: 'AI rewrite — stronger / shorter / metrics', ai: true },
 		{ label: 'AI resume summary from JD + library', ai: true },
@@ -240,35 +241,37 @@
 
 <style>
 	.upgrade {
-		padding: 1rem 1.15rem;
+		padding: var(--space-3) var(--space-4);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-3);
+		box-shadow: var(--shadow-xs);
 	}
 	.upgrade strong {
 		display: block;
-		font-size: 0.95rem;
-		margin-bottom: 0.35rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		margin-bottom: var(--space-1);
 	}
 	.context {
-		margin: 0.25rem 0 0;
-		font-size: 0.875rem;
+		margin: var(--space-1) 0 0;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
 	.features {
 		list-style: none;
-		margin: 0.75rem 0 0;
+		margin: var(--space-3) 0 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: var(--space-1);
 	}
 	.features li {
 		display: flex;
 		align-items: flex-start;
-		gap: 0.4rem;
+		gap: var(--space-2);
 		font-size: 0.8125rem;
 		line-height: 1.4;
 		color: var(--color-text);
@@ -276,8 +279,8 @@
 	.features li::before {
 		content: '';
 		flex-shrink: 0;
-		width: 0.4rem;
-		height: 0.4rem;
+		width: 0.35rem;
+		height: 0.35rem;
 		margin-top: 0.4rem;
 		border-radius: 50%;
 		background: var(--color-primary);
@@ -289,7 +292,7 @@
 		justify-content: center;
 		margin-top: 0.1rem;
 		padding: 0.05rem 0.28rem;
-		border-radius: 3px;
+		border-radius: var(--radius-sm);
 		font-size: 0.5625rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
@@ -298,20 +301,20 @@
 		line-height: 1.2;
 	}
 	.price {
-		margin: 0.85rem 0 0 !important;
+		margin: var(--space-3) 0 0 !important;
 		color: var(--color-text) !important;
-		font-size: 0.875rem !important;
+		font-size: 0.8125rem !important;
 		font-weight: 600;
 	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 0.85rem;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
 	}
 	.hint {
-		font-size: 0.8125rem !important;
-		margin-top: 0.65rem !important;
+		font-size: 0.75rem !important;
+		margin-top: var(--space-2) !important;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
@@ -321,33 +324,34 @@
 	.billing-dialog {
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
-		padding: 1.25rem 1.35rem 1rem;
+		padding: var(--space-4) var(--space-5) var(--space-3);
 		max-width: min(28rem, calc(100vw - 2rem));
 		width: 100%;
 		background: var(--color-surface);
 		color: var(--color-text);
-		box-shadow: 0 12px 40px rgba(26, 26, 46, 0.16);
+		box-shadow: var(--shadow-md);
 	}
 	.billing-dialog::backdrop {
 		background: rgba(15, 23, 42, 0.45);
 	}
 	.billing-dialog h2 {
-		margin: 0 0 0.35rem;
-		font-size: 1.05rem;
+		margin: 0 0 var(--space-1);
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.dialog-intro {
-		margin: 0 0 1rem;
+		margin: 0 0 var(--space-3);
 		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
 	.dialog-close {
-		margin-top: 0.75rem;
+		margin-top: var(--space-3);
 		border: none;
 		background: transparent;
 		color: var(--color-muted);
 		font-size: 0.8125rem;
 		cursor: pointer;
-		padding: 0.25rem 0;
+		padding: var(--space-1) 0;
 	}
 </style>

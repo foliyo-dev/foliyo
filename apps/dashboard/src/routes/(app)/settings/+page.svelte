@@ -358,7 +358,8 @@
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else}
-	<Card>
+	<div class="settings-stack">
+	<Card variant="panel">
 		<h2 class="section-title">Account</h2>
 		<p class="muted">
 			Email: <strong>{$user?.email ?? '—'}</strong>
@@ -409,7 +410,7 @@
 		{/if}
 	</Card>
 
-	<Card>
+	<Card variant="panel">
 		<h2 class="section-title">Plan</h2>
 		<p class="muted">
 			Current plan:
@@ -540,7 +541,7 @@
 	</Card>
 
 	{#if showDpdp && planInfo?.billing_available && billingProfile}
-		<Card>
+		<Card variant="panel">
 			<h2 class="section-title">Billing address</h2>
 			{#if billingProfile.complete}
 				<p class="muted ok-line">
@@ -560,7 +561,7 @@
 		</Card>
 	{/if}
 
-	<Card>
+	<Card variant="panel">
 		<h2 class="section-title">Password</h2>
 		<p class="muted">Change your password. This signs you out of other devices.</p>
 		<div class="fields">
@@ -590,7 +591,7 @@
 		</div>
 	</Card>
 
-	<Card>
+	<Card variant="panel">
 		<h2 class="section-title">Clear library &amp; resumes</h2>
 		<p class="muted">
 			Delete all library content, portfolios, resumes, job analyses, applications, and import undo
@@ -616,7 +617,7 @@
 	</Card>
 
 	{#if showDpdp}
-		<Card>
+		<Card variant="panel">
 			<h2 class="section-title">Privacy &amp; data (DPDP)</h2>
 			{#if privacyConsent}
 				<p class="muted">
@@ -650,50 +651,58 @@
 			</div>
 		</Card>
 	{/if}
+	</div>
 {/if}
 
 <style>
+	.settings-stack {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
 	.muted {
 		color: var(--color-muted);
+		font-size: 0.8125rem;
 	}
 	.ok {
-		margin: 0.75rem 0 0;
-		font-size: 0.875rem;
-		color: #166534;
+		margin: var(--space-2) 0 0;
+		font-size: 0.8125rem;
+		color: var(--color-success-text);
 	}
 	.plan-pro {
 		color: var(--color-primary);
 	}
 	.actions {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
+		margin-top: var(--space-4);
+		padding-top: var(--space-3);
 		border-top: 1px solid var(--color-border);
 	}
 	.section-title {
-		margin: 0 0 0.75rem;
-		font-size: 1.125rem;
+		margin: 0 0 var(--space-3);
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.account-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.75rem;
+		gap: var(--space-2);
 		border-top: none;
 		padding-top: 0;
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 	.danger {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
+		margin-top: var(--space-4);
+		padding-top: var(--space-3);
 		border-top: 1px solid var(--color-border);
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		margin-top: 1rem;
+		gap: var(--space-3);
+		margin-top: var(--space-3);
 	}
 	.link-btn {
-		margin-left: 0.5rem;
+		margin-left: var(--space-2);
 		border: none;
 		background: transparent;
 		color: var(--color-primary);
@@ -708,25 +717,25 @@
 		color: var(--color-primary-hover);
 	}
 	.cooldown-hint {
-		margin-left: 0.5rem;
+		margin-left: var(--space-2);
 		font-size: 0.8125rem;
 		color: var(--color-muted);
 	}
 	.handle-edit {
-		margin-top: 0.75rem;
+		margin-top: var(--space-3);
 	}
 	.handle-field {
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--space-2);
 	}
 	.prefix {
 		display: block;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
-		margin-bottom: 0.35rem;
+		margin-bottom: var(--space-1);
 	}
 	.status {
-		font-size: 0.875rem;
-		margin: 0 0 0.75rem;
+		font-size: 0.8125rem;
+		margin: 0 0 var(--space-3);
 	}
 	.taken {
 		color: var(--color-error);

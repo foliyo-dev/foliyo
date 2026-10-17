@@ -256,10 +256,10 @@
 		{draftSummary}
 	>
 		{#if editingId}
-			<Card>
+			<Card variant="panel">
 				<div class="create-head">
 					<h2 class="section-title">Edit resume</h2>
-					<Button variant="ghost" on:click={resetEdit}>Cancel</Button>
+					<Button variant="ghost" size="sm" on:click={resetEdit}>Cancel</Button>
 				</div>
 				<div class="fields">
 					<Input label="Name" bind:value={name} />
@@ -342,7 +342,7 @@
 		{/if}
 
 		{#if items.length === 0}
-			<Card>
+			<Card variant="panel">
 				<p class="muted empty">No resumes yet.</p>
 				<p class="hint">
 					<a href="/resume/tailor">Tailor to a job</a>
@@ -354,7 +354,7 @@
 			<ul class="list">
 				{#each items as r (r.id)}
 					<li class:previewing={previewingId === r.id} aria-current={previewingId === r.id ? 'true' : undefined}>
-						<Card>
+						<Card variant="panel">
 							<div class="row">
 								<div>
 									<h2>
@@ -383,35 +383,37 @@
 								<div class="actions">
 									<Button
 										variant="ghost"
+										size="sm"
 										on:click={() => togglePreview(r.id)}
 										pressed={previewingId === r.id}
 									>
 										{previewingId === r.id ? 'Hide preview' : 'Preview'}
 									</Button>
 									{#if r.is_public}
-										<Button variant="ghost" on:click={() => setVisibility(r, false)}
+										<Button variant="ghost" size="sm" on:click={() => setVisibility(r, false)}
 											>Make private</Button
 										>
-										<Button variant="ghost" on:click={() => copyLink(r.share_token)}
+										<Button variant="ghost" size="sm" on:click={() => copyLink(r.share_token)}
 											>Copy link</Button
 										>
-										<Button variant="ghost" on:click={() => regenerate(r.id)}
+										<Button variant="ghost" size="sm" on:click={() => regenerate(r.id)}
 											>Regenerate link</Button
 										>
 									{:else}
-										<Button variant="ghost" on:click={() => setVisibility(r, true)}
+										<Button variant="ghost" size="sm" on:click={() => setVisibility(r, true)}
 											>Make public</Button
 										>
 									{/if}
-									<Button variant="ghost" on:click={() => startEdit(r)}>Edit</Button>
+									<Button variant="ghost" size="sm" on:click={() => startEdit(r)}>Edit</Button>
 									<Button
 										variant="ghost"
+										size="sm"
 										disabled={exportingId === r.id}
 										on:click={() => downloadFio(r)}
 									>
 										{exportingId === r.id ? 'Exporting…' : 'Download .fio'}
 									</Button>
-									<Button variant="ghost" on:click={() => remove(r.id)}>Delete</Button>
+									<Button variant="ghost" size="sm" on:click={() => remove(r.id)}>Delete</Button>
 								</div>
 							</div>
 						</Card>
@@ -425,37 +427,38 @@
 <style>
 	.section-title {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.create-head {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		gap: 1rem;
-		margin-bottom: 1rem;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.summary-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		padding: 0.85rem 0.9rem;
+		gap: var(--space-2);
+		padding: var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
 	}
 	.summary-title {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.summary-using {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
@@ -463,10 +466,10 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.75rem 1rem;
+		gap: var(--space-2) var(--space-3);
 	}
 	.summary-link {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-primary);
 		text-decoration: none;
@@ -491,14 +494,15 @@
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	select {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
@@ -506,16 +510,16 @@
 		color: var(--color-text);
 	}
 	.hint {
-		margin: 0.5rem 0 0;
-		font-size: 0.875rem;
+		margin: var(--space-2) 0 0;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.4;
 	}
 	.mode {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
-		gap: 0.35rem;
-		padding: 0.25rem;
+		gap: var(--space-1);
+		padding: var(--space-1);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
@@ -523,8 +527,8 @@
 	.mode-option {
 		border: 0;
 		background: transparent;
-		padding: 0.55rem 0.4rem;
-		border-radius: 6px;
+		padding: 0.45rem 0.35rem;
+		border-radius: var(--radius-sm);
 		font: inherit;
 		font-size: 0.8125rem;
 		font-weight: 500;
@@ -534,18 +538,18 @@
 	.mode-option.on {
 		background: var(--color-surface);
 		color: var(--color-text);
-		box-shadow: 0 1px 2px rgba(26, 26, 46, 0.06);
+		box-shadow: var(--shadow-xs);
 	}
 	.form-actions {
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
 	}
 	.muted {
 		color: var(--color-muted);
 	}
 	.meta {
-		margin: 0.25rem 0 0;
+		margin: var(--space-1) 0 0;
 		font-size: 0.8125rem;
 		color: var(--color-muted);
 	}
@@ -558,57 +562,61 @@
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: var(--space-2);
 	}
 	.row {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 1rem;
+		gap: var(--space-3);
 		flex-wrap: wrap;
 	}
 	h2 {
 		margin: 0;
-		font-size: 1.0625rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		flex-wrap: wrap;
 	}
 	.tag {
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		font-weight: 600;
 		text-transform: uppercase;
-		padding: 0.1rem 0.45rem;
-		border-radius: 4px;
+		padding: 0.1rem 0.35rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border);
 	}
 	.tag.public {
-		background: #dcfce7;
-		color: #166534;
+		background: var(--color-success-bg);
+		color: var(--color-success-text);
+		border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
 	}
 	.tag.private {
-		background: #f3f4f6;
+		background: var(--color-bg);
 		color: var(--color-muted);
 	}
 	.tag.previewing {
 		background: var(--color-primary-light);
 		color: var(--color-primary);
+		border-color: transparent;
 	}
 	.list li.previewing :global(.card) {
 		border-color: var(--color-primary);
 		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent);
 	}
 	.link {
-		margin: 0.35rem 0 0;
-		font-size: 0.8125rem;
+		margin: var(--space-1) 0 0;
+		font-size: 0.75rem;
 		font-family: ui-monospace, monospace;
 	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	:global(.card + .card) {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 </style>

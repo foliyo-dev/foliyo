@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	/** Shown as a default "Edit" button in the actions area, unless the `actions` slot is used instead. */
@@ -12,27 +11,27 @@
 </script>
 
 <li>
-	<Card>
-		<div class="item-row">
-			<div class="detail">
-				<slot />
-			</div>
-			<div class="row-actions">
-				<slot name="actions">
-					{#if onMoveUp || onMoveDown}
-						<Button variant="ghost" disabled={!onMoveUp} on:click={() => onMoveUp?.()}>↑</Button>
-						<Button variant="ghost" disabled={!onMoveDown} on:click={() => onMoveDown?.()}>↓</Button>
-					{/if}
-					{#if onEdit}
-						<Button variant="ghost" on:click={onEdit}>Edit</Button>
-					{/if}
-					{#if onRemove}
-						<Button variant="ghost" on:click={onRemove}>Delete</Button>
-					{/if}
-				</slot>
-			</div>
+	<div class="item-row" style:align-items={align}>
+		<div class="detail">
+			<slot />
 		</div>
-	</Card>
+		<div class="row-actions">
+			<slot name="actions">
+				{#if onMoveUp || onMoveDown}
+					<Button variant="ghost" size="sm" disabled={!onMoveUp} on:click={() => onMoveUp?.()}>↑</Button>
+					<Button variant="ghost" size="sm" disabled={!onMoveDown} on:click={() => onMoveDown?.()}
+						>↓</Button
+					>
+				{/if}
+				{#if onEdit}
+					<Button variant="ghost" size="sm" on:click={onEdit}>Edit</Button>
+				{/if}
+				{#if onRemove}
+					<Button variant="ghost" size="sm" on:click={onRemove}>Delete</Button>
+				{/if}
+			</slot>
+		</div>
+	</div>
 </li>
 
 <style>
@@ -40,25 +39,42 @@
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
-		gap: 0.75rem;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
 	}
 	.detail {
 		min-width: 0;
+		flex: 1;
 	}
 	.row-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
-	/* Shared presentation for item-detail markup that pages render into the default slot. */
 	.detail :global(.meta) {
 		display: block;
 		font-size: 0.8125rem;
 		color: var(--color-muted);
-		margin-top: 0.25rem;
+		margin-top: 0.15rem;
 	}
 	.detail :global(.desc) {
-		margin: 0.35rem 0 0;
+		margin: 0.25rem 0 0;
+		font-size: 0.8125rem;
+	}
+	.detail :global(strong) {
 		font-size: 0.875rem;
+	}
+
+	@media (min-width: 640px) {
+		.item-row {
+			flex-direction: row;
+			justify-content: space-between;
+			gap: var(--space-4);
+		}
+		.row-actions {
+			flex-shrink: 0;
+			justify-content: flex-end;
+			align-self: center;
+		}
 	}
 </style>

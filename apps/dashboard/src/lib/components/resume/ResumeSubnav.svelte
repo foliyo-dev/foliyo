@@ -21,9 +21,9 @@
 	.subnav {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.35rem;
-		margin: -0.5rem 0 1.25rem;
-		padding: 0.25rem;
+		gap: var(--space-1);
+		margin: 0 0 var(--space-4);
+		padding: var(--space-1);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
@@ -31,20 +31,21 @@
 		max-width: 100%;
 	}
 	.tab {
-		padding: 0.5rem 0.85rem;
-		border-radius: 6px;
-		font-size: 0.8125rem;
+		padding: 0.35rem 0.7rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--color-muted);
 		text-decoration: none;
 	}
 	.tab:hover {
 		color: var(--color-text);
+		background: color-mix(in srgb, var(--color-surface) 70%, transparent);
 	}
 	.tab.on {
 		background: var(--color-surface);
-		color: var(--color-text);
-		box-shadow: 0 1px 2px rgba(26, 26, 46, 0.06);
+		color: var(--color-primary);
+		box-shadow: var(--shadow-xs);
 		font-weight: 600;
 	}
 </style>

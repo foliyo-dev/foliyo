@@ -5,7 +5,7 @@
 	export let title: string;
 </script>
 
-<Card>
+<Card variant="panel">
 	<h2 class="section-title">{title}</h2>
 	<div class="fields">
 		<slot name="fields" />
@@ -17,22 +17,24 @@
 
 <style>
 	.section-title {
-		margin: 0 0 1rem;
-		font-size: 1rem;
+		margin: 0 0 var(--space-3);
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.form-actions {
 		position: sticky;
 		bottom: 0;
 		z-index: 5;
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-		padding: 0.75rem 0 0.25rem;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
+		padding: var(--space-3) 0 var(--space-1);
 		background: linear-gradient(
 			to top,
 			var(--color-surface) 70%,

@@ -15,26 +15,27 @@
 	label {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text);
 	}
 	textarea {
-		padding: 0.5rem 0.75rem;
+		padding: var(--space-2) var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
 		color: var(--color-text);
 		font-family: inherit;
+		font-size: 0.875rem;
 		resize: vertical;
 		min-height: 5rem;
 	}
 	textarea:focus {
 		border-color: var(--color-primary-muted);
-		box-shadow: 0 0 0 3px var(--color-primary-light);
+		box-shadow: var(--focus-ring);
 		outline: none;
 	}
 </style>

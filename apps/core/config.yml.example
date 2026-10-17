@@ -8,3 +8,5 @@ admin_email: admin@foliyo.dev
 token_secret: change-me-in-production
 integrity_secret: change-me-in-production
 site_url: http://localhost:8080
+# Optional Google/GitHub login — prefer env vars:
+# FOLIYO_OAUTH_ENABLED, OAUTH_REDIRECT_BASE, GOOGLE_CLIENT_ID/SECRET, GITHUB_CLIENT_ID/SECRET

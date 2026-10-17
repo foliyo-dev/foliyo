@@ -24,6 +24,7 @@ import { specRoutes } from "./routes/spec.js";
 import { statusNotifyRoutes } from "./routes/status-notify.js";
 import { fioImportRoutes } from "./routes/fio-import.js";
 import { jobsRoutes } from "./routes/jobs.js";
+import { oauthRoutes, type OAuthRoutesOptions } from "./routes/oauth.js";
 import { authMiddleware } from "./middleware/auth.js";
 import type { JobDocumentParser } from "./jobs/types.js";
 
@@ -39,6 +40,11 @@ export type CreateFoliyoAppOptions = {
   extendApi?: (api: Hono) => void;
   /** Optional hosted LLM JD parser. Heuristic analysis always runs without this. */
   jobDocumentParser?: JobDocumentParser;
+  /**
+   * OAuth route options. When `oauth === false`, core does not mount Google/GitHub
+   * routes (cloud mounts them with SaaS hooks instead). Default: mount with no hooks.
+   */
+  oauth?: false | OAuthRoutesOptions;
 };
 
 /** Build the Foliyo Hono app without starting the server — used by foliyo-cloud to mount SaaS routes. */
@@ -107,6 +113,13 @@ export function createFoliyoApp(
   // so hosted signup is not shadowed by OSS auth routes.
   options.beforeProtectedApi?.(app);
 
+  // Google/GitHub OAuth — self-host uses core defaults; cloud sets oauth: false
+  // and remounts with onOAuthUserCreated (trial + welcome email).
+  if (options.oauth !== false) {
+    const oauthOpts = options.oauth === undefined ? {} : options.oauth;
+    app.route("/api/auth", oauthRoutes(db, config, oauthOpts));
+  }
+
   app.route("/api/auth", authRoutes(db, config));
 
   const api = new Hono();
@@ -141,7 +154,7 @@ export function createFoliyoApp(
   api.route("/resumes", resumesRoutes(db, config));
   api.route("/jobs", jobsRoutes(db, options.jobDocumentParser));
   api.route("/applications", applicationsRoutes(db));
-  api.route("/blog", blogRoutes(db));
+  api.route("/blog", blogRoutes(db, config));
   api.route("/upload", uploadRoutes(db, config));
   api.route("/settings", settingsRoutes(db, config));
   api.route("/import", fioImportRoutes(db, config));

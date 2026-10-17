@@ -365,98 +365,126 @@
 	}
 </script>
 
-<PageHeader
-	title="Tailor to a job"
-	description="Paste a JD and see how your library fits. Create a resume after you’re happy with the match."
-/>
+<div class="editor-with-preview tailor-page">
+	<div class="editor">
+		<PageHeader
+			title="Tailor to a job"
+			description="Paste a JD and see how your library fits. Create a resume after you’re happy with the match."
+		/>
 
-{#if loading}
-	<p class="muted">Loading…</p>
-{:else}
-	<Card>
-		<div class="fields">
-			<label class="field">
-				<span class="label">Compare against</span>
-				<select bind:value={scopeId} disabled={analyzeBusy || saving}>
-					<option value="">Full library</option>
-					{#each portfolios as p}
-						<option value={p.id}>{p.name} folio</option>
-					{/each}
-				</select>
-				<p class="hint">
-					Optional — scope diff proposals to a folio’s selection. JD matching always uses your
-					full library.
-					{#if jobAnalysis}(Re-analyze after changing scope.){/if}
-				</p>
-			</label>
+		{#if loading}
+			<p class="muted">Loading…</p>
+		{:else}
+			<Card variant="panel">
+				<div class="fields">
+					<label class="field">
+						<span class="label">Compare against</span>
+						<select bind:value={scopeId} disabled={analyzeBusy || saving}>
+							<option value="">Full library</option>
+							{#each portfolios as p}
+								<option value={p.id}>{p.name} folio</option>
+							{/each}
+						</select>
+						<p class="hint">
+							Optional — scope diff proposals to a folio’s selection. JD matching always uses your
+							full library.
+							{#if jobAnalysis}(Re-analyze after changing scope.){/if}
+						</p>
+					</label>
 
-			<div class="jd-wrap">
-				<div class="jd-head">
-					<span class="jd-label">Job description</span>
-					{#if canStartFresh}
-						<Button variant="secondary" disabled={analyzeBusy || saving} on:click={startFresh}>
-							New JD
-						</Button>
-					{/if}
-				</div>
-				<Textarea
-					bind:value={jdText}
-					rows={10}
-					placeholder="Paste the JD — we’ll match your Library, not invent skills…"
-				/>
-			</div>
+					<div class="jd-wrap">
+						<div class="jd-head">
+							<span class="jd-label">Job description</span>
+							{#if canStartFresh}
+								<Button
+									variant="secondary"
+									size="sm"
+									disabled={analyzeBusy || saving}
+									on:click={startFresh}
+								>
+									New JD
+								</Button>
+							{/if}
+						</div>
+						<Textarea
+							bind:value={jdText}
+							rows={14}
+							placeholder="Paste the JD — we’ll match your Library, not invent skills…"
+						/>
+					</div>
 
-			{#if pro}
-				<label class="checkbox" class:dim={outOfAiUnits}>
-					<input type="checkbox" bind:checked={enhanceParse} disabled={outOfAiUnits} />
-					Smarter parse (1 AI unit)
-				</label>
-				{#if aiUsage}
-					<p class="hint" class:warn={outOfAiUnits}>
-						{#if outOfAiUnits}
-							Daily AI budget used ({aiUsage.units}/{aiUsage.limit}). Heuristic parse is free —
-							try again tomorrow.
-						{:else}
-							{aiUsage.remaining} of {aiUsage.limit} AI units left today · summary 1 · rewrite 1 ·
-							import {aiUsage.costs.import}
+					{#if pro}
+						<label class="checkbox" class:dim={outOfAiUnits}>
+							<input type="checkbox" bind:checked={enhanceParse} disabled={outOfAiUnits} />
+							Smarter parse (1 AI unit)
+						</label>
+						{#if aiUsage}
+							<p class="hint" class:warn={outOfAiUnits}>
+								{#if outOfAiUnits}
+									Daily AI budget used ({aiUsage.units}/{aiUsage.limit}). Heuristic parse is free —
+									try again tomorrow.
+								{:else}
+									{aiUsage.remaining} of {aiUsage.limit} AI units left today · summary 1 · rewrite 1 ·
+									import {aiUsage.costs.import}
+								{/if}
+							</p>
 						{/if}
-					</p>
-				{/if}
-			{/if}
-			{#if jobAnalysis}
-				<JobAnalysisPanel analysis={jobAnalysis} bind:accepted={acceptedChanges} />
-				<AiSummaryAssist
-					bind:headline
-					bind:bio
-					{jdText}
-					skillNames={summarySkillNames}
-					{pro}
-					outOfUnits={outOfAiUnits}
-					unitsHint={aiUsage
-						? `${aiUsage.remaining} of ${aiUsage.limit} AI units left today`
-						: ''}
-					disabled={analyzeBusy || saving}
-					on:upgrade={(e) => showToast(e.detail, 'error')}
-					on:generated={() => refreshAiUsage()}
-				/>
-			{/if}
-			<div class="page-actions">
-				<Button variant="secondary" disabled={analyzeBusy || saving} on:click={runAnalyze}>
-					{analyzeBusy
-						? 'Analyzing…'
-						: jobAnalysis
-							? 'Re-analyze'
-							: 'Analyze fit'}
-				</Button>
+					{/if}
+
+					<div class="page-actions">
+						<Button variant="secondary" disabled={analyzeBusy || saving} on:click={runAnalyze}>
+							{analyzeBusy ? 'Analyzing…' : jobAnalysis ? 'Re-analyze' : 'Analyze fit'}
+						</Button>
+						{#if jobAnalysis}
+							<span class="page-actions-primary desktop-hidden">
+								<Button disabled={saving} on:click={openCreateSheet}>Create tailored resume</Button>
+							</span>
+						{/if}
+					</div>
+				</div>
+			</Card>
+		{/if}
+	</div>
+
+	{#if !loading}
+		<aside class="results-pane" aria-label="Job fit analysis">
+			<div class="results-toolbar">
+				<span class="results-title">Fit analysis</span>
 				{#if jobAnalysis}
-					<span class="page-actions-primary">
-						<Button disabled={saving} on:click={openCreateSheet}>Create tailored resume</Button>
-					</span>
+					<Button size="sm" disabled={saving} on:click={openCreateSheet}>Create resume</Button>
 				{/if}
 			</div>
-		</div>
-	</Card>
+			<div class="results-scroll">
+				{#if jobAnalysis}
+					<JobAnalysisPanel analysis={jobAnalysis} bind:accepted={acceptedChanges} />
+					<AiSummaryAssist
+						bind:headline
+						bind:bio
+						{jdText}
+						skillNames={summarySkillNames}
+						{pro}
+						outOfUnits={outOfAiUnits}
+						unitsHint={aiUsage
+							? `${aiUsage.remaining} of ${aiUsage.limit} AI units left today`
+							: ''}
+						disabled={analyzeBusy || saving}
+						on:upgrade={(e) => showToast(e.detail, 'error')}
+						on:generated={() => refreshAiUsage()}
+					/>
+				{:else}
+					<div class="results-empty">
+						<p class="muted">
+							Paste a job description and click <strong>Analyze fit</strong> — matches and gaps
+							show up here.
+						</p>
+					</div>
+				{/if}
+			</div>
+		</aside>
+	{/if}
+</div>
 
+{#if !loading}
 	<dialog
 		bind:this={createDialog}
 		class="sheet"
@@ -552,54 +580,114 @@
 {/if}
 
 <style>
+	.tailor-page.editor-with-preview {
+		display: flex;
+		align-items: stretch;
+		gap: var(--space-3);
+		min-height: 100%;
+		width: 100%;
+	}
+	.editor {
+		flex: 1 1 42%;
+		min-width: 0;
+	}
+	.results-pane {
+		flex: 1 1 58%;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		position: sticky;
+		top: 0;
+		align-self: start;
+		height: 100cqh;
+		max-height: 100cqh;
+	}
+	.results-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		flex-shrink: 0;
+	}
+	.results-title {
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+	}
+	.results-scroll {
+		flex: 1 1 0;
+		min-height: 0;
+		overflow: auto;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		box-shadow: var(--shadow-sm);
+		padding: var(--space-4);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+	.results-empty {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 12rem;
+		padding: var(--space-4);
+		text-align: center;
+	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.jd-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 0.75rem;
-		margin-bottom: 0.25rem;
+		gap: var(--space-3);
+		margin-bottom: var(--space-1);
 	}
 	.jd-label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	select,
 	input[type='text'] {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
 		font: inherit;
+		font-size: 0.875rem;
 		color: var(--color-text);
 	}
 	.hint {
-		margin: 0.25rem 0 0;
-		font-size: 0.8125rem;
+		margin: var(--space-1) 0 0;
+		font-size: 0.75rem;
 		color: var(--color-muted);
 		line-height: 1.4;
 	}
 	.hint.warn {
-		color: #92400e;
+		color: var(--color-warning-text);
 	}
 	.checkbox {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
+		gap: var(--space-2);
+		font-size: 0.8125rem;
 	}
 	.checkbox.dim {
 		opacity: 0.6;
@@ -607,8 +695,8 @@
 	.mode {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
-		gap: 0.35rem;
-		padding: 0.25rem;
+		gap: var(--space-1);
+		padding: var(--space-1);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
@@ -616,10 +704,10 @@
 	.mode-option {
 		border: 0;
 		background: transparent;
-		padding: 0.55rem 0.4rem;
-		border-radius: 6px;
+		padding: 0.45rem 0.4rem;
+		border-radius: var(--radius-sm);
 		font: inherit;
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--color-muted);
 		cursor: pointer;
@@ -627,21 +715,44 @@
 	.mode-option.on {
 		background: var(--color-surface);
 		color: var(--color-text);
-		box-shadow: 0 1px 2px rgba(26, 26, 46, 0.06);
+		box-shadow: var(--shadow-xs);
 	}
 	.muted {
 		color: var(--color-muted);
+		font-size: 0.875rem;
 	}
 	.page-actions {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
-		padding-top: 0.75rem;
+		gap: var(--space-2);
+		padding-top: var(--space-3);
 		border-top: 1px solid var(--color-border);
 	}
 	.page-actions-primary {
 		margin-left: auto;
+	}
+	.desktop-hidden {
+		display: none;
+	}
+
+	@media (max-width: 1099px) {
+		.tailor-page.editor-with-preview {
+			display: block;
+			min-height: 0;
+		}
+		.results-pane {
+			position: static;
+			height: auto;
+			max-height: none;
+			margin-top: var(--space-4);
+		}
+		.results-scroll {
+			max-height: none;
+		}
+		.desktop-hidden {
+			display: inline-flex;
+		}
 	}
 	dialog.sheet {
 		width: min(32rem, 100%);

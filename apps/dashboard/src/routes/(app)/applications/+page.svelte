@@ -153,7 +153,7 @@
 	description="Track where you applied and which resume you sent. This is not another portfolio — it’s a simple log of opportunities."
 />
 
-<Card>
+<Card variant="panel">
 	<h2 class="section-title">{editingId ? 'Edit application' : 'Log an application'}</h2>
 	<p class="form-hint">
 		After you apply somewhere, note the company and the resume you used so you can follow up later.
@@ -211,7 +211,7 @@
 	<ul class="list">
 		{#each items as a (a.id)}
 			<li>
-				<Card>
+				<Card variant="panel">
 					<div class="row">
 						<div class="main">
 							<h2>{a.company}{#if a.role} · {a.role}{/if}</h2>
@@ -232,8 +232,8 @@
 							{/if}
 						</div>
 						<div class="actions">
-							<Button variant="ghost" on:click={() => startEdit(a)}>Edit</Button>
-							<Button variant="ghost" on:click={() => remove(a.id)}>Delete</Button>
+							<Button variant="ghost" size="sm" on:click={() => startEdit(a)}>Edit</Button>
+							<Button variant="ghost" size="sm" on:click={() => remove(a.id)}>Delete</Button>
 						</div>
 					</div>
 				</Card>
@@ -249,27 +249,28 @@
 
 <style>
 	.section-title {
-		margin: 0 0 0.35rem;
-		font-size: 1rem;
+		margin: 0 0 var(--space-1);
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.form-hint {
-		margin: 0 0 1rem;
-		font-size: 0.875rem;
+		margin: 0 0 var(--space-3);
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	.field-hint {
@@ -280,7 +281,8 @@
 		font-weight: 600;
 	}
 	select {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
@@ -289,48 +291,48 @@
 		margin: 0;
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
-		padding: 0.65rem 0.85rem;
+		padding: var(--space-2) var(--space-3);
 		background: var(--color-bg);
 	}
 	.more summary {
 		cursor: pointer;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--color-muted);
 	}
 	.more-fields {
-		margin-top: 0.85rem;
+		margin-top: var(--space-3);
 	}
 	.form-actions {
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
 	}
 	.muted {
 		color: var(--color-muted);
 	}
 	.empty {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 	.ats-footnote {
-		margin: 1.5rem 0 0;
+		margin: var(--space-5) 0 0;
 		font-size: 0.75rem;
 		line-height: 1.45;
 		max-width: 40rem;
 	}
 	.list {
 		list-style: none;
-		margin: 1rem 0 0;
+		margin: var(--space-3) 0 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: var(--space-2);
 	}
 	.row {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 1rem;
+		gap: var(--space-3);
 		flex-wrap: wrap;
 	}
 	.main {
@@ -339,39 +341,40 @@
 	}
 	h2 {
 		margin: 0;
-		font-size: 1.0625rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.meta {
-		margin: 0.25rem 0 0;
+		margin: var(--space-1) 0 0;
 		font-size: 0.8125rem;
 		color: var(--color-muted);
 	}
 	.pipeline {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
-		margin-top: 0.55rem;
+		gap: var(--space-1);
+		margin-top: var(--space-2);
 		flex-wrap: wrap;
 	}
 	.dot {
-		width: 0.55rem;
-		height: 0.55rem;
+		width: 0.5rem;
+		height: 0.5rem;
 		border-radius: 50%;
 		background: var(--color-border);
 	}
 	.dot.on {
-		background: #0f6b4c;
+		background: var(--color-success);
 	}
 	.dot.term {
-		background: #b45309;
+		background: var(--color-warning);
 	}
 	.status-text {
 		font-size: 0.8125rem;
 		font-weight: 500;
-		margin-left: 0.35rem;
+		margin-left: var(--space-1);
 	}
 	.notes {
-		margin: 0.5rem 0 0;
+		margin: var(--space-2) 0 0;
 		font-size: 0.8125rem;
 		color: var(--color-muted);
 		white-space: pre-wrap;
@@ -379,6 +382,6 @@
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 </style>

@@ -35,6 +35,12 @@ function testConfig(dir: string): Config {
     fromEmail: "",
     smtpSecure: false,
     smtpIgnoreTls: true,
+    oauthEnabled: true,
+    oauthRedirectBase: "http://localhost:8080",
+    googleClientId: "",
+    googleClientSecret: "",
+    githubClientId: "",
+    githubClientSecret: "",
   };
 }
 

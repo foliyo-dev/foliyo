@@ -20,8 +20,11 @@ if (!ontologySeed.skipped) {
 }
 await ensureHandles(db);
 
-const { app, api } = createFoliyoApp(db, config);
-api.route("/plan", planRoutes(db, config));
+const { app } = createFoliyoApp(db, config, {
+  extendApi(api) {
+    api.route("/plan", planRoutes(db, config));
+  },
+});
 
 serve({ fetch: app.fetch, port: config.port, hostname: config.host }, () => {
   console.log(`Foliyo running on http://${config.host}:${config.port}`);

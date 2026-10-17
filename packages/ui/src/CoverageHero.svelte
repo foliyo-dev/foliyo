@@ -66,15 +66,24 @@
           <span class="seg missing" style:flex={missingN}></span>
         {/if}
       </div>
-      <div class="stack-labels" aria-hidden="true">
+      <div class="legend" aria-hidden="true">
         {#if strongN}
-          <span class="stack-label strong" style:flex={strongN}>{skillsPhrase(strongN, "strong")}</span>
+          <span class="legend-item strong">
+            <span class="dot"></span>
+            {skillsPhrase(strongN, "strong")}
+          </span>
         {/if}
         {#if partialN}
-          <span class="stack-label partial" style:flex={partialN}>{skillsPhrase(partialN, "partial")}</span>
+          <span class="legend-item partial">
+            <span class="dot"></span>
+            {skillsPhrase(partialN, "partial")}
+          </span>
         {/if}
         {#if missingN}
-          <span class="stack-label missing" style:flex={missingN}>{skillsPhrase(missingN, "missing")}</span>
+          <span class="legend-item missing">
+            <span class="dot"></span>
+            {skillsPhrase(missingN, "missing")}
+          </span>
         {/if}
       </div>
     </div>
@@ -113,16 +122,16 @@
     -webkit-box-decoration-break: clone;
   }
   mark.hl.strong {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--color-success-bg, #dcfce7);
+    color: var(--color-success-text, #166534);
   }
   mark.hl.partial {
-    background: #fef3c7;
-    color: #92400e;
+    background: var(--color-warning-bg, #fef3c7);
+    color: var(--color-warning-text, #92400e);
   }
   mark.hl.weak {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-error-bg, #fee2e2);
+    color: var(--color-error, #991b1b);
   }
   mark.hl.unknown {
     background: var(--color-bg, #f3f4f6);
@@ -131,7 +140,7 @@
   .stack-block {
     display: flex;
     flex-direction: column;
-    gap: 0.28rem;
+    gap: 0.4rem;
   }
   .stack {
     display: flex;
@@ -141,41 +150,54 @@
     background: var(--color-border);
   }
   .seg {
-    min-width: 0;
+    min-width: 0.25rem;
   }
   .seg.strong {
-    background: #16a34a;
+    background: var(--color-success, #16a34a);
   }
   .seg.partial {
-    background: #d97706;
+    background: var(--color-warning, #d97706);
   }
   .seg.missing {
-    background: #dc2626;
+    background: var(--color-error, #dc2626);
   }
-  .stack-labels {
+  .legend {
     display: flex;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.85rem;
   }
-  .stack-label {
-    min-width: 0;
-    padding-right: 0.45rem;
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.6875rem;
     font-weight: 650;
     line-height: 1.3;
-    text-align: left;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
   }
-  .stack-label.strong {
-    color: #166534;
+  .dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 99px;
+    flex-shrink: 0;
   }
-  .stack-label.partial {
-    color: #92400e;
+  .legend-item.strong {
+    color: var(--color-success-text, #166534);
   }
-  .stack-label.missing {
+  .legend-item.strong .dot {
+    background: var(--color-success, #16a34a);
+  }
+  .legend-item.partial {
+    color: var(--color-warning-text, #92400e);
+  }
+  .legend-item.partial .dot {
+    background: var(--color-warning, #d97706);
+  }
+  .legend-item.missing {
     color: #991b1b;
   }
-  .stack-label:last-child {
-    padding-right: 0;
+  .legend-item.missing .dot {
+    background: var(--color-error, #dc2626);
   }
   .compact .verdict {
     font-size: 0.95rem;

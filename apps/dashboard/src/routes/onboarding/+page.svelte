@@ -8,7 +8,7 @@
 	import { publicHost } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
 
 	/** Same rules as cloud `/api/handle` (lowercase, 3–32 chars). */
 	const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/;
@@ -126,79 +126,65 @@
 	<title>Claim your handle · Foliyo</title>
 </svelte:head>
 
-<div class="auth-page">
-	<Card>
-		<h1>Choose your public URL</h1>
-		{#if tempHandle}
-			<p class="muted">
-				Your link is <strong>{host}/u/{tempHandle}</strong> (name + signup date). Claim a shorter
-				handle anytime, or keep this one.
-			</p>
-		{:else}
-			<p class="muted">Your portfolio will be at <strong>{host}/u/{preview}</strong></p>
-		{/if}
+<AuthShell title="Choose your public URL">
+	{#if tempHandle}
+		<p class="lead muted">
+			Your link is <strong>{host}/u/{tempHandle}</strong> (name + signup date). Claim a shorter
+			handle anytime, or keep this one.
+		</p>
+	{:else}
+		<p class="lead muted">Your portfolio will be at <strong>{host}/u/{preview}</strong></p>
+	{/if}
 
-		<div class="handle-field">
-			<span class="prefix">{host}/u/</span>
-			<Input
-				label=""
-				bind:value={handle}
-				placeholder="yourname"
-				autocomplete="username"
-			/>
-		</div>
+	<div class="handle-field">
+		<span class="prefix">{host}/u/</span>
+		<Input label="" bind:value={handle} placeholder="yourname" autocomplete="username" />
+	</div>
 
-		{#if formatError && handle.trim()}
-			<p class="taken status">{formatError}</p>
-		{:else if checking}
-			<p class="muted status">Checking…</p>
-		{:else if available === true}
-			<p class="ok status">Available — {host}/u/{handle.toLowerCase().trim()}</p>
-		{:else if available === false}
-			<p class="taken status">Unavailable (taken or reserved)</p>
-		{/if}
+	{#if formatError && handle.trim()}
+		<p class="taken status">{formatError}</p>
+	{:else if checking}
+		<p class="muted status">Checking…</p>
+	{:else if available === true}
+		<p class="ok status">Available — {host}/u/{handle.toLowerCase().trim()}</p>
+	{:else if available === false}
+		<p class="taken status">Unavailable (taken or reserved)</p>
+	{/if}
 
-		<Button disabled={!canClaim} on:click={finish}>
-			{saving ? 'Saving…' : 'Claim handle'}
-		</Button>
-		<button type="button" class="skip" disabled={saving} on:click={skip}>
-			Skip — keep {tempHandle || 'current URL'}
-		</button>
-	</Card>
-</div>
+	<Button disabled={!canClaim} on:click={finish}>
+		{saving ? 'Saving…' : 'Claim handle'}
+	</Button>
+	<button type="button" class="skip" disabled={saving} on:click={skip}>
+		Skip — keep {tempHandle || 'current URL'}
+	</button>
+</AuthShell>
 
 <style>
-	.auth-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		background: linear-gradient(160deg, var(--color-primary-light) 0%, var(--color-bg) 45%);
-	}
-	h1 {
-		margin: 0 0 0.25rem;
-		font-size: 1.5rem;
+	.lead {
+		margin: 0 0 var(--space-4);
+		text-align: center;
+		font-size: 0.875rem;
+		line-height: 1.45;
 	}
 	.muted {
 		color: var(--color-muted);
-		margin: 0 0 1.25rem;
 	}
 	.handle-field {
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-3);
 	}
 	.prefix {
 		display: block;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
-		margin-bottom: 0.35rem;
+		margin-bottom: var(--space-1);
 	}
 	.status {
-		font-size: 0.875rem;
-		margin: 0 0 1rem;
+		font-size: 0.8125rem;
+		margin: 0 0 var(--space-3);
+		text-align: center;
 	}
 	.ok {
-		color: var(--color-success);
+		color: var(--color-success-text);
 	}
 	.taken {
 		color: var(--color-error);
@@ -206,13 +192,13 @@
 	.skip {
 		display: block;
 		width: 100%;
-		margin-top: 0.75rem;
-		padding: 0.5rem;
+		margin-top: var(--space-3);
+		padding: var(--space-2);
 		border: none;
 		background: transparent;
 		color: var(--color-muted);
 		font: inherit;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		cursor: pointer;
 		text-decoration: underline;
 	}

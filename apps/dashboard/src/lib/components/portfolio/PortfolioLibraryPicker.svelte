@@ -26,6 +26,7 @@
 	export let showEducation = true;
 	export let showCertifications = true;
 	export let showLanguages = true;
+	export let showPosts = true;
 
 	export let skillsTitle = '';
 	export let projectsTitle = '';
@@ -33,9 +34,12 @@
 	export let educationTitle = '';
 	export let certificationsTitle = '';
 	export let languagesTitle = '';
+	export let postsTitle = '';
 
 	/** When false, hide per-section “Show on portfolio” toggles (e.g. resume Custom). */
 	export let showSectionVisibility = true;
+	/** Hide Writing/posts when editing a resume (posts are portfolio-only). */
+	export let showPostsSection = true;
 
 	export let title = 'Choose what visitors will see';
 	export let hint = 'Edit items under My Library; select which ones appear in this portfolio.';
@@ -658,10 +662,49 @@
 				</div>
 			{/if}
 		</section>
+
+		{#if showPostsSection && showSectionVisibility}
+			<!-- Writing: on/off only — posts are managed under Blog -->
+			<section class="section writing-toggle" role="listitem">
+				<div class="section-head writing-head">
+					<span class="section-label">{postsTitle.trim() || 'Writing'}</span>
+					<span class="writing-hint muted">Links to your blog</span>
+				</div>
+				<div class="section-aside">
+					<label class="show-toggle">
+						<input type="checkbox" bind:checked={showPosts} />
+						Show on portfolio
+					</label>
+					<input
+						class="title-override"
+						type="text"
+						maxlength="40"
+						placeholder="Writing"
+						bind:value={postsTitle}
+						aria-label="Writing nav label"
+					/>
+				</div>
+			</section>
+		{/if}
 	</div>
 </div>
 
 <style>
+	.writing-toggle {
+		align-items: center;
+	}
+	.writing-head {
+		cursor: default;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+		padding: 0.65rem 0.85rem;
+	}
+	.writing-hint {
+		font-size: 0.75rem;
+		font-weight: 400;
+	}
 	.picker {
 		display: flex;
 		flex-direction: column;

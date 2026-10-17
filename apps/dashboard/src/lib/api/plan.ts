@@ -11,6 +11,7 @@ export type PlanEntitlements = {
 	remove_branding: boolean;
 	ai_resume_import: boolean;
 	ai_assist?: boolean;
+	user_blog?: boolean;
 	portfolio_limit: number | null;
 	resume_limit: number | null;
 };

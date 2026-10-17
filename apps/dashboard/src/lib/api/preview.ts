@@ -43,18 +43,21 @@ export type PortfolioDraftPreview = {
 	show_education?: number;
 	show_certifications?: number;
 	show_languages?: number;
+	show_posts?: number;
 	skills_title?: string;
 	projects_title?: string;
 	experience_title?: string;
 	education_title?: string;
 	certifications_title?: string;
 	languages_title?: string;
+	posts_title?: string;
 	skill_ids?: string[];
 	project_ids?: string[];
 	experience_ids?: string[];
 	education_ids?: string[];
 	certification_ids?: string[];
 	language_ids?: string[];
+	post_ids?: string[];
 };
 
 /** Render unsaved portfolio form state as HTML (owner, all plans). */

@@ -55,12 +55,14 @@
 	let showEducation = true;
 	let showCertifications = true;
 	let showLanguages = true;
+	let showPosts = true;
 	let skillsTitle = '';
 	let projectsTitle = '';
 	let experienceTitle = '';
 	let educationTitle = '';
 	let certificationsTitle = '';
 	let languagesTitle = '';
+	let postsTitle = '';
 	let slugTouched = false;
 	let resumeId: string | null = null;
 	let accessToken: string | null = null;
@@ -93,7 +95,8 @@
 			: null,
 		selectedLanguages.size
 			? `${selectedLanguages.size} language${selectedLanguages.size === 1 ? '' : 's'}`
-			: null
+			: null,
+		showPosts ? 'Writing on' : null
 	]
 		.filter(Boolean)
 		.join(' · ') || 'Nothing selected yet';
@@ -118,18 +121,21 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				show_posts: showPosts ? 1 : 0,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
 				education_title: educationTitle,
 				certifications_title: certificationsTitle,
 				languages_title: languagesTitle,
+				posts_title: postsTitle,
 				skill_ids: [...selectedSkills],
 				project_ids: [...selectedProjects],
 				experience_ids: [...selectedExperience],
 				education_ids: [...selectedEducation],
 				certification_ids: [...selectedCertifications],
-				language_ids: [...selectedLanguages]
+				language_ids: [...selectedLanguages],
+				post_ids: []
 			}) satisfies PortfolioDraftPreview | null;
 
 	$: liveUrl =
@@ -194,12 +200,14 @@
 		showEducation = p.show_education === 1;
 		showCertifications = (p.show_certifications ?? 1) === 1;
 		showLanguages = (p.show_languages ?? 1) === 1;
+		showPosts = (p.show_posts ?? 1) === 1;
 		skillsTitle = p.skills_title ?? '';
 		projectsTitle = p.projects_title ?? '';
 		experienceTitle = p.experience_title ?? '';
 		educationTitle = p.education_title ?? '';
 		certificationsTitle = p.certifications_title ?? '';
 		languagesTitle = p.languages_title ?? '';
+		postsTitle = p.posts_title ?? '';
 		resumeId = p.resume_id ?? null;
 		accessToken = p.access_token ?? null;
 		slugTouched = true;
@@ -242,12 +250,14 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				show_posts: showPosts ? 1 : 0,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
 				education_title: educationTitle,
 				certifications_title: certificationsTitle,
 				languages_title: languagesTitle,
+				posts_title: postsTitle,
 				sort_order: portfolio.sort_order ?? 0,
 				resume_id: resumeId
 			});
@@ -258,7 +268,8 @@
 				experience_ids: [...selectedExperience],
 				education_ids: [...selectedEducation],
 				certification_ids: [...selectedCertifications],
-				language_ids: [...selectedLanguages]
+				language_ids: [...selectedLanguages],
+				post_ids: []
 			});
 			showToast('Portfolio saved', 'success');
 			await load();
@@ -347,7 +358,7 @@
 		portfolioName={name.trim() || portfolio.name}
 		{liveUrl}
 	>
-		<Card>
+		<Card variant="panel">
 			<details class="block" open>
 				<summary>Details &amp; identity</summary>
 				<div class="fields">
@@ -402,7 +413,7 @@
 			</details>
 		</Card>
 
-		<Card>
+		<Card variant="panel">
 			<details class="block" open>
 				<summary>Sharing</summary>
 				<div class="fields">
@@ -431,11 +442,11 @@
 						{#if privateUrl}
 							<div class="link-row">
 								<code class="link-code">{privateUrl}</code>
-								<Button variant="ghost" on:click={() => copyLink(privateUrl ?? '')}>Copy</Button>
-								<Button variant="ghost" disabled={tokenBusy} on:click={generateLink}
+								<Button variant="ghost" size="sm" on:click={() => copyLink(privateUrl ?? '')}>Copy</Button>
+								<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
 									>Regenerate</Button
 								>
-								<Button variant="ghost" disabled={tokenBusy} on:click={revokeLink}
+								<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={revokeLink}
 									>Revoke</Button
 								>
 							</div>
@@ -444,7 +455,7 @@
 								regenerating breaks the old link.</span
 							>
 						{:else}
-							<Button variant="ghost" disabled={tokenBusy} on:click={generateLink}
+							<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
 								>{tokenBusy ? 'Creating…' : 'Create private link'}</Button
 							>
 							<span class="hint"
@@ -457,7 +468,7 @@
 			</details>
 		</Card>
 
-		<Card>
+		<Card variant="panel">
 			<details class="block" open>
 				<summary>
 					What visitors will see
@@ -482,22 +493,24 @@
 					bind:showEducation
 					bind:showCertifications
 					bind:showLanguages
+					bind:showPosts
 					bind:skillsTitle
 					bind:projectsTitle
 					bind:experienceTitle
 					bind:educationTitle
 					bind:certificationsTitle
 					bind:languagesTitle
+					bind:postsTitle
 					title="Choose what visitors will see"
-					hint="Turn sections on or off, then open each section to pick individual items. Optional titles rename public headings."
+					hint="Turn sections on or off, then pick items. Writing is an on/off link to your Blog — manage posts there."
 				/>
 			</details>
 		</Card>
 
 		<div class="actions sticky">
 			<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save portfolio'}</Button>
-			<Button variant="ghost" on:click={() => goto('/portfolios')}>Back</Button>
-			<Button variant="ghost" on:click={remove}>Delete</Button>
+			<Button variant="ghost" size="sm" on:click={() => goto('/portfolios')}>Back</Button>
+			<Button variant="ghost" size="sm" on:click={remove}>Delete</Button>
 		</div>
 	</EditorWithPortfolioPreview>
 {/if}
@@ -507,8 +520,8 @@
 		color: var(--color-muted);
 	}
 	.url-banner {
-		margin: 0 0 1rem;
-		font-size: 0.875rem;
+		margin: 0 0 var(--space-3);
+		font-size: 0.8125rem;
 	}
 	.block {
 		margin: 0;
@@ -516,14 +529,14 @@
 	.block summary {
 		cursor: pointer;
 		font-weight: 600;
-		font-size: 1rem;
+		font-size: 0.9375rem;
 		display: flex;
 		align-items: center;
-		gap: 0.65rem;
+		gap: var(--space-2);
 		margin-bottom: 0;
 	}
 	.block[open] summary {
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-3);
 	}
 	.step-meta {
 		font-size: 0.75rem;
@@ -533,25 +546,25 @@
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.summary-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		padding: 0.85rem 0.9rem;
+		gap: var(--space-2);
+		padding: var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
 	}
 	.summary-title {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.summary-using {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
@@ -559,10 +572,10 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.75rem 1rem;
+		gap: var(--space-2) var(--space-3);
 	}
 	.summary-link {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-primary);
 		text-decoration: none;
@@ -587,67 +600,68 @@
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	select {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
 	}
 	.hint {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		color: var(--color-muted);
 	}
 	.link-row {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 	.link-code {
 		font-family: ui-monospace, monospace;
-		font-size: 0.8125rem;
-		padding: 0.35rem 0.6rem;
-		background: var(--color-bg, #f8fafc);
+		font-size: 0.75rem;
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-bg);
 		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
+		border-radius: var(--radius-sm);
 		word-break: break-all;
 	}
 	.toggles {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.75rem 1.5rem;
+		gap: var(--space-2) var(--space-4);
 	}
 	.checkbox {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
+		gap: var(--space-2);
+		font-size: 0.8125rem;
 	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 1rem;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
 	}
 	.actions.sticky {
 		position: sticky;
 		bottom: 0;
 		z-index: 5;
-		margin-top: 1.25rem;
-		padding: 0.75rem 0;
+		margin-top: var(--space-4);
+		padding: var(--space-3) 0 var(--space-1);
 		background: linear-gradient(
 			to top,
-			var(--color-bg, #f8fafc) 70%,
-			color-mix(in srgb, var(--color-bg, #f8fafc) 0%, transparent)
+			var(--color-bg) 70%,
+			color-mix(in srgb, var(--color-bg) 0%, transparent)
 		);
 	}
 	:global(.card + .card) {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 </style>

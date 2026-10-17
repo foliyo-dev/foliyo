@@ -83,45 +83,46 @@
 		display: none;
 	}
 	.intro {
-		margin: 0 0 1rem;
-		font-size: 0.875rem;
+		margin: 0 0 var(--space-3);
+		font-size: 0.8125rem;
 		line-height: 1.45;
 	}
 	.grid {
 		display: flex;
 		flex-direction: column;
-		gap: 0.85rem;
+		gap: var(--space-3);
 	}
 	.row-2 {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 0.75rem;
+		gap: var(--space-3);
 	}
 	label {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text);
 	}
 	select {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
 		color: var(--color-text);
-		font-size: 0.9375rem;
+		font-size: 0.875rem;
 	}
 	select:focus {
 		border-color: var(--color-primary-muted);
-		box-shadow: 0 0 0 3px var(--color-primary-light);
+		box-shadow: var(--focus-ring);
 		outline: none;
 	}
 	.actions {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 	@media (max-width: 520px) {
 		.row-2 {

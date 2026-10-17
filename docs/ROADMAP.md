@@ -27,16 +27,16 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 
 **Next after Phase D:** tag **v1.0.0** hosted + self-host release (QA / launch assets). Empty-section + onboarding leftovers are done.
 
-**Not next (Later / post-MVP):** full **user blog module** (editor + `/u/{handle}/blog`), multi-resume, guest/no-email trial, MeshQL client migration, password-protect, Hindi UI. (Hosted **7-day personal Pro trial** on email verify is in scope and ships with billing.)
+**Shipped post-MVP (Phase E partial):** user blog CMS (Pro / lifetime / self-host), Google/GitHub OAuth on self-host (env-configurable).
+
+**Not next (Later):** multi-resume, guest/no-email trial, MeshQL client migration, password-protect, Hindi UI, custom domains.
 
 **Writing / blogs — split clearly:**
 
 | Need | Ship when | Notes |
 |------|-----------|--------|
-| Link a project/job to a write-up (“View more”) | **Done (Phase A)** | URL can be Medium, Dev.to, company blog, *or* a future Foliyo post |
-| Foliyo-hosted blog CMS | **Phase E** | Editor, drafts, listing at `/u/{handle}/blog` — not required for MVP |
-
-Do not block MVP on a blog CMS. Proof-of-work links on library items cover the resume use case.
+| Link a project/job to a write-up (“View more”) | **Done (Phase A)** | URL can be Medium, Dev.to, company blog, *or* a Foliyo post |
+| Foliyo-hosted blog CMS | **Done** | Editor, drafts/publish, `/u/{handle}/blog`, portfolio attach; Pro + self-host |
 
 ---
 
@@ -148,11 +148,11 @@ Only after activation metrics exist:
 - Custom domains (Pro)
 - Multi-resume
 - Guest / no-email trial (evidence-gated; distinct from hosted 7-day account Pro trial on verify)
-- **User blog module** (Foliyo-hosted CMS)
-  - Markdown editor, drafts/publish, tags
-  - Public `/u/{handle}/blog` and `/u/{handle}/blog/{slug}`
-  - Select posts onto a portfolio (like other library items)
-  - Attach a Foliyo post URL into project/experience write-up fields (same link UI as external blogs)
+- ~~**User blog module** (Foliyo-hosted CMS)~~ **Done**
+  - [x] Markdown editor, drafts/publish, tags
+  - [x] Public `/u/{handle}/blog` and `/u/{handle}/blog/{slug}`
+  - [x] Select posts onto a portfolio (like other library items)
+  - [x] Paste Foliyo post URL into project/experience write-up fields
 - Resume analytics
 - Hindi pilot
 - GitHub import / ATS checker
@@ -168,7 +168,7 @@ Make the existing library work for photo / research / writing without a blog CMS
 - [x] `POST /api/upload/project-image` → `{dataDir}/uploads/{id}.{ext}`; public `GET /uploads/:file`
 - [x] Optional `url_label` / `repo_url_label` / `article_url_label` on projects; `article_url_label` on experience
 - [x] Per-portfolio section titles (`projects_title`, …); resume headings stay ATS-canonical
-- User blog CMS remains Later (Phase E)
+- [x] User blog CMS (Pro / self-host)
 
 ### Foliyo Resume Spec (shipped foundation)
 

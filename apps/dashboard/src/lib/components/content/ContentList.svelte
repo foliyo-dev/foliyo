@@ -17,16 +17,23 @@
 <style>
 	.muted {
 		color: var(--color-muted);
+		font-size: 0.875rem;
 	}
 	.empty {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 	.list {
 		list-style: none;
-		margin: 1rem 0 0;
+		margin: var(--space-3) 0 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		overflow: hidden;
+	}
+	.list :global(> li + li) {
+		border-top: 1px solid var(--color-border);
 	}
 </style>

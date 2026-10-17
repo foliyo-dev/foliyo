@@ -147,8 +147,8 @@
 		border: 1px solid var(--color-border);
 		background: transparent;
 		border-radius: var(--radius);
-		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
+		padding: 0.25rem 0.65rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--color-text);
 		cursor: pointer;
@@ -170,9 +170,9 @@
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		color: var(--color-muted);
-		line-height: 1.4;
+		line-height: 1.35;
 	}
 	.frame-wrap {
 		flex: 1 1 0;
@@ -181,7 +181,7 @@
 		border-radius: var(--radius);
 		overflow: hidden;
 		background: var(--color-surface);
-		box-shadow: 0 4px 24px rgba(83, 74, 183, 0.08);
+		box-shadow: var(--shadow-sm);
 	}
 	.frame {
 		display: block;

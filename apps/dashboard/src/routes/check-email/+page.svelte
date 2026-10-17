@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { get } from 'svelte/store';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
 	import {
 		getPendingSignupEmail,
 		resendVerification
@@ -57,49 +57,35 @@
 	<title>Check your email · Foliyo</title>
 </svelte:head>
 
-<div class="auth-page">
-	<Card>
-		{#if loading}
-			<p class="muted">Loading…</p>
-		{:else}
-			<h1>Check your email</h1>
-			<p class="muted">
-				{#if email}
-					We sent a link to <strong>{email}</strong> to choose a password. It expires in 60 minutes.
-				{:else}
-					We sent a link to choose a password. It expires in 60 minutes.
-				{/if}
-			</p>
-			<Button disabled={resending || !email} on:click={handleResend}>
-				{resending ? 'Sending…' : 'Resend email'}
-			</Button>
-			<p class="footer muted">
-				<a href="/login">Sign in</a>
-				· Wrong address? <a href="/signup">Sign up again</a>
-			</p>
-		{/if}
-	</Card>
-</div>
+{#if loading}
+	<AuthShell description="Loading…" />
+{:else}
+	<AuthShell title="Check your email">
+		<p class="body muted">
+			{#if email}
+				We sent a link to <strong>{email}</strong> to choose a password. It expires in 60 minutes.
+			{:else}
+				We sent a link to choose a password. It expires in 60 minutes.
+			{/if}
+		</p>
+		<Button disabled={resending || !email} on:click={handleResend}>
+			{resending ? 'Sending…' : 'Resend email'}
+		</Button>
+		<p class="footer">
+			<a href="/login">Sign in</a>
+			· Wrong address? <a href="/signup">Sign up again</a>
+		</p>
+	</AuthShell>
+{/if}
 
 <style>
-	.auth-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		background: linear-gradient(160deg, var(--color-primary-light) 0%, var(--color-bg) 45%);
-	}
-	h1 {
-		margin: 0 0 0.5rem;
-		font-size: 1.5rem;
+	.body {
+		margin: 0 0 var(--space-4);
+		text-align: center;
+		font-size: 0.875rem;
+		line-height: 1.45;
 	}
 	.muted {
 		color: var(--color-muted);
-	}
-	.footer {
-		margin-top: 1.25rem;
-		text-align: center;
-		font-size: 0.875rem;
 	}
 </style>

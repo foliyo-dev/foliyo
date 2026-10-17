@@ -1,13 +1,45 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+	import { onMount } from 'svelte';
 	import ResumePreview from './ResumePreview.svelte';
 	import type { ResumeDraftPreview } from '$lib/api/preview';
 
-	export let resumeId: string | null = null;
-	export let resumeName = 'Resume';
-	export let draftSummary: ResumeDraftPreview | null = null;
+	type Props = {
+		resumeId?: string | null;
+		resumeName?: string;
+		draftSummary?: ResumeDraftPreview | null;
+		children?: Snippet;
+	};
 
-	let preview: ResumePreview;
-	let root: HTMLDivElement;
+	let {
+		resumeId = null,
+		resumeName = 'Resume',
+		draftSummary = null,
+		children
+	}: Props = $props();
+
+	const STORAGE_KEY = 'foliyo.preview.resume.hidden';
+
+	let preview: ResumePreview | undefined = $state();
+	let root: HTMLDivElement | undefined = $state();
+	let previewHidden = $state(false);
+
+	onMount(() => {
+		try {
+			previewHidden = localStorage.getItem(STORAGE_KEY) === '1';
+		} catch {
+			/* ignore */
+		}
+	});
+
+	function togglePreview() {
+		previewHidden = !previewHidden;
+		try {
+			localStorage.setItem(STORAGE_KEY, previewHidden ? '1' : '0');
+		} catch {
+			/* ignore */
+		}
+	}
 
 	export async function refreshPreview(): Promise<void> {
 		await preview?.refresh();
@@ -28,29 +60,71 @@
 	}
 </script>
 
-<div class="editor-with-preview" bind:this={root}>
+<div class="editor-with-preview" class:preview-hidden={previewHidden} bind:this={root}>
 	<div class="editor">
-		<slot />
+		<div class="preview-toggle-bar desktop-only">
+			<button type="button" class="toggle" onclick={togglePreview}>
+				{previewHidden ? 'Show preview' : 'Hide preview'}
+			</button>
+		</div>
+		{#if children}
+			{@render children()}
+		{/if}
 	</div>
-	<ResumePreview bind:this={preview} {resumeId} {resumeName} {draftSummary} />
+	{#if !previewHidden}
+		<ResumePreview bind:this={preview} {resumeId} {resumeName} {draftSummary} />
+	{/if}
 </div>
 
 <style>
 	.editor-with-preview {
 		display: flex;
-		align-items: flex-start;
-		gap: 1.5rem;
+		align-items: stretch;
+		gap: var(--space-3);
 		min-height: 100%;
+		width: 100%;
 	}
 	.editor {
-		flex: 1 1 0;
+		flex: 1 1 48%;
 		min-width: 0;
+	}
+	.editor-with-preview.preview-hidden .editor {
+		flex: 1 1 auto;
+		max-width: 40rem;
+	}
+	.editor-with-preview:not(.preview-hidden) :global(aside.pane.desktop) {
+		flex: 1 1 52%;
+		min-width: 0;
+		max-width: none;
+	}
+	.preview-toggle-bar {
+		display: flex;
+		justify-content: flex-end;
+		margin-bottom: var(--space-2);
+	}
+	.toggle {
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius);
+		padding: 0.25rem 0.65rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-muted);
+		cursor: pointer;
+	}
+	.toggle:hover {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+		background: var(--color-primary-light);
 	}
 
 	@media (max-width: 1099px) {
 		.editor-with-preview {
 			display: block;
 			min-height: 0;
+		}
+		.desktop-only {
+			display: none;
 		}
 	}
 </style>

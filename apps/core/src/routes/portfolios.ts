@@ -28,12 +28,14 @@ const portfolioSchema = z.object({
   show_education: z.number().int().default(1),
   show_certifications: z.number().int().default(1),
   show_languages: z.number().int().default(1),
+  show_posts: z.number().int().default(1),
   skills_title: z.string().max(40).default(""),
   projects_title: z.string().max(40).default(""),
   experience_title: z.string().max(40).default(""),
   education_title: z.string().max(40).default(""),
   certifications_title: z.string().max(40).default(""),
   languages_title: z.string().max(40).default(""),
+  posts_title: z.string().max(40).default(""),
   sort_order: z.number().int().default(0),
   /** Resume shown as a "Download resume" button on this public portfolio, if any. */
   resume_id: z.string().nullable().default(null),
@@ -46,10 +48,23 @@ const contentSchema = z.object({
   education_ids: z.array(z.string()).default([]),
   certification_ids: z.array(z.string()).default([]),
   language_ids: z.array(z.string()).default([]),
+  post_ids: z.array(z.string()).default([]),
 });
 
+async function getPostIds(db: FoliyoDb, portfolioId: string): Promise<string[]> {
+  const rows = await queryAll<{ id: string }>(
+    db,
+    `SELECT j.post_id AS id FROM portfolio_posts j
+     INNER JOIN blog_posts p ON p.id = j.post_id
+     WHERE j.portfolio_id = ? AND p.status = 'published'
+     ORDER BY j.sort_order, p.published_at DESC, p.id`,
+    [portfolioId],
+  );
+  return rows.map((r) => r.id);
+}
+
 async function getContentIds(db: FoliyoDb, portfolioId: string) {
-  const [skills, projects, experience, education, certifications, languages] = await Promise.all([
+  const [skills, projects, experience, education, certifications, languages, posts] = await Promise.all([
     orderedJunctionIds(db, "portfolio_skills", "portfolio_id", portfolioId, "skill_id", "skills", false),
     orderedJunctionIds(
       db,
@@ -96,6 +111,7 @@ async function getContentIds(db: FoliyoDb, portfolioId: string) {
       "languages",
       false,
     ),
+    getPostIds(db, portfolioId),
   ]);
   return {
     skill_ids: skills,
@@ -104,6 +120,7 @@ async function getContentIds(db: FoliyoDb, portfolioId: string) {
     education_ids: education,
     certification_ids: certifications,
     language_ids: languages,
+    post_ids: posts,
   };
 }
 
@@ -121,6 +138,14 @@ async function setContent(
   const certification_ids = await sortIdsByLibraryOrder(db, "certifications", owned.certification_ids);
   const language_ids = await sortIdsByLibraryOrder(db, "languages", owned.language_ids);
 
+  const ownedPosts = await queryAll<{ id: string }>(
+    db,
+    "SELECT id FROM blog_posts WHERE user_id = ? AND status = 'published'",
+    [userId],
+  );
+  const postAllow = new Set(ownedPosts.map((p) => p.id));
+  const post_ids = content.post_ids.filter((id) => postAllow.has(id));
+
   await withTransaction(db, async () => {
     await run(db, "DELETE FROM portfolio_skills WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_projects WHERE portfolio_id = ?", [portfolioId]);
@@ -128,6 +153,7 @@ async function setContent(
     await run(db, "DELETE FROM portfolio_education WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_certifications WHERE portfolio_id = ?", [portfolioId]);
     await run(db, "DELETE FROM portfolio_languages WHERE portfolio_id = ?", [portfolioId]);
+    await run(db, "DELETE FROM portfolio_posts WHERE portfolio_id = ?", [portfolioId]);
     for (const skillId of skill_ids) {
       await run(db, "INSERT INTO portfolio_skills (portfolio_id, skill_id) VALUES (?, ?)", [portfolioId, skillId]);
     }
@@ -164,6 +190,13 @@ async function setContent(
         languageId,
       ]);
     }
+    for (const [sortOrder, postId] of post_ids.entries()) {
+      await run(db, "INSERT INTO portfolio_posts (portfolio_id, post_id, sort_order) VALUES (?, ?, ?)", [
+        portfolioId,
+        postId,
+        sortOrder,
+      ]);
+    }
   });
   return {
     skill_ids,
@@ -172,6 +205,7 @@ async function setContent(
     education_ids,
     certification_ids,
     language_ids,
+    post_ids,
   };
 }
 
@@ -221,15 +255,15 @@ export function portfoliosRoutes(db: FoliyoDb, config: Config) {
     await run(
       db,
       `INSERT INTO portfolios (user_id, name, slug, description, headline, bio, theme_slug, is_public, is_default,
-       show_skills, show_projects, show_experience, show_education, show_certifications, show_languages,
-       skills_title, projects_title, experience_title, education_title, certifications_title, languages_title,
+       show_skills, show_projects, show_experience, show_education, show_certifications, show_languages, show_posts,
+       skills_title, projects_title, experience_title, education_title, certifications_title, languages_title, posts_title,
        sort_order, resume_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         userId, d.name, d.slug, d.description, d.headline, d.bio, d.theme_slug, d.is_public, isDefault,
         d.show_skills, d.show_projects, d.show_experience, d.show_education, d.show_certifications,
-        d.show_languages, d.skills_title, d.projects_title, d.experience_title, d.education_title,
-        d.certifications_title, d.languages_title, d.sort_order, d.resume_id,
+        d.show_languages, d.show_posts, d.skills_title, d.projects_title, d.experience_title, d.education_title,
+        d.certifications_title, d.languages_title, d.posts_title, d.sort_order, d.resume_id,
       ],
     );
     const items = await queryAll(db, "SELECT * FROM portfolios WHERE user_id = ? ORDER BY sort_order", [userId]);

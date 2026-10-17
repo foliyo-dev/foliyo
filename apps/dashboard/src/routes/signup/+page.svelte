@@ -5,7 +5,7 @@
 	import { privacyUrl, publicHost } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
 	import OAuthButtons from '$lib/components/auth/OAuthButtons.svelte';
 
 	let email = $state('');
@@ -45,64 +45,33 @@
 	<title>Sign up · Foliyo</title>
 </svelte:head>
 
-<div class="auth-page">
-	<Card>
-		<h1>Create your account</h1>
-		<p class="muted">Start building your portfolio at {publicHost()}</p>
-		<label class="consent">
-			<input type="checkbox" bind:checked={consent} />
-			I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
-			(DPDP Act 2023)
-		</label>
-		<form onsubmit={handleSubmit}>
-			<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
-			<p class="hint">We’ll email a link to choose your password. It expires in 60 minutes.</p>
-			<Button type="submit" disabled={loading || !consent}>{loading ? 'Sending…' : 'Continue'}</Button>
-		</form>
-		<OAuthButtons consent={consent} disabled={!consent} />
-		<p class="footer muted">Already have an account? <a href="/login">Sign in</a></p>
-	</Card>
-</div>
+<AuthShell title="Create your account" description={`Start building your portfolio at ${publicHost()}`}>
+	<label class="consent">
+		<input type="checkbox" bind:checked={consent} />
+		I agree to the <a href={privacyUrl} target="_blank" rel="noreferrer">Privacy Policy</a>
+		(DPDP Act 2023)
+	</label>
+	<form onsubmit={handleSubmit}>
+		<Input label="Email" type="email" name="email" autocomplete="email" bind:value={email} />
+		<p class="hint">We’ll email a link to choose your password. It expires in 60 minutes.</p>
+		<Button type="submit" disabled={loading || !consent}>{loading ? 'Sending…' : 'Continue'}</Button>
+	</form>
+	<OAuthButtons consent={consent} disabled={!consent} />
+	<p class="footer">Already have an account? <a href="/login">Sign in</a></p>
+</AuthShell>
 
 <style>
-	.auth-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		background: linear-gradient(160deg, var(--color-primary-light) 0%, var(--color-bg) 45%);
-	}
-	h1 {
-		margin: 0 0 0.25rem;
-		font-size: 1.5rem;
-		text-align: center;
-	}
-	.muted {
-		color: var(--color-muted);
-		text-align: center;
-	}
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		margin-top: 1rem;
-	}
 	.consent {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		align-items: flex-start;
-		margin-top: 1rem;
-		font-size: 0.875rem;
+		margin-bottom: var(--space-3);
+		font-size: 0.8125rem;
+		line-height: 1.4;
 	}
 	.hint {
-		margin: -0.35rem 0 0;
-		font-size: 0.8125rem;
+		margin: calc(var(--space-1) * -1) 0 0;
+		font-size: 0.75rem;
 		color: var(--color-muted);
-	}
-	.footer {
-		margin-top: 1.25rem;
-		text-align: center;
-		font-size: 0.875rem;
 	}
 </style>

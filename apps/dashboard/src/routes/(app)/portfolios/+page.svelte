@@ -70,12 +70,14 @@
 	let showEducation = true;
 	let showCertifications = true;
 	let showLanguages = true;
+	let showPosts = true;
 	let skillsTitle = '';
 	let projectsTitle = '';
 	let experienceTitle = '';
 	let educationTitle = '';
 	let certificationsTitle = '';
 	let languagesTitle = '';
+	let postsTitle = '';
 
 	let showCreate = false;
 	let previewingId: string | null = null;
@@ -96,7 +98,8 @@
 			: null,
 		selectedLanguages.size
 			? `${selectedLanguages.size} language${selectedLanguages.size === 1 ? '' : 's'}`
-			: null
+			: null,
+		showPosts ? 'Writing on' : null
 	]
 		.filter(Boolean)
 		.join(' · ') || 'Nothing selected yet';
@@ -113,18 +116,21 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				show_posts: showPosts ? 1 : 0,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
 				education_title: educationTitle,
 				certifications_title: certificationsTitle,
 				languages_title: languagesTitle,
+				posts_title: postsTitle,
 				skill_ids: [...selectedSkills],
 				project_ids: [...selectedProjects],
 				experience_ids: [...selectedExperience],
 				education_ids: [...selectedEducation],
 				certification_ids: [...selectedCertifications],
-				language_ids: [...selectedLanguages]
+				language_ids: [...selectedLanguages],
+				post_ids: []
 			}
 		: null) satisfies PortfolioDraftPreview | null;
 
@@ -202,12 +208,14 @@
 		showEducation = true;
 		showCertifications = true;
 		showLanguages = true;
+		showPosts = true;
 		skillsTitle = '';
 		projectsTitle = '';
 		experienceTitle = '';
 		educationTitle = '';
 		certificationsTitle = '';
 		languagesTitle = '';
+		postsTitle = '';
 		selectedSkills = new Set(skills.map((s) => s.id));
 		selectedProjects = new Set(projects.map((p) => p.id));
 		selectedExperience = new Set(experiences.map((e) => e.id));
@@ -242,12 +250,14 @@
 				show_education: showEducation ? 1 : 0,
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
+				show_posts: showPosts ? 1 : 0,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
 				education_title: educationTitle,
 				certifications_title: certificationsTitle,
 				languages_title: languagesTitle,
+				posts_title: postsTitle,
 				sort_order: items.length
 			});
 			const created = items.find((p) => p.slug === createdSlug);
@@ -258,7 +268,8 @@
 					experience_ids: [...selectedExperience],
 					education_ids: [...selectedEducation],
 					certification_ids: [...selectedCertifications],
-					language_ids: [...selectedLanguages]
+					language_ids: [...selectedLanguages],
+					post_ids: []
 				});
 				if (wasFirstPortfolio) {
 					const when = new Date().toLocaleString('en-US', {
@@ -412,7 +423,7 @@
 					class:previewing={previewingId === p.id && !showCreateForm}
 					aria-current={previewingId === p.id && !showCreateForm ? 'true' : undefined}
 				>
-					<Card>
+					<Card variant="panel">
 						<div class="row">
 							<div>
 								<h2>
@@ -432,20 +443,21 @@
 							<div class="actions">
 								<Button
 									variant="ghost"
+									size="sm"
 									on:click={() => togglePreview(p.id)}
 									pressed={previewingId === p.id && !showCreateForm}
 								>
 									{previewingId === p.id && !showCreateForm ? 'Hide preview' : 'Preview'}
 								</Button>
-								<Button variant="ghost" on:click={() => goto(`/portfolios/${p.id}`)}
+								<Button variant="ghost" size="sm" on:click={() => goto(`/portfolios/${p.id}`)}
 									>Edit</Button
 								>
 								{#if !p.is_default}
-									<Button variant="ghost" on:click={() => makeDefault(p.id)}
+									<Button variant="ghost" size="sm" on:click={() => makeDefault(p.id)}
 										>Set default</Button
 									>
 								{/if}
-								<Button variant="ghost" on:click={() => remove(p.id)}>Delete</Button>
+								<Button variant="ghost" size="sm" on:click={() => remove(p.id)}>Delete</Button>
 							</div>
 						</div>
 					</Card>
@@ -461,12 +473,13 @@
 			</div>
 		{:else}
 			<div class="create-wrap previewing">
-			<Card>
+			<Card variant="panel">
 				<div class="create-head">
 					<h2 class="section-title">New portfolio <span class="tag previewing">previewing</span></h2>
 					{#if items.length > 0}
 						<Button
 							variant="ghost"
+							size="sm"
 							on:click={() => {
 								showCreate = false;
 							}}>Cancel</Button
@@ -518,14 +531,16 @@
 						bind:showEducation
 						bind:showCertifications
 						bind:showLanguages
+						bind:showPosts
 						bind:skillsTitle
 						bind:projectsTitle
 						bind:experienceTitle
 						bind:educationTitle
 						bind:certificationsTitle
 						bind:languagesTitle
+						bind:postsTitle
 						title="Choose what visitors will see"
-						hint="Turn sections on or off, then open each section to pick individual items. Everything starts selected — trim what doesn’t belong. Optional titles rename public headings (Projects → Papers, Gallery…)."
+						hint="Turn sections on or off, then open each section to pick individual items. Writing is an on/off link to your Blog — manage posts there. Optional titles rename public headings (Projects → Papers, Gallery…)."
 					/>
 				</details>
 
@@ -543,36 +558,37 @@
 <style>
 	.section-title {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		flex-wrap: wrap;
 	}
 	.create-head {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		gap: 1rem;
-		margin-bottom: 1rem;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
 	}
 	.create-cta {
-		margin-top: 1.25rem;
+		margin-top: var(--space-4);
 	}
 	.step {
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
-		padding: 0.65rem 0.85rem;
-		margin-bottom: 0.75rem;
+		padding: var(--space-2) var(--space-3);
+		margin-bottom: var(--space-3);
 		background: var(--color-bg, transparent);
 	}
 	.step summary {
 		cursor: pointer;
 		font-weight: 600;
-		font-size: 0.9rem;
+		font-size: 0.875rem;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 	.step-meta {
 		font-weight: 500;
@@ -580,25 +596,26 @@
 		color: var(--color-muted);
 	}
 	.step[open] summary {
-		margin-bottom: 0.75rem;
+		margin-bottom: var(--space-3);
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		margin-bottom: 0.25rem;
+		gap: var(--space-3);
+		margin-bottom: var(--space-1);
 	}
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 	}
 	select {
-		padding: 0.5rem 0.75rem;
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
@@ -606,67 +623,72 @@
 	.checkbox {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
+		gap: var(--space-2);
+		font-size: 0.8125rem;
 	}
 	.form-actions {
-		margin-top: 1.25rem;
+		margin-top: var(--space-4);
 	}
 	.muted {
 		color: var(--color-muted);
 	}
 	.empty {
-		margin-top: 1rem;
+		margin-top: var(--space-3);
 	}
 	.list {
 		list-style: none;
-		margin: 1rem 0 0;
+		margin: var(--space-3) 0 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: var(--space-2);
 	}
 	.row {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 1rem;
+		gap: var(--space-3);
 		flex-wrap: wrap;
 	}
 	h2 {
-		margin: 0 0 0.25rem;
-		font-size: 1.125rem;
+		margin: 0 0 var(--space-1);
+		font-size: 0.9375rem;
+		font-weight: 600;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 	.star {
-		font-size: 0.75rem;
+		font-size: 0.625rem;
 		font-weight: 600;
 		color: var(--color-primary);
 		background: var(--color-primary-light);
-		padding: 0.15rem 0.5rem;
-		border-radius: 4px;
+		padding: 0.1rem 0.35rem;
+		border-radius: var(--radius-sm);
+		text-transform: uppercase;
 	}
 	.tag {
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		font-weight: 600;
 		text-transform: uppercase;
-		padding: 0.15rem 0.45rem;
-		border-radius: 4px;
+		padding: 0.1rem 0.35rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border);
 	}
 	.tag.public {
-		background: #dcfce7;
-		color: #166534;
+		background: var(--color-success-bg);
+		color: var(--color-success-text);
+		border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
 	}
 	.tag.private {
-		background: #f3f4f6;
+		background: var(--color-bg);
 		color: var(--color-muted);
 	}
 	.tag.previewing {
 		background: var(--color-primary-light);
 		color: var(--color-primary);
+		border-color: transparent;
 	}
 	.list li.previewing :global(.card),
 	.create-wrap.previewing :global(.card) {
@@ -685,30 +707,34 @@
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 	.welcome-banner {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 1rem;
-		margin: 0 0 1.25rem;
-		padding: 1rem 1.15rem;
-		border: 1px solid var(--color-primary, #0f766e);
-		border-radius: 8px;
-		background: var(--color-primary-light, #ecfdf5);
+		gap: var(--space-3);
+		margin: 0 0 var(--space-4);
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--color-primary-muted);
+		border-radius: var(--radius);
+		background: var(--color-primary-light);
+		box-shadow: var(--shadow-xs);
 	}
 	.exposure-banner {
-		margin: 0 0 1.25rem;
-		padding: 0.85rem 1.1rem;
-		border: 1px solid #f59e0b;
-		border-radius: 8px;
-		background: #fffbeb;
+		margin: 0 0 var(--space-4);
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
+		border-radius: var(--radius);
+		background: var(--color-warning-bg);
+		box-shadow: var(--shadow-xs);
 	}
 	.exposure-banner strong {
 		display: block;
-		margin-bottom: 0.25rem;
-		font-size: 0.9rem;
+		margin-bottom: var(--space-1);
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-warning-text);
 	}
 	.exposure-banner p {
 		margin: 0;
@@ -720,11 +746,12 @@
 	}
 	.welcome-banner strong {
 		display: block;
-		margin-bottom: 0.25rem;
+		margin-bottom: var(--space-1);
+		font-size: 0.875rem;
 	}
 	.welcome-banner p {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 	}
 	.welcome-dismiss {
@@ -742,7 +769,7 @@
 		.welcome-banner {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 0.75rem;
+			gap: var(--space-3);
 		}
 		.welcome-dismiss {
 			align-self: flex-end;

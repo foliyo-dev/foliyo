@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { resolveCorePublicDir } from "../assets.js";
 import type { Config } from "../config.js";
-import { queryOne, run, type FoliyoDb } from "../db.js";
+import { queryAll, queryOne, run, type FoliyoDb } from "../db.js";
 import {
   getDefaultPublicPortfolio,
   getPublicPortfolioBySlug,
@@ -15,7 +15,7 @@ import {
   renderPortfolioPage,
   renderWelcome,
 } from "../public/pages.js";
-import { renderResumeHtml } from "../public/themes.js";
+import { renderBlogListHtml, renderBlogPostHtml, renderResumeHtml } from "../public/themes.js";
 
 export function publicRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
@@ -47,6 +47,16 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
   r.get("/spec/", (c) => c.redirect("/static/spec/index.html"));
 
   r.get("/welcome", (c) => c.html(renderWelcome(config)));
+
+  // OSS: site root is the default portfolio; dashboard lives on FOLIYO_DASHBOARD_URL.
+  // Cloud keeps a separate marketing landing. Bridge common auth entry paths.
+  const dash = config.dashboardUrl.replace(/\/$/, "");
+  for (const path of ["/login", "/signup", "/forgot", "/reset", "/check-email", "/verify"] as const) {
+    r.get(path, (c) => {
+      const q = new URL(c.req.url).search;
+      return c.redirect(`${dash}${path}${q}`);
+    });
+  }
 
   r.get("/r/:token", async (c) => {
     const resume = await queryOne<{
@@ -83,8 +93,109 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
     return c.html(renderPortfolioPage(data, config));
   });
 
+  // Blog routes must register before /u/:handle/:slug so "blog" is never a portfolio slug.
+  r.get("/u/:handle/blog/:postSlug", async (c) => {
+    const handle = c.req.param("handle");
+    const postSlug = c.req.param("postSlug");
+    const user = await getUserByHandle(db, handle);
+    if (!user) return c.html(renderNotFound("User not found.", config.dashboardUrl), 404);
+
+    const post = await queryOne<{
+      title: string;
+      slug: string;
+      excerpt: string;
+      content: string;
+      cover_image: string;
+      published_at: string | null;
+      tags: string;
+    }>(
+      db,
+      `SELECT title, slug, excerpt, content, cover_image, published_at, tags FROM blog_posts
+       WHERE user_id = ? AND slug = ? AND status = 'published'`,
+      [user.id, postSlug],
+    );
+    if (!post) return c.html(renderNotFound("Post not found.", config.dashboardUrl), 404);
+
+    const profile = await queryOne<{ name: string | null }>(
+      db,
+      "SELECT name FROM profile WHERE user_id = ?",
+      [user.id],
+    );
+    const planRow = await queryOne<{ plan: string; plan_expires: string | null }>(
+      db,
+      "SELECT plan, plan_expires FROM users WHERE id = ?",
+      [user.id],
+    );
+
+    const portfolio = await getDefaultPublicPortfolio(db, user.id);
+
+    return c.html(
+      renderBlogPostHtml(
+        {
+          handle: user.handle,
+          authorName: profile?.name?.trim() || user.handle,
+          plan: planRow?.plan ?? "free",
+          plan_expires: planRow?.plan_expires ?? null,
+          post,
+        },
+        config,
+        portfolio,
+      ),
+    );
+  });
+
+  r.get("/u/:handle/blog", async (c) => {
+    const handle = c.req.param("handle");
+    const user = await getUserByHandle(db, handle);
+    if (!user) return c.html(renderNotFound("User not found.", config.dashboardUrl), 404);
+
+    const posts = await queryAll<{
+      title: string;
+      slug: string;
+      excerpt: string;
+      cover_image: string;
+      published_at: string | null;
+    }>(
+      db,
+      `SELECT title, slug, excerpt, cover_image, published_at FROM blog_posts
+       WHERE user_id = ? AND status = 'published'
+       ORDER BY published_at DESC, created_at DESC`,
+      [user.id],
+    );
+
+    const profile = await queryOne<{ name: string | null }>(
+      db,
+      "SELECT name FROM profile WHERE user_id = ?",
+      [user.id],
+    );
+    const planRow = await queryOne<{ plan: string; plan_expires: string | null }>(
+      db,
+      "SELECT plan, plan_expires FROM users WHERE id = ?",
+      [user.id],
+    );
+
+    const portfolio = await getDefaultPublicPortfolio(db, user.id);
+
+    return c.html(
+      renderBlogListHtml(
+        {
+          handle: user.handle,
+          authorName: profile?.name?.trim() || user.handle,
+          plan: planRow?.plan ?? "free",
+          plan_expires: planRow?.plan_expires ?? null,
+          posts,
+        },
+        config,
+        portfolio,
+      ),
+    );
+  });
+
   r.get("/u/:handle/:slug", async (c) => {
     const { handle, slug } = c.req.param();
+    if (slug === "blog") {
+      return c.redirect(`/u/${encodeURIComponent(handle)}/blog`, 301);
+    }
     const user = await getUserByHandle(db, handle);
     if (!user) return c.html(renderNotFound("User not found.", config.dashboardUrl), 404);
     const data = await getPublicPortfolioBySlug(db, user.id, slug);
@@ -111,7 +222,22 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
     return c.html(renderPortfolioPage(data, config));
   });
 
-  const reserved = new Set(["welcome", "api", "mesh", "static", "u", "r", "p", "uploads"]);
+  const reserved = new Set([
+    "welcome",
+    "login",
+    "signup",
+    "forgot",
+    "reset",
+    "check-email",
+    "verify",
+    "api",
+    "mesh",
+    "static",
+    "u",
+    "r",
+    "p",
+    "uploads",
+  ]);
   r.get("/:slug", async (c) => {
     const slug = c.req.param("slug");
     if (reserved.has(slug)) return c.notFound();

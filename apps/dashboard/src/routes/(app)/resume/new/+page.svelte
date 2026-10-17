@@ -301,6 +301,7 @@
 						bind:selectedCertifications
 						bind:selectedLanguages
 						showSectionVisibility={false}
+						showPostsSection={false}
 						title="Build this resume"
 						hint="Choose from your library. Foliyo stores a snapshot — library edits won’t auto-sync."
 					/>

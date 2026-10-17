@@ -79,11 +79,11 @@
 				</p>
 			</Card>
 		{/if}
-		<Card>
+		<Card variant="panel">
 			<div class="fields">
 				<Input label="Name" bind:value={profile.name} placeholder="Jane Doe" />
 				<Input label="Headline" bind:value={profile.headline} placeholder="Full-stack developer" />
-				<Textarea label="Bio" bind:value={profile.bio} placeholder="A short introduction…" rows={5} />
+				<Textarea label="Bio" bind:value={profile.bio} placeholder="A short introduction…" rows={4} />
 				<Input label="Avatar URL" bind:value={profile.avatar_url} placeholder="https://…" />
 				<Input label="Location" bind:value={profile.location} placeholder="Mumbai, India" />
 				<Input
@@ -110,11 +110,11 @@
 	.fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
 	}
 	.hint {
-		margin: 1rem 0 0;
-		font-size: 0.875rem;
+		margin: var(--space-3) 0 0;
+		font-size: 0.8125rem;
 		color: var(--color-muted);
 	}
 	.import-cta {

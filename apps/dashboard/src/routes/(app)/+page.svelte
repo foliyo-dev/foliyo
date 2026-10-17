@@ -394,7 +394,7 @@
 				<a href="/portfolios">Manage →</a>
 			</div>
 			{#if portfolios.length === 0}
-				<Card>
+				<Card variant="panel">
 					<p class="muted">No portfolios yet. Choose what visitors will see from your library.</p>
 					<a href="/portfolios">Create portfolio →</a>
 				</Card>
@@ -435,7 +435,7 @@
 				<a href="/resume">Manage →</a>
 			</div>
 			{#if resumes.length === 0}
-				<Card>
+				<Card variant="panel">
 					<p class="muted">No resumes yet. Tailor one to a JD, or copy a folio.</p>
 					<a href="/resume/tailor">Tailor to a job →</a>
 				</Card>
@@ -465,7 +465,7 @@
 				</ul>
 			{/if}
 			{#if isSaas}
-				<Card>
+				<Card variant="panel">
 					{#if pro}
 						<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
 						<a href="/import?onboarding=1">Import resume →</a>
@@ -477,59 +477,30 @@
 			{/if}
 		</div>
 	</section>
-
-	<section class="section">
-		<h3 class="section-title">Quick links</h3>
-		<div class="grid">
-			<Card>
-				<h4>My Library</h4>
-				<p class="muted">
-					Basics, skills, projects, experience, education, certifications, and languages.
-				</p>
-				<a href="/basics">Edit basics →</a>
-			</Card>
-			<Card>
-				<h4>Portfolios</h4>
-				<p class="muted">
-					Choose what visitors will see — Free includes 1, Pro unlimited.
-				</p>
-				<a href="/portfolios">Manage portfolios →</a>
-			</Card>
-			<Card>
-				<h4>Resume</h4>
-				<p class="muted">Reuse the same library, pick a theme, and export PDF.</p>
-				<a href="/resume">Open resume →</a>
-			</Card>
-			<Card>
-				<h4>Settings</h4>
-				<p class="muted">Site title, themes, plan, custom domain, and privacy exports.</p>
-				<a href="/settings">Open settings →</a>
-			</Card>
-		</div>
-	</section>
 {/if}
 
 <style>
 	.muted {
 		color: var(--color-muted);
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		margin: 0;
 	}
 	.welcome {
 		display: grid;
-		grid-template-columns: 1.4fr 1fr;
-		gap: 1.25rem;
-		padding: 1.25rem 1.5rem;
-		margin-bottom: 1.75rem;
+		grid-template-columns: 1.5fr auto;
+		gap: var(--space-4);
+		padding: var(--space-4) var(--space-5);
+		margin-bottom: var(--space-5);
 		border-radius: var(--radius);
 		border: 1px solid var(--color-border);
 		background:
 			linear-gradient(135deg, var(--color-primary-light) 0%, transparent 55%),
 			var(--color-surface);
+		box-shadow: var(--shadow-xs);
 	}
 	.eyebrow {
-		margin: 0 0 0.25rem;
-		font-size: 0.75rem;
+		margin: 0 0 0.15rem;
+		font-size: 0.6875rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -537,21 +508,21 @@
 	}
 	.welcome-name {
 		margin: 0;
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		line-height: 1.2;
 	}
 	.headline {
-		margin: 0.35rem 0 0.75rem;
-		font-size: 0.95rem;
+		margin: 0.25rem 0 0.5rem;
+		font-size: 0.875rem;
 	}
 	.public-row {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 	.public-link {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--color-primary);
 		word-break: break-all;
@@ -560,8 +531,8 @@
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		border-radius: var(--radius);
-		padding: 0.25rem 0.6rem;
-		font-size: 0.75rem;
+		padding: 0.2rem 0.5rem;
+		font-size: 0.6875rem;
 		cursor: pointer;
 		color: var(--color-text);
 	}
@@ -571,57 +542,62 @@
 	}
 	.welcome-meta {
 		display: flex;
-		flex-direction: column;
-		gap: 0.65rem;
-		justify-content: center;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		align-items: center;
+		justify-content: flex-end;
 	}
 	.meta-chip {
 		display: flex;
 		flex-direction: column;
-		gap: 0.1rem;
+		gap: 0.05rem;
+		min-width: 5.5rem;
 	}
 	.meta-label {
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--color-muted);
 	}
 	.meta-chip strong {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.meta-chip strong.plan-pro {
 		color: var(--color-primary);
 	}
 	.upgrade {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 600;
-		margin-top: 0.25rem;
+		width: 100%;
+		text-align: right;
 	}
 	.section {
-		margin-bottom: 1.75rem;
+		margin-bottom: var(--space-5);
 	}
 	.section-head {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 0.75rem;
+		gap: var(--space-3);
+		margin-bottom: var(--space-2);
 	}
 	.section-title {
-		margin: 0 0 0.75rem;
-		font-size: 1rem;
+		margin: 0 0 var(--space-2);
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.section-head .section-title {
 		margin: 0;
 	}
 	.section-head a {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 	}
 	.gs-lead {
-		margin: -0.25rem 0 1rem;
+		margin: 0 0 var(--space-3);
 	}
 	.gs-steps {
 		list-style: none;
@@ -629,13 +605,13 @@
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: var(--space-2);
 	}
 	.gs-step {
 		display: flex;
-		gap: 1rem;
+		gap: var(--space-3);
 		align-items: flex-start;
-		padding: 1rem 1.15rem;
+		padding: var(--space-3) var(--space-4);
 		border-radius: var(--radius);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
@@ -649,13 +625,13 @@
 	}
 	.gs-num {
 		flex-shrink: 0;
-		width: 1.75rem;
-		height: 1.75rem;
+		width: 1.5rem;
+		height: 1.5rem;
 		border-radius: 999px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		background: var(--color-bg);
 		border: 1px solid var(--color-border);
@@ -667,72 +643,77 @@
 		color: #fff;
 	}
 	.gs-step.done .gs-num {
-		background: #dcfce7;
-		border-color: #bbf7d0;
-		color: #166534;
+		background: var(--color-success-bg);
+		border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+		color: var(--color-success-text);
 	}
 	.gs-body {
 		flex: 1;
 		min-width: 0;
 	}
 	.gs-body h4 {
-		margin: 0 0 0.25rem;
-		font-size: 1rem;
+		margin: 0 0 0.15rem;
+		font-size: 0.875rem;
 	}
 	.gs-actions {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.75rem;
-		margin-top: 0.65rem;
+		gap: var(--space-3);
+		margin-top: var(--space-2);
 	}
 	.gs-cta {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.gs-secondary {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		color: var(--color-muted);
 	}
 	.gs-done-label {
-		margin: 0.5rem 0 0;
-		font-size: 0.75rem;
+		margin: var(--space-2) 0 0;
+		font-size: 0.6875rem;
 		font-weight: 600;
-		color: #166534;
+		color: var(--color-success-text);
 	}
 	.steps {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 1rem;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		gap: var(--space-3);
 	}
 	.step-index {
-		margin: 0 0 0.35rem;
-		font-size: 0.6875rem;
+		margin: 0 0 0.25rem;
+		font-size: 0.625rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--color-primary-muted);
 	}
-	.steps h4,
-	.grid h4 {
-		margin: 0 0 0.35rem;
-		font-size: 1rem;
-	}
-	.steps a,
-	.grid a {
+	.steps h4 {
+		margin: 0 0 0.25rem;
 		font-size: 0.875rem;
+	}
+	.steps a {
+		font-size: 0.8125rem;
 		font-weight: 600;
+	}
+	.steps :global(.card) {
+		padding: var(--space-4);
+		box-shadow: var(--shadow-xs);
+	}
+	.steps .muted {
+		margin: 0 0 var(--space-2);
 	}
 	.counts {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-		gap: 0.75rem;
+		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+		gap: var(--space-2);
 	}
 	.count-tile {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
-		padding: 1rem;
+		gap: 0.1rem;
+		padding: var(--space-3);
 		border-radius: var(--radius);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
@@ -749,23 +730,28 @@
 		opacity: 0.85;
 	}
 	.count-num {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 		line-height: 1;
 		color: var(--color-primary);
 	}
 	.count-label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.count-hint {
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-muted);
 	}
 	.publish {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 1.25rem;
+		gap: var(--space-4);
+	}
+	.publish-col {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
 	}
 	.list {
 		list-style: none;
@@ -780,31 +766,31 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.85rem 1rem;
+		gap: var(--space-3);
+		padding: var(--space-3) var(--space-4);
 		border-bottom: 1px solid var(--color-border);
 	}
 	.list li:last-child {
 		border-bottom: none;
 	}
 	.list strong {
-		font-size: 0.875rem;
-		margin-right: 0.4rem;
+		font-size: 0.8125rem;
+		margin-right: 0.35rem;
 	}
 	.badge {
 		display: inline-block;
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		font-weight: 600;
-		padding: 0.1rem 0.4rem;
-		border-radius: 4px;
+		padding: 0.1rem 0.35rem;
+		border-radius: var(--radius-sm);
 		background: var(--color-bg);
 		color: var(--color-muted);
 		border: 1px solid var(--color-border);
 	}
 	.badge.on {
-		color: #166534;
-		background: #dcfce7;
-		border-color: #bbf7d0;
+		color: var(--color-success-text);
+		background: var(--color-success-bg);
+		border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
 	}
 	.badge.default {
 		color: var(--color-primary);
@@ -813,39 +799,33 @@
 	}
 	.views {
 		margin-left: 0.35rem;
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-muted);
 	}
 	.list-link {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		white-space: nowrap;
-	}
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 1rem;
-	}
-	.grid .muted,
-	.steps .muted {
-		margin: 0 0 0.75rem;
 	}
 	@media (max-width: 800px) {
 		.welcome,
 		.publish {
 			grid-template-columns: 1fr;
 		}
-		.grid {
-			grid-template-columns: 1fr;
+		.welcome-meta {
+			justify-content: flex-start;
+		}
+		.upgrade {
+			text-align: left;
 		}
 		.list-link {
 			white-space: normal;
 		}
 		.welcome {
-			padding: 1rem 1.1rem;
+			padding: var(--space-3) var(--space-4);
 		}
 		.welcome-name {
-			font-size: 1.25rem;
+			font-size: 1.125rem;
 		}
 	}
 </style>

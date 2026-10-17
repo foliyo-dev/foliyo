@@ -41,6 +41,30 @@ export FOLIYO_ADMIN_PASSWORD=your-secure-password
 export FOLIYO_DATA_DIR=~/data
 ```
 
+### Optional: Google / GitHub login
+
+Self-host OAuth is **off by default** until you set provider secrets. Leave them empty for email/password only.
+
+```bash
+# Master switch (default true). Set false to disable even if secrets are present.
+# FOLIYO_OAUTH_ENABLED=true
+
+# Public API origin used in OAuth redirect URIs (defaults to FOLIYO_SITE_URL)
+# OAUTH_REDIRECT_BASE=https://yourdomain.com
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+```
+
+Register callback URLs with each provider:
+
+- `{OAUTH_REDIRECT_BASE}/api/auth/oauth/google/callback`
+- `{OAUTH_REDIRECT_BASE}/api/auth/oauth/github/callback`
+
+The dashboard shows “Continue with Google/GitHub” only when the matching secrets are set and `FOLIYO_OAUTH_ENABLED` is not false.
+
 ## Database (SQLite vs Postgres)
 
 Default self-host uses **SQLite** (`FOLIYO_DB_DRIVER=sqlite`) — fine for most installs.

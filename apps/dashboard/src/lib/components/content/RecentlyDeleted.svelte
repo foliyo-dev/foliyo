@@ -99,6 +99,7 @@
 					<div class="actions">
 						<Button
 							variant="ghost"
+							size="sm"
 							disabled={busyId === item.id}
 							on:click={() => doRestore(item)}
 						>
@@ -106,6 +107,7 @@
 						</Button>
 						<Button
 							variant="ghost"
+							size="sm"
 							disabled={busyId === item.id}
 							on:click={() => doPurge(item)}
 						>
@@ -120,20 +122,20 @@
 
 <style>
 	.trash {
-		margin: 0 0 1rem;
-		padding: 0.85rem 1rem;
+		margin: 0 0 var(--space-3);
+		padding: var(--space-3) var(--space-4);
 		border: 1px dashed var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-bg);
 	}
 	.trash summary {
 		cursor: pointer;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--color-muted);
 	}
 	.hint {
-		margin: 0.5rem 0 0.75rem;
+		margin: var(--space-2) 0 var(--space-3);
 		font-size: 0.75rem;
 		color: var(--color-muted);
 		line-height: 1.4;
@@ -144,33 +146,33 @@
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0;
 	}
 	.list li {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
-		gap: 0.5rem 1rem;
-		padding: 0.5rem 0;
+		gap: var(--space-2) var(--space-4);
+		padding: var(--space-2) 0;
 		border-top: 1px solid var(--color-border);
 	}
 	.meta {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.1rem;
 		min-width: 0;
 	}
 	.meta strong {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 	}
 	.when {
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-muted);
 	}
 	.actions {
 		display: flex;
-		gap: 0.25rem;
+		gap: var(--space-1);
 		flex-wrap: wrap;
 	}
 </style>

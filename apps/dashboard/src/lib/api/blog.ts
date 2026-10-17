@@ -42,6 +42,7 @@ export function tagsFromJson(json: string): string {
 }
 
 export const listPosts = () => api<BlogPost[]>('/blog/posts');
+export const getPost = (id: string) => api<BlogPost>(`/blog/posts/${id}`);
 export const createPost = (data: Partial<BlogPost>) =>
 	api<BlogPost[]>('/blog/posts', { method: 'POST', body: JSON.stringify(data) });
 export const updatePost = (id: string, data: Partial<BlogPost>) =>

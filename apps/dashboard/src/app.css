@@ -1,8 +1,11 @@
 @import '@foliyo/brand/tokens.css';
 
 :root {
-  --sidebar-width: 240px;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 64px;
+  --header-height: 3.25rem;
   --bp-nav: 900px;
+  --content-max: 72rem;
 }
 
 *,
@@ -37,7 +40,23 @@ textarea {
 }
 
 input:focus-visible,
-button:focus-visible {
+button:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--color-primary-muted);
   outline-offset: 2px;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }

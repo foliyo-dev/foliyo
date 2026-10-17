@@ -32,6 +32,18 @@ export interface Config {
   smtpSecure: boolean;
   /** Skip STARTTLS — required for MailHog / Mailpit. */
   smtpIgnoreTls: boolean;
+  /**
+   * Master switch for Google/GitHub login (self-host and hosted).
+   * When false, providers stay off even if client secrets are set.
+   * Default true — leave secrets empty to disable a provider.
+   */
+  oauthEnabled: boolean;
+  /** Public API origin for OAuth redirect URIs (defaults to siteUrl). */
+  oauthRedirectBase: string;
+  googleClientId: string;
+  googleClientSecret: string;
+  githubClientId: string;
+  githubClientSecret: string;
 }
 
 function env(key: string, fallback = ""): string {
@@ -169,5 +181,34 @@ export function loadConfig(): Config {
       envInt("FOLIYO_SMTP_PORT", Number.parseInt(y("smtp_port", "587"), 10)) === 465,
     ),
     smtpIgnoreTls: envBool("FOLIYO_SMTP_IGNORE_TLS", false),
+    oauthEnabled: envBool("FOLIYO_OAUTH_ENABLED", true),
+    oauthRedirectBase: env("OAUTH_REDIRECT_BASE", siteUrl).replace(/\/$/, ""),
+    googleClientId: env("GOOGLE_CLIENT_ID").trim(),
+    googleClientSecret: env("GOOGLE_CLIENT_SECRET").trim(),
+    githubClientId: env("GITHUB_CLIENT_ID").trim(),
+    githubClientSecret: env("GITHUB_CLIENT_SECRET").trim(),
   };
+}
+
+export function isGoogleOAuthConfigured(
+  config: Pick<Config, "oauthEnabled" | "googleClientId" | "googleClientSecret">,
+): boolean {
+  return config.oauthEnabled && Boolean(config.googleClientId && config.googleClientSecret);
+}
+
+export function isGitHubOAuthConfigured(
+  config: Pick<Config, "oauthEnabled" | "githubClientId" | "githubClientSecret">,
+): boolean {
+  return config.oauthEnabled && Boolean(config.githubClientId && config.githubClientSecret);
+}
+
+export function oauthRedirectBase(config: Pick<Config, "oauthRedirectBase">): string {
+  return config.oauthRedirectBase.replace(/\/$/, "");
+}
+
+export function oauthCallbackUrl(
+  config: Pick<Config, "oauthRedirectBase">,
+  provider: "google" | "github",
+): string {
+  return `${oauthRedirectBase(config)}/api/auth/oauth/${provider}/callback`;
 }

@@ -6,6 +6,7 @@ import type { Config } from "../config.js";
 import type { PublicPortfolio } from "./pages.js";
 import { effectivePlan, showFoliyoBranding } from "../plan.js";
 import { absoluteHttpUrl } from "../http-url.js";
+import { markdownToSafeHtml } from "../markdown.js";
 import {
   resolveSocialUrl,
   socialDisplayLabel,
@@ -168,9 +169,10 @@ type SectionParts = {
   eduHtml: string;
   certHtml: string;
   langHtml: string;
+  postsHtml: string;
 };
 
-type NavItem = { id: string; label: string };
+type NavItem = { id: string; label: string; href?: string };
 
 function sectionTag(
   mode: "portfolio" | "resume",
@@ -207,6 +209,7 @@ const SECTION_DEFAULTS = {
   education: "Education",
   certifications: "Certifications",
   languages: "Languages",
+  posts: "Writing",
 } as const;
 
 type SectionKey = keyof typeof SECTION_DEFAULTS;
@@ -393,6 +396,9 @@ function sectionParts(
       )
     : "";
 
+  // Writing lives on /u/{handle}/blog — linked from site nav, not inlined here.
+  const postsHtml = "";
+
   return {
     contactHtml: "",
     skillsHtml,
@@ -401,6 +407,7 @@ function sectionParts(
     eduHtml,
     certHtml,
     langHtml,
+    postsHtml,
   };
 }
 
@@ -416,18 +423,31 @@ function navItemsFor(data: PublicPortfolio): NavItem[] {
     items.push({ id: "certifications", label: sectionTitle(data, "certifications", "portfolio") });
   }
   if (data.languages.length) items.push({ id: "languages", label: sectionTitle(data, "languages", "portfolio") });
+  const handle = data.handle?.trim();
+  if ((data.posts ?? []).length && handle) {
+    items.push({
+      id: "posts",
+      label: sectionTitle(data, "posts", "portfolio"),
+      href: `/u/${encodeURIComponent(handle)}/blog`,
+    });
+  }
   return items;
 }
 
-function siteNavHtml(data: PublicPortfolio): string {
+function siteNavHtml(data: PublicPortfolio, activeId = ""): string {
   const name = esc(displayName(data));
   const handle = data.handle ? esc(data.handle) : "";
+  const home = handle ? `/u/${handle}` : "#about";
   const items = navItemsFor(data)
-    .map((item) => `<a href="#${item.id}">${esc(item.label)}</a>`)
+    .map((item) => {
+      const href = item.href ?? (item.id === "about" ? home : `${home}#${item.id}`);
+      const active = item.id === activeId ? ' aria-current="page" class="active"' : "";
+      return `<a href="${esc(href)}"${active}>${esc(item.label)}</a>`;
+    })
     .join("");
   return `<nav class="site-nav" aria-label="Site">
     <div class="site-nav-brand">
-      <a class="site-name" href="#about">${name}</a>
+      <a class="site-name" href="${home}">${name}</a>
       ${handle ? `<a class="handle" href="/u/${handle}">@${handle}</a>` : ""}
     </div>
     <div class="site-nav-links">${items}</div>
@@ -455,7 +475,7 @@ function sparseSectionHtml(mode: "portfolio" | "resume"): string {
 
 function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume", siteUrl = ""): string {
   const p = sectionParts(data, mode, siteUrl);
-  const body = `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}`;
+  const body = `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`;
   if (mode === "portfolio" && isSparsePortfolio(data) && !body.trim()) {
     return sparseSectionHtml(mode);
   }
@@ -581,7 +601,7 @@ const SITE_SHELL_CSS = `
 .site-nav .handle{font-size:0.8125rem;color:var(--muted,#78716c);text-decoration:none}
 .site-nav-links{display:flex;flex-wrap:wrap;gap:0.35rem 0.85rem}
 .site-nav-links a{font-size:0.8125rem;font-weight:500;color:var(--muted,#78716c);text-decoration:none}
-.site-nav-links a:hover{color:var(--accent,#0f766e)}
+.site-nav-links a:hover,.site-nav-links a.active,.site-nav-links a[aria-current="page"]{color:var(--accent,#0f766e)}
 .section[id],.hero[id]{scroll-margin-top:4.5rem}
 .section-sparse{padding:2rem 0 3rem}
 .sparse-copy{margin:0;font-size:0.9375rem;text-align:center;color:var(--muted,#78716c)}
@@ -630,15 +650,44 @@ function documentShell(opts: {
   /** UI chrome outside the resume/portfolio document (e.g. floating print). */
   chrome?: string;
   footer?: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+  ogType?: "article" | "website";
 }): string {
   const shellCss = opts.variant === "site" ? SITE_SHELL_CSS : DOCUMENT_SHELL_CSS;
   const mainClass = opts.variant === "document" ? "page resume-page" : "page";
+  const description = opts.description?.trim();
+  const seoBits: string[] = [];
+  if (description) {
+    seoBits.push(`<meta name="description" content="${esc(description)}">`);
+  }
+  if (opts.canonical) {
+    seoBits.push(`<link rel="canonical" href="${esc(opts.canonical)}">`);
+  }
+  if (description || opts.ogImage || opts.canonical) {
+    seoBits.push(`<meta property="og:title" content="${opts.title}">`);
+    seoBits.push(
+      `<meta property="og:type" content="${opts.ogType ?? (opts.ogImage ? "article" : "website")}">`,
+    );
+    if (description) {
+      seoBits.push(`<meta property="og:description" content="${esc(description)}">`);
+    }
+    if (opts.ogImage) {
+      seoBits.push(`<meta property="og:image" content="${esc(opts.ogImage)}">`);
+      seoBits.push(`<meta name="twitter:card" content="summary_large_image">`);
+    } else if (description) {
+      seoBits.push(`<meta name="twitter:card" content="summary">`);
+    }
+  }
+  const seo = seoBits.filter(Boolean).join("\n  ");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${opts.title}</title>
+  ${seo}
   <link rel="icon" href="/static/images/foliyo-icon.svg" type="image/svg+xml">
   <style>${opts.css}
 ${shellCss}
@@ -711,6 +760,178 @@ export function renderResumeHtml(
     variant: "document",
     body: resumeBodyHtml(data, slug, config.siteUrl),
     chrome,
+    footer,
+  });
+}
+
+export type BlogListPage = {
+  handle: string;
+  authorName: string;
+  plan: string;
+  plan_expires?: string | null;
+  posts: Array<{
+    title: string;
+    slug: string;
+    excerpt: string;
+    cover_image?: string;
+    published_at: string | null;
+  }>;
+};
+
+export type BlogPostPage = {
+  handle: string;
+  authorName: string;
+  plan: string;
+  plan_expires?: string | null;
+  post: {
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    cover_image?: string;
+    published_at: string | null;
+    tags: string;
+  };
+};
+
+function absMediaUrl(raw: string | undefined, siteUrl: string): string | null {
+  const src = safeMediaUrl(raw);
+  if (!src) return null;
+  return src.startsWith("/uploads/") ? `${siteUrl.replace(/\/$/, "")}${src}` : src;
+}
+
+function writingChrome(handle: string, authorName: string, writingLabel = "Writing"): string {
+  const h = esc(handle);
+  const label = esc(writingLabel);
+  return `<nav class="site-nav" aria-label="Site">
+    <div class="site-nav-brand">
+      <a class="site-name" href="/u/${h}">${esc(authorName)}</a>
+      <a class="handle" href="/u/${h}">@${h}</a>
+    </div>
+    <div class="site-nav-links">
+      <a href="/u/${h}">Portfolio</a>
+      <a href="/u/${h}/blog" aria-current="page" class="active">${label}</a>
+    </div>
+  </nav>`;
+}
+
+export function renderBlogListHtml(
+  data: BlogListPage,
+  config: Config,
+  portfolio: PublicPortfolio | null = null,
+): string {
+  const css = loadThemeCss(
+    "portfolio",
+    portfolio ? normalizeSlug("portfolio", portfolio.portfolio.theme_slug) : "minimal",
+  );
+  const plan = effectivePlan(data.plan, config, data.plan_expires);
+  const footer = showFoliyoBranding(plan)
+    ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
+    : "";
+  const site = config.siteUrl.replace(/\/$/, "");
+  const writingLabel = portfolio
+    ? sectionTitle(portfolio, "posts", "portfolio")
+    : "Writing";
+  const items = data.posts.length
+    ? `<ul class="cards">${data.posts
+        .map((p) => {
+          const when = p.published_at
+            ? `<time datetime="${esc(p.published_at)}">${esc(p.published_at.slice(0, 10))}</time>`
+            : "";
+          const excerpt = p.excerpt ? `<p>${esc(p.excerpt)}</p>` : "";
+          const coverAbs = absMediaUrl(p.cover_image, site);
+          const cover = coverAbs
+            ? `<img class="post-cover post-cover-list" src="${esc(coverAbs)}" alt="" loading="lazy" />`
+            : "";
+          return `<li class="post-card">
+            ${cover}
+            <strong><a href="/u/${esc(data.handle)}/blog/${esc(p.slug)}">${esc(p.title)}</a></strong>
+            ${when}${excerpt}
+          </li>`;
+        })
+        .join("")}</ul>`
+    : `<p class="muted">No published posts yet.</p>`;
+
+  const topbar = portfolio
+    ? siteNavHtml(portfolio, "posts")
+    : writingChrome(data.handle, data.authorName, writingLabel);
+
+  return documentShell({
+    title: `${esc(data.authorName)} · ${esc(writingLabel)} · Foliyo`,
+    themeClass: `theme-portfolio theme-${portfolio ? normalizeSlug("portfolio", portfolio.portfolio.theme_slug) : "minimal"}`,
+    css,
+    variant: "site",
+    topbar,
+    description: `${writingLabel} by ${data.authorName}`,
+    canonical: `${site}/u/${encodeURIComponent(data.handle)}/blog`,
+    ogType: "website",
+    body: `<header class="hero"><div><h1>${esc(writingLabel)}</h1><p class="headline">By ${esc(data.authorName)}</p></div></header>
+      <section class="section section-posts" id="posts">${items}</section>`,
+    footer,
+  });
+}
+
+export function renderBlogPostHtml(
+  data: BlogPostPage,
+  config: Config,
+  portfolio: PublicPortfolio | null = null,
+): string {
+  const themeSlug = portfolio
+    ? normalizeSlug("portfolio", portfolio.portfolio.theme_slug)
+    : "minimal";
+  const css = loadThemeCss("portfolio", themeSlug);
+  const plan = effectivePlan(data.plan, config, data.plan_expires);
+  const footer = showFoliyoBranding(plan)
+    ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
+    : "";
+  const site = config.siteUrl.replace(/\/$/, "");
+  const writingLabel = portfolio
+    ? sectionTitle(portfolio, "posts", "portfolio")
+    : "Writing";
+  const when = data.post.published_at
+    ? `<p class="muted"><time datetime="${esc(data.post.published_at)}">${esc(data.post.published_at.slice(0, 10))}</time></p>`
+    : "";
+  let tagsHtml = "";
+  try {
+    const tags = JSON.parse(data.post.tags || "[]") as unknown;
+    if (Array.isArray(tags) && tags.length) {
+      tagsHtml = `<ul class="tags">${tags.map((t) => `<li>${esc(String(t))}</li>`).join("")}</ul>`;
+    }
+  } catch {
+    /* ignore */
+  }
+  const bodyHtml = markdownToSafeHtml(data.post.content);
+  const coverAbs = absMediaUrl(data.post.cover_image, site);
+  const cover = coverAbs
+    ? `<img class="post-cover post-cover-hero" src="${esc(coverAbs)}" alt="" />`
+    : "";
+  const canonical = `${site}/u/${encodeURIComponent(data.handle)}/blog/${encodeURIComponent(data.post.slug)}`;
+  const description = data.post.excerpt?.trim() || undefined;
+  const topbar = portfolio
+    ? siteNavHtml(portfolio, "posts")
+    : writingChrome(data.handle, data.authorName, writingLabel);
+
+  return documentShell({
+    title: `${esc(data.post.title)} · ${esc(data.authorName)} · Foliyo`,
+    themeClass: `theme-portfolio theme-${themeSlug}`,
+    css,
+    variant: "site",
+    topbar,
+    description,
+    ogImage: coverAbs ?? undefined,
+    canonical,
+    ogType: "article",
+    body: `<article class="section section-posts" id="post">
+      <header class="hero"><div>
+        <h1>${esc(data.post.title)}</h1>
+        ${when}
+        ${data.post.excerpt ? `<p class="headline">${esc(data.post.excerpt)}</p>` : ""}
+        ${tagsHtml}
+      </div></header>
+      ${cover}
+      <div class="prose">${bodyHtml}</div>
+      <p class="links"><a href="/u/${esc(data.handle)}/blog">← ${esc(writingLabel)}</a></p>
+    </article>`,
     footer,
   });
 }

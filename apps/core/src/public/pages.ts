@@ -21,6 +21,8 @@ export type PublicPortfolio = {
   education: Record<string, unknown>[];
   certifications: Record<string, unknown>[];
   languages: Record<string, unknown>[];
+  /** Published blog posts selected onto this portfolio (portfolio mode only). */
+  posts: Record<string, unknown>[];
   social_links: Record<string, unknown>[];
   handle: string;
   /** Stored user plan (`free` | `pro` | …). Branding uses effective plan + expiry + config.mode. */
@@ -29,6 +31,21 @@ export type PublicPortfolio = {
   /** share_token of the linked resume, only set when that resume is public (renders a "Download resume" button). */
   download_resume_token?: string | null;
 };
+
+/** All published posts for the user — Writing is portfolio on/off, not a curated subset. */
+async function fetchPublishedBlogPosts(
+  db: FoliyoDb,
+  userId: string,
+): Promise<Record<string, unknown>[]> {
+  return queryAll(
+    db,
+    `SELECT id, title, slug, excerpt, published_at, cover_image, tags
+     FROM blog_posts
+     WHERE user_id = ? AND status = 'published'
+     ORDER BY published_at DESC, id`,
+    [userId],
+  );
+}
 
 function handleFromEmail(email: string): string {
   const local = email.split("@")[0] ?? "user";
@@ -205,6 +222,10 @@ export async function loadPortfolioContent(db: FoliyoDb, portfolioId: string): P
             "languages",
           )
         : [],
+    posts:
+      portfolio.show_posts === 1 || portfolio.show_posts === undefined
+        ? await fetchPublishedBlogPosts(db, userId)
+        : [],
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
@@ -316,6 +337,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
       "language_id",
       "languages",
     ),
+    posts: [],
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
@@ -440,6 +462,7 @@ export async function loadLibraryPreview(
     languages: await queryAll(db, "SELECT * FROM languages WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order", [
       userId,
     ]),
+    posts: [],
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
@@ -463,18 +486,21 @@ export type PortfolioDraftPreviewInput = {
   show_education?: number;
   show_certifications?: number;
   show_languages?: number;
+  show_posts?: number;
   skills_title?: string;
   projects_title?: string;
   experience_title?: string;
   education_title?: string;
   certifications_title?: string;
   languages_title?: string;
+  posts_title?: string;
   skill_ids?: string[];
   project_ids?: string[];
   experience_ids?: string[];
   education_ids?: string[];
   certification_ids?: string[];
   language_ids?: string[];
+  post_ids?: string[];
 };
 
 /**
@@ -535,12 +561,14 @@ export async function loadPortfolioDraftPreview(
       show_education: show(input.show_education),
       show_certifications: show(input.show_certifications),
       show_languages: show(input.show_languages),
+      show_posts: show(input.show_posts),
       skills_title: String(input.skills_title ?? ""),
       projects_title: String(input.projects_title ?? ""),
       experience_title: String(input.experience_title ?? ""),
       education_title: String(input.education_title ?? ""),
       certifications_title: String(input.certifications_title ?? ""),
       languages_title: String(input.languages_title ?? ""),
+      posts_title: String(input.posts_title ?? ""),
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
     skills,
@@ -562,6 +590,7 @@ export async function loadPortfolioDraftPreview(
       show(input.show_languages) === 1
         ? await fetchOwned("languages", input.language_ids ?? [])
         : [],
+    posts: show(input.show_posts) === 1 ? await fetchPublishedBlogPosts(db, userId) : [],
     social_links: await queryAll(
       db,
       "SELECT * FROM social_links WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, provider",
