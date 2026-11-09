@@ -23,6 +23,7 @@ import { publicRoutes } from "./routes/public.js";
 import { specRoutes } from "./routes/spec.js";
 import { statusNotifyRoutes } from "./routes/status-notify.js";
 import { fioImportRoutes } from "./routes/fio-import.js";
+import { aiRoutes } from "./routes/ai.js";
 import { jobsRoutes } from "./routes/jobs.js";
 import { oauthRoutes, type OAuthRoutesOptions } from "./routes/oauth.js";
 import { authMiddleware } from "./middleware/auth.js";
@@ -45,6 +46,11 @@ export type CreateFoliyoAppOptions = {
    * routes (cloud mounts them with SaaS hooks instead). Default: mount with no hooks.
    */
   oauth?: false | OAuthRoutesOptions;
+  /**
+   * Mount core BYOK AI routes at `/api/ai`. Default true for OSS.
+   * Hosted cloud sets false and mounts metered AI routes via extendApi instead.
+   */
+  mountAiRoutes?: boolean;
 };
 
 /** Build the Foliyo Hono app without starting the server — used by foliyo-cloud to mount SaaS routes. */
@@ -159,6 +165,10 @@ export function createFoliyoApp(
   api.route("/settings", settingsRoutes(db, config));
   api.route("/import", fioImportRoutes(db, config));
   api.route("/preview", previewRoutes(db, config));
+  // OSS BYOK AI. Cloud disables this and mounts metered /ai via extendApi.
+  if (options.mountAiRoutes !== false) {
+    api.route("/ai", aiRoutes(db, config));
+  }
   // Cloud (and other hosts) must register here — not after createFoliyoApp returns.
   options.extendApi?.(api);
   app.route("/api", api);

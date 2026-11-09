@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse } from "yaml";
+import type { OpenRouterClientConfig } from "./ai/types.js";
 
 export interface Config {
   port: number;
@@ -44,6 +45,22 @@ export interface Config {
   googleClientSecret: string;
   githubClientId: string;
   githubClientSecret: string;
+  /** Optional BYOK OpenRouter key for OSS AI (resume import, rewrite, theme, JD enhance). */
+  openRouterApiKey: string;
+  openRouterModel: string;
+  /** max_tokens for rewrite / summary helpers. */
+  aiRewriteMaxTokens: number;
+  /** File uploads: local disk (default) or S3-compatible (AWS/R2/MinIO). */
+  storageDriver: "local" | "s3";
+  s3Bucket: string;
+  s3Region: string;
+  /** Empty = AWS default endpoint; set for R2/MinIO. */
+  s3Endpoint: string;
+  s3AccessKeyId: string;
+  s3SecretAccessKey: string;
+  /** Object key prefix, always stored with trailing slash. */
+  s3Prefix: string;
+  s3ForcePathStyle: boolean;
 }
 
 function env(key: string, fallback = ""): string {
@@ -187,7 +204,66 @@ export function loadConfig(): Config {
     googleClientSecret: env("GOOGLE_CLIENT_SECRET").trim(),
     githubClientId: env("GITHUB_CLIENT_ID").trim(),
     githubClientSecret: env("GITHUB_CLIENT_SECRET").trim(),
+    openRouterApiKey: env("OPENROUTER_API_KEY").trim(),
+    openRouterModel: env("OPENROUTER_MODEL", "google/gemini-2.5-flash").trim() || "google/gemini-2.5-flash",
+    aiRewriteMaxTokens: (() => {
+      const n = Number.parseInt(env("AI_REWRITE_MAX_TOKENS", "400"), 10);
+      return Number.isFinite(n) && n > 64 ? n : 400;
+    })(),
+    ...loadStorageConfig(),
   };
+}
+
+function loadStorageConfig(): Pick<
+  Config,
+  | "storageDriver"
+  | "s3Bucket"
+  | "s3Region"
+  | "s3Endpoint"
+  | "s3AccessKeyId"
+  | "s3SecretAccessKey"
+  | "s3Prefix"
+  | "s3ForcePathStyle"
+> {
+  const raw = env("FOLIYO_STORAGE", "local").trim().toLowerCase();
+  const storageDriver: Config["storageDriver"] = raw === "s3" ? "s3" : "local";
+  let prefix = env("FOLIYO_S3_PREFIX", "uploads/").trim() || "uploads/";
+  if (!prefix.endsWith("/")) prefix = `${prefix}/`;
+  const s3 = {
+    storageDriver,
+    s3Bucket: env("FOLIYO_S3_BUCKET").trim(),
+    s3Region: env("FOLIYO_S3_REGION", "auto").trim() || "auto",
+    s3Endpoint: env("FOLIYO_S3_ENDPOINT").trim(),
+    s3AccessKeyId: env("FOLIYO_S3_ACCESS_KEY_ID").trim(),
+    s3SecretAccessKey: env("FOLIYO_S3_SECRET_ACCESS_KEY").trim(),
+    s3Prefix: prefix,
+    s3ForcePathStyle: envBool("FOLIYO_S3_FORCE_PATH_STYLE", Boolean(env("FOLIYO_S3_ENDPOINT").trim())),
+  };
+  if (storageDriver === "s3") {
+    const missing: string[] = [];
+    if (!s3.s3Bucket) missing.push("FOLIYO_S3_BUCKET");
+    if (!s3.s3AccessKeyId) missing.push("FOLIYO_S3_ACCESS_KEY_ID");
+    if (!s3.s3SecretAccessKey) missing.push("FOLIYO_S3_SECRET_ACCESS_KEY");
+    if (missing.length) {
+      throw new Error(
+        `FOLIYO_STORAGE=s3 requires ${missing.join(", ")}. Or set FOLIYO_STORAGE=local.`,
+      );
+    }
+  }
+  return s3;
+}
+
+export function openRouterFromConfig(config: Config): OpenRouterClientConfig {
+  return {
+    openRouterApiKey: config.openRouterApiKey,
+    openRouterModel: config.openRouterModel,
+    dashboardUrl: config.dashboardUrl,
+    aiRewriteMaxTokens: config.aiRewriteMaxTokens,
+  };
+}
+
+export function isOpenRouterConfigured(config: Pick<Config, "openRouterApiKey">): boolean {
+  return Boolean(config.openRouterApiKey);
 }
 
 export function isGoogleOAuthConfigured(

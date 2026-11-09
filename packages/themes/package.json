@@ -1,6 +1,6 @@
 {
 	"name": "@foliyo/themes",
-	"version": "0.6.21",
+	"version": "0.6.22",
 	"private": true,
 	"description": "Portfolio and resume theme CSS + metadata for Foliyo public pages",
 	"type": "module",
@@ -8,6 +8,7 @@
 		"./package.json": "./package.json",
 		"./portfolio/*/style.css": "./portfolio/*/style.css",
 		"./portfolio/*/theme.json": "./portfolio/*/theme.json",
+		"./portfolio/recipes/*/style.css": "./portfolio/recipes/*/style.css",
 		"./resume/*/style.css": "./resume/*/style.css",
 		"./resume/*/theme.json": "./resume/*/theme.json"
 	},

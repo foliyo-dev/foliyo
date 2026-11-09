@@ -16,17 +16,13 @@ import { runMigrations } from "./migrate.js";
 import { hashPassword } from "./auth/password.js";
 import { ensureHandles } from "./public/pages.js";
 import { copyPortfolioContentToResume } from "./resume/content.js";
+import { gravatarUrl as gravatar } from "./avatar.js";
 
 const DEMO_PASSWORD = process.env.FOLIYO_DEMO_PASSWORD || "changeme";
 const force = process.argv.includes("--force");
 
 function id(): string {
   return randomBytes(16).toString("hex");
-}
-
-function gravatar(email: string, size = 200): string {
-  const hash = createHash("md5").update(email.trim().toLowerCase()).digest("hex");
-  return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 }
 
 async function clearUserLibrary(db: FoliyoDb, userId: string): Promise<void> {

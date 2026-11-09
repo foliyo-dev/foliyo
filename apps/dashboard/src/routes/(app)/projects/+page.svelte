@@ -11,6 +11,7 @@
 	import ContentListItem from '$lib/components/content/ContentListItem.svelte';
 	import RecentlyDeleted from '$lib/components/content/RecentlyDeleted.svelte';
 	import AiRewriteAssist from '$lib/components/AiRewriteAssist.svelte';
+	import { aiByok, aiConfigured, ensureAiUsage } from '$lib/stores/ai';
 	import { createCrudList } from '$lib/utils/crudList';
 	import { parseSkillsJson, skillsArrayToJson, skillsFromJson } from '$lib/utils/skills';
 	import {
@@ -130,7 +131,10 @@
 	);
 	const { items, loading, saving, editingId, formOpen } = crud;
 
-	onMount(crud.load);
+	onMount(() => {
+		void ensureAiUsage();
+		return crud.load();
+	});
 
 	async function uploadFile(file: File) {
 		uploading = true;
@@ -213,7 +217,12 @@
 			<svelte:fragment slot="fields">
 				<Input label="Title" bind:value={title} placeholder="My awesome app" />
 				<Textarea label="Description" bind:value={description} rows={4} />
-				<AiRewriteAssist bind:value={description} disabled={$saving} />
+				<AiRewriteAssist
+					bind:value={description}
+					disabled={$saving}
+					aiEnabled={$aiConfigured}
+					byok={$aiByok}
+				/>
 				<div class="row">
 					<Input label="URL" bind:value={url} placeholder="https://…" />
 					<Input label="URL label" bind:value={urlLabel} placeholder="Live, Series, Paper…" />

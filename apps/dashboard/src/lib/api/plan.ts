@@ -169,3 +169,15 @@ export function isPaidHostedPlan(plan: string | null | undefined): boolean {
 	const p = (plan ?? 'free').toLowerCase();
 	return p === 'pro' || p === 'lifetime';
 }
+
+/**
+ * Pro entitlements for UI: hosted Pro/lifetime, or any self-host (no paywall).
+ * Pass `isSaas` from `$lib/config`.
+ */
+export function hasProFeatures(
+	plan: string | null | undefined,
+	saas: boolean
+): boolean {
+	if (!saas) return true;
+	return isProPlan(plan);
+}

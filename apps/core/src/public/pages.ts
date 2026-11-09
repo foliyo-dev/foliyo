@@ -480,6 +480,7 @@ export type PortfolioDraftPreviewInput = {
   headline?: string;
   bio?: string;
   theme_slug?: string;
+  theme_config?: unknown;
   show_skills?: number;
   show_projects?: number;
   show_experience?: number;
@@ -502,7 +503,6 @@ export type PortfolioDraftPreviewInput = {
   language_ids?: string[];
   post_ids?: string[];
 };
-
 /**
  * Owner-only synthetic portfolio for dashboard create/edit live preview
  * before (or without) persisting junctions.
@@ -553,6 +553,14 @@ export async function loadPortfolioDraftPreview(
       headline: String(input.headline ?? ""),
       bio: String(input.bio ?? ""),
       theme_slug: themeSlug,
+      theme_config:
+        input.theme_config === undefined
+          ? null
+          : input.theme_config === null
+            ? null
+            : typeof input.theme_config === "string"
+              ? input.theme_config
+              : JSON.stringify(input.theme_config),
       is_public: 1,
       is_default: 0,
       show_skills: show(input.show_skills),

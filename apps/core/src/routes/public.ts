@@ -1,5 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { resolveCorePublicDir } from "../assets.js";
@@ -16,28 +15,22 @@ import {
   renderWelcome,
 } from "../public/pages.js";
 import { renderBlogListHtml, renderBlogPostHtml, renderResumeHtml } from "../public/themes.js";
+import { getStorage, parseUploadKey } from "../storage/index.js";
 
 export function publicRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono();
 
   r.get("/static/*", serveStatic({ root: resolveCorePublicDir(import.meta.url) }));
 
-  r.get("/uploads/:file", (c) => {
+  r.get("/uploads/:file", async (c) => {
     const file = basename(c.req.param("file"));
-    const match = file.match(/^([a-f0-9]{32})\.(jpg|jpeg|png|webp)$/i);
-    if (!match) return c.notFound();
-    const id = match[1]!.toLowerCase();
-    const ext = match[2]!.toLowerCase() === "jpeg" ? "jpg" : match[2]!.toLowerCase();
-    const abs = join(config.dataDir, "uploads", `${id}.${ext}`);
-    if (!existsSync(abs)) return c.notFound();
-    const types: Record<string, string> = {
-      jpg: "image/jpeg",
-      png: "image/png",
-      webp: "image/webp",
-    };
-    return new Response(readFileSync(abs), {
+    const key = parseUploadKey(file);
+    if (!key) return c.notFound();
+    const obj = await getStorage(config).get(key);
+    if (!obj) return c.notFound();
+    return new Response(new Uint8Array(obj.bytes), {
       headers: {
-        "Content-Type": types[ext] ?? "application/octet-stream",
+        "Content-Type": obj.contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

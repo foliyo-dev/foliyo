@@ -1,6 +1,8 @@
 import { isSaas, siteUrl } from '$lib/config';
 import { api, ApiError } from './client';
 
+import type { ThemeConfig, ThemeRecipe } from './ai';
+
 export type Portfolio = {
 	id: string;
 	name: string;
@@ -9,6 +11,8 @@ export type Portfolio = {
 	headline: string;
 	bio: string;
 	theme_slug: string;
+	/** JSON string or parsed ThemeConfig from API */
+	theme_config?: ThemeConfig | string | null;
 	is_public: number;
 	is_default: number;
 	show_skills: number;
@@ -29,6 +33,27 @@ export type Portfolio = {
 	resume_id: string | null;
 	access_token: string | null;
 };
+
+export type { ThemeConfig, ThemeRecipe };
+
+export const portfolioLayouts = [
+	{ id: 'classic' as const, label: 'Classic', hint: 'Existing Foliyo skins' },
+	{ id: 'photo-hero' as const, label: 'Photo hero', hint: 'Cinematic photography layout' },
+	{ id: 'gallery-grid' as const, label: 'Gallery grid', hint: 'Minimal image gallery' },
+	{ id: 'glassmorphic' as const, label: 'Glassmorphic', hint: 'Frosted glass panels' }
+];
+
+export function parsePortfolioThemeConfig(
+	raw: ThemeConfig | string | null | undefined
+): ThemeConfig | null {
+	if (raw == null || raw === '') return null;
+	if (typeof raw === 'object') return raw;
+	try {
+		return JSON.parse(raw) as ThemeConfig;
+	} catch {
+		return null;
+	}
+}
 
 export type PortfolioContent = {
 	skill_ids: string[];

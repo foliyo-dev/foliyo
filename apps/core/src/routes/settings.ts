@@ -1,5 +1,3 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -7,6 +5,7 @@ import type { AppEnv } from "../middleware/auth.js";
 import { queryOne, run, type FoliyoDb } from "../db.js";
 import type { Config } from "../config.js";
 import { clearUserContent } from "../account/clear-content.js";
+import { getStorage, publicUploadUrl } from "../storage/index.js";
 
 const settingsSchema = z.object({
   site_title: z.string().optional(),
@@ -138,10 +137,10 @@ export function uploadRoutes(_db: FoliyoDb, config: Config) {
       return c.json({ error: "unsupported_type", message: "Use JPEG, PNG, or WebP." }, 400);
     }
     const name = `${randomBytes(16).toString("hex")}.${ext}`;
-    const dir = join(config.dataDir, "uploads");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, name), buf);
-    return c.json({ url: `/uploads/${name}` });
+    const imageType =
+      ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+    await getStorage(config).put(name, buf, imageType);
+    return c.json({ url: publicUploadUrl(name) });
   });
   return r;
 }

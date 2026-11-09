@@ -233,12 +233,10 @@
 			} catch {
 				planInfo = null;
 			}
-			if (isSaas) {
-				try {
-					aiUsage = await getAiUsage();
-				} catch {
-					aiUsage = null;
-				}
+			try {
+				aiUsage = await getAiUsage();
+			} catch {
+				aiUsage = null;
 			}
 			try {
 				const c = await getConsents();
@@ -424,7 +422,7 @@
 				· AI assist {(planInfo.entitlements.ai_assist ?? planInfo.entitlements.ai_resume_import) ? 'on' : 'off'}
 			{/if}
 		</p>
-		{#if isSaas && pro && aiUsage}
+		{#if isSaas && pro && aiUsage && !aiUsage.byok}
 			<p class="muted">
 				Daily AI budget:
 				<strong>{aiUsage.remaining} of {aiUsage.limit} units left</strong>
@@ -436,6 +434,16 @@
 			<p class="muted">
 				Pro includes a daily AI unit budget for smarter JD parse, rewrite, resume summary, and
 				resume import.
+			</p>
+		{:else if !isSaas}
+			<p class="muted">
+				{#if aiUsage?.openrouter}
+					AI: <strong>on</strong> (OpenRouter BYOK). Resume import, rewrite, summary, and theme
+					generation use your server key — no Foliyo unit cap.
+				{:else}
+					AI: <strong>off</strong>. Set <code>OPENROUTER_API_KEY</code> on the server for cloud-like
+					AI features (bring your own key).
+				{/if}
 			</p>
 		{/if}
 		{#if !pro && showDpdp}

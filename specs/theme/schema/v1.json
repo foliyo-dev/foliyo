@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.foliyo.dev/theme/v1",
+  "title": "Foliyo Theme Config",
+  "description": "Presentation config for curated portfolio layout recipes. AI fills this JSON; the renderer never executes freeform HTML/CSS.",
+  "type": "object",
+  "required": ["version", "recipe"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "recipe": {
+      "type": "string",
+      "enum": ["classic", "photo-hero", "gallery-grid", "glassmorphic"]
+    },
+    "skin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theme_slug": {
+          "type": "string",
+          "enum": ["minimal", "modern", "creative", "noir", "atelier", "editorial", "custom"]
+        },
+        "colors": {
+          "type": "object",
+          "required": ["bg", "ink", "muted", "accent"],
+          "additionalProperties": false,
+          "properties": {
+            "bg": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+            "ink": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+            "muted": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+            "accent": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+            "accentSoft": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" }
+          }
+        },
+        "fonts": {
+          "type": "object",
+          "required": ["heading", "body"],
+          "additionalProperties": false,
+          "properties": {
+            "heading": {
+              "type": "string",
+              "enum": [
+                "Inter", "Outfit", "DM Sans", "Space Grotesk", "Sora", "Manrope",
+                "Cormorant Garamond", "Playfair Display", "Libre Baskerville", "Lora",
+                "Source Serif 4", "Instrument Serif", "Fraunces",
+                "IBM Plex Sans", "IBM Plex Serif", "JetBrains Mono"
+              ]
+            },
+            "body": {
+              "type": "string",
+              "enum": [
+                "Inter", "Outfit", "DM Sans", "Space Grotesk", "Sora", "Manrope",
+                "Cormorant Garamond", "Playfair Display", "Libre Baskerville", "Lora",
+                "Source Serif 4", "Instrument Serif", "Fraunces",
+                "IBM Plex Sans", "IBM Plex Serif", "JetBrains Mono"
+              ]
+            }
+          }
+        },
+        "radius": { "type": "string", "enum": ["sharp", "soft", "pill"] },
+        "density": { "type": "string", "enum": ["airy", "cozy"] },
+        "glass": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "blur": { "type": "string", "enum": ["sm", "md", "lg"] },
+            "opacity": { "type": "string", "enum": ["light", "medium", "heavy"] },
+            "borderGlow": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "brand": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "maxLength": 80 },
+            "monogram": { "type": "string", "maxLength": 4 },
+            "logo_url": { "type": "string", "maxLength": 2048 }
+          }
+        },
+        "hero": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string", "maxLength": 160 },
+            "title_accent": { "type": "string", "maxLength": 80 },
+            "subtitle": { "type": "string", "maxLength": 400 },
+            "cta_primary": { "type": "string", "maxLength": 40 },
+            "cta_secondary": { "type": "string", "maxLength": 40 },
+            "image_project_id": { "type": "string", "maxLength": 64 },
+            "image_url": { "type": "string", "maxLength": 2048 },
+            "badges": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "required": ["label"],
+                "additionalProperties": false,
+                "properties": {
+                  "label": { "type": "string", "maxLength": 60 },
+                  "tone": { "type": "string", "enum": ["accent", "muted", "success"] }
+                }
+              }
+            }
+          }
+        },
+        "stats": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "value": { "type": "string", "maxLength": 24 },
+              "label": { "type": "string", "maxLength": 80 }
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["title", "description"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string", "maxLength": 80 },
+              "description": { "type": "string", "maxLength": 240 },
+              "icon": {
+                "type": "string",
+                "enum": ["spark", "camera", "clock", "edit", "globe", "star", "heart", "layers", "zap", "frame"]
+              }
+            }
+          }
+        },
+        "about": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "eyebrow": { "type": "string", "maxLength": 60 },
+            "title": { "type": "string", "maxLength": 160 },
+            "body": { "type": "string", "maxLength": 2000 },
+            "signature_url": { "type": "string", "maxLength": 2048 },
+            "image_project_id": { "type": "string", "maxLength": 64 },
+            "detail_project_id": { "type": "string", "maxLength": 64 },
+            "image_url": { "type": "string", "maxLength": 2048 },
+            "detail_url": { "type": "string", "maxLength": 2048 }
+          }
+        },
+        "gallery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string", "maxLength": 80 },
+            "caption_mode": { "type": "string", "enum": ["name-category", "title", "none"] },
+            "columns": { "type": "integer", "enum": [2, 3] }
+          }
+        }
+      }
+    },
+    "chrome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "show_nav": { "type": "boolean" },
+        "nav_style": { "type": "string", "enum": ["sticky", "minimal", "none", "floating-glass"] }
+      }
+    }
+  }
+}

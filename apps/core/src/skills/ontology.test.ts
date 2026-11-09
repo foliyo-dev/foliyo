@@ -47,6 +47,17 @@ function testConfig(dir: string): Config {
     googleClientSecret: "",
     githubClientId: "",
     githubClientSecret: "",
+    openRouterApiKey: "",
+    openRouterModel: "google/gemini-2.5-flash",
+    aiRewriteMaxTokens: 400,
+    storageDriver: "local",
+    s3Bucket: "",
+    s3Region: "auto",
+    s3Endpoint: "",
+    s3AccessKeyId: "",
+    s3SecretAccessKey: "",
+    s3Prefix: "uploads/",
+    s3ForcePathStyle: false,
   };
 }
 

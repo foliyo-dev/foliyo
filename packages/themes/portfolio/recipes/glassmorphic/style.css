@@ -1,0 +1,252 @@
+/* Glassmorphic — frosted panels over a vivid atmospheric background */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap");
+
+.theme-glassmorphic {
+  --bg: #0b1224;
+  --ink: #f8fafc;
+  --muted: #b6c2d9;
+  --accent: #38bdf8;
+  --accent-soft: #818cf8;
+  --surface: rgba(255, 255, 255, 0.1);
+  --line: var(--glass-border, rgba(255, 255, 255, 0.18));
+  --radius: 1.1rem;
+  --glass-blur: 18px;
+  --glass-alpha: 0.22;
+  --font-heading: "Sora", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  background:
+    radial-gradient(900px 500px at 15% 10%, rgba(56, 189, 248, 0.35), transparent 55%),
+    radial-gradient(800px 480px at 90% 0%, rgba(129, 140, 248, 0.4), transparent 50%),
+    radial-gradient(700px 500px at 50% 100%, rgba(236, 72, 153, 0.22), transparent 55%),
+    linear-gradient(160deg, #07101f, #121a33 45%, #0b1224);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+.theme-glassmorphic .page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+.theme-glassmorphic h1,
+.theme-glassmorphic h2,
+.theme-glassmorphic h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.theme-glassmorphic .glass {
+  background: rgba(255, 255, 255, var(--glass-alpha));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .theme-glassmorphic .glass {
+    background: color-mix(in srgb, #152038 88%, white 12%);
+  }
+}
+
+.theme-glassmorphic .site-nav {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 20;
+  margin: 0.75rem auto 0;
+  max-width: 1080px;
+  width: calc(100% - 2.5rem);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, calc(var(--glass-alpha) + 0.05));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.theme-glassmorphic .site-nav .site-name {
+  color: var(--ink);
+}
+
+.theme-glassmorphic .site-nav-links a {
+  color: var(--muted);
+}
+
+.theme-glassmorphic .site-nav-links a:hover {
+  color: var(--accent);
+}
+
+.theme-glassmorphic .gl-hero {
+  margin-top: 2rem;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.theme-glassmorphic .gl-hero h1 {
+  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  margin: 0 0 0.85rem;
+  line-height: 1.08;
+}
+
+.theme-glassmorphic .gl-hero h1 .accent {
+  color: var(--accent);
+}
+
+.theme-glassmorphic .gl-hero .subtitle {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+  max-width: 34rem;
+}
+
+.theme-glassmorphic .gl-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.theme-glassmorphic .gl-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.65rem 1.15rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.theme-glassmorphic .gl-btn-primary {
+  background: var(--accent);
+  color: #0b1224;
+}
+
+.theme-glassmorphic .gl-btn-secondary {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.theme-glassmorphic .gl-hero-media img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: calc(var(--radius) - 0.2rem);
+  display: block;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-glassmorphic .gl-stats {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.theme-glassmorphic .gl-stats li {
+  padding: 0.9rem 1rem;
+  text-align: center;
+}
+
+.theme-glassmorphic .gl-stats strong {
+  display: block;
+  font-size: 1.25rem;
+}
+
+.theme-glassmorphic .gl-stats span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.theme-glassmorphic .section {
+  margin-top: 1.5rem;
+  padding: 1.35rem 1.35rem 1.5rem;
+}
+
+.theme-glassmorphic .section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+}
+
+.theme-glassmorphic .cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.theme-glassmorphic .cards > li {
+  background: rgba(255, 255, 255, calc(var(--glass-alpha) - 0.04));
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 0.15rem);
+  padding: 0.9rem;
+  backdrop-filter: blur(calc(var(--glass-blur) - 4px));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) - 4px));
+}
+
+.theme-glassmorphic .card-media {
+  height: 10rem;
+  border-radius: 0.7rem;
+}
+
+.theme-glassmorphic .tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.theme-glassmorphic .tags li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.theme-glassmorphic .timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-glassmorphic .timeline > li {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-glassmorphic .muted {
+  color: var(--muted);
+}
+
+.theme-glassmorphic .site-footer {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem 0;
+  font-size: 0.85rem;
+}
+
+.theme-glassmorphic .site-footer a {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  .theme-glassmorphic .gl-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-glassmorphic .gl-stats {
+    grid-template-columns: 1fr;
+  }
+}

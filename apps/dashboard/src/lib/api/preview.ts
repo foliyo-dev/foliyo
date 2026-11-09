@@ -37,6 +37,7 @@ export type PortfolioDraftPreview = {
 	headline?: string;
 	bio?: string;
 	theme_slug?: string;
+	theme_config?: unknown;
 	show_skills?: number;
 	show_projects?: number;
 	show_experience?: number;

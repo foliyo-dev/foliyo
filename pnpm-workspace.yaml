@@ -2,4 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  # Optional native peer of unpdf (PDF text extract). We only need extractText —
+  # deny the install script so Docker/CI stay on strictDepBuilds without compiling cairo.
+  canvas: false
   esbuild: true

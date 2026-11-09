@@ -18,7 +18,7 @@ export default defineConfig({
 	},
 	ssr: {
 		// Compile workspace Svelte/CSS packages in the app bundle
-		noExternal: ['@foliyo/ui', '@foliyo/brand']
+		noExternal: ['@foliyo/ui', '@foliyo/brand', '@foliyo/themes']
 	},
 	server: {
 		// Same-origin /api in dev (matches production nginx). Avoids 404s when the

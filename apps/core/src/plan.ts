@@ -19,9 +19,9 @@ export type PlanEntitlements = {
   portfolios_unlimited: boolean;
   pdf_export: boolean;
   remove_branding: boolean;
-  /** Hosted Pro: AI resume → Foliyo Resume Spec draft (OpenRouter in cloud). Never on OSS. */
+  /** AI resume → Foliyo Resume Spec draft (OpenRouter). Hosted: Foliyo key + units. OSS: BYOK. */
   ai_resume_import: boolean;
-  /** Hosted Pro: AI rewrite / assist (unit-metered). Gap-check is free (no LLM). */
+  /** AI rewrite / assist. Hosted: unit-metered. OSS: BYOK. Gap-check is free (no LLM). */
   ai_assist: boolean;
   /** Pro / lifetime / selfhost: Foliyo-hosted user blog CMS. */
   user_blog: boolean;

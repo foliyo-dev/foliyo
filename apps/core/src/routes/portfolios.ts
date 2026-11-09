@@ -12,6 +12,11 @@ import {
   isProPlan,
   upgradePayload,
 } from "../plan.js";
+import {
+  serializeThemeConfig,
+  themeConfigSchema,
+  type ThemeConfig,
+} from "../spec/theme-config.js";
 
 const portfolioSchema = z.object({
   name: z.string().min(1),
@@ -20,6 +25,8 @@ const portfolioSchema = z.object({
   headline: z.string().default(""),
   bio: z.string().default(""),
   theme_slug: z.string().default("minimal"),
+  /** Presentation overlay for curated layout recipes; null clears. */
+  theme_config: themeConfigSchema.nullable().optional(),
   is_public: z.number().int().default(0),
   is_default: z.number().int().default(0),
   show_skills: z.number().int().default(1),
@@ -40,6 +47,11 @@ const portfolioSchema = z.object({
   /** Resume shown as a "Download resume" button on this public portfolio, if any. */
   resume_id: z.string().nullable().default(null),
 });
+
+function themeConfigToSql(config: ThemeConfig | null): string | null {
+  if (config === null) return null;
+  return serializeThemeConfig(config);
+}
 
 const contentSchema = z.object({
   skill_ids: z.array(z.string()).default([]),
@@ -252,15 +264,18 @@ export function portfoliosRoutes(db: FoliyoDb, config: Config) {
       if (!owned) return c.json({ error: "resume not found" }, 404);
     }
 
+    const themeConfigJson =
+      d.theme_config === undefined ? null : themeConfigToSql(d.theme_config);
+
     await run(
       db,
-      `INSERT INTO portfolios (user_id, name, slug, description, headline, bio, theme_slug, is_public, is_default,
+      `INSERT INTO portfolios (user_id, name, slug, description, headline, bio, theme_slug, theme_config, is_public, is_default,
        show_skills, show_projects, show_experience, show_education, show_certifications, show_languages, show_posts,
        skills_title, projects_title, experience_title, education_title, certifications_title, languages_title, posts_title,
        sort_order, resume_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
-        userId, d.name, d.slug, d.description, d.headline, d.bio, d.theme_slug, d.is_public, isDefault,
+        userId, d.name, d.slug, d.description, d.headline, d.bio, d.theme_slug, themeConfigJson, d.is_public, isDefault,
         d.show_skills, d.show_projects, d.show_experience, d.show_education, d.show_certifications,
         d.show_languages, d.show_posts, d.skills_title, d.projects_title, d.experience_title, d.education_title,
         d.certifications_title, d.languages_title, d.posts_title, d.sort_order, d.resume_id,
@@ -301,22 +316,33 @@ export function portfoliosRoutes(db: FoliyoDb, config: Config) {
     const userId = c.get("userId");
     const id = c.req.param("id");
     const body = portfolioSchema.partial().safeParse(await c.req.json());
-    if (!body.success) return c.json({ error: "invalid body" }, 400);
-    const cols = Object.keys(body.data);
-    if (cols.length === 0) return c.json({ ok: true });
-    if (body.data.resume_id) {
+    if (!body.success) return c.json({ error: "invalid body", details: body.error.flatten() }, 400);
+    const data = { ...body.data };
+    if (Object.keys(data).length === 0) return c.json({ ok: true });
+    if (data.resume_id) {
       const owned = await queryOne(db, "SELECT id FROM resumes WHERE id = ? AND user_id = ?", [
-        body.data.resume_id,
+        data.resume_id,
         userId,
       ]);
       if (!owned) return c.json({ error: "resume not found" }, 404);
     }
-    if (body.data.is_default === 1) {
+    if (data.is_default === 1) {
       await run(db, "UPDATE portfolios SET is_default=0 WHERE user_id=?", [userId]);
     }
-    const sets = cols.map((col) => `${col}=?`).join(", ");
-    await run(db, `UPDATE portfolios SET ${sets}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
-      ...Object.values(body.data) as SqlValue[], id, userId,
+
+    const values: SqlValue[] = [];
+    const sets: string[] = [];
+    for (const [col, val] of Object.entries(data)) {
+      if (col === "theme_config") {
+        sets.push("theme_config=?");
+        values.push(themeConfigToSql((val as ThemeConfig | null) ?? null));
+        continue;
+      }
+      sets.push(`${col}=?`);
+      values.push(val as SqlValue);
+    }
+    await run(db, `UPDATE portfolios SET ${sets.join(", ")}, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`, [
+      ...values, id, userId,
     ]);
     return c.json({ ok: true });
   });

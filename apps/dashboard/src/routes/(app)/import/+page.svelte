@@ -10,7 +10,9 @@
 	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 	import { isSaas } from '$lib/config';
 	import { showToast } from '$lib/stores/toast';
-	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { getPlan, hasProFeatures, type PlanInfo } from '$lib/api/plan';
+	import { getAiUsage } from '$lib/api/ai';
+	import { setAiUsage } from '$lib/stores/ai';
 	import {
 		importResumeFromPdf,
 		importResumeFromText,
@@ -60,8 +62,19 @@
 		| 'languages'
 		| 'links';
 
+	/** Categories with per-row checkboxes (section header = select all). */
+	type SelectableKey =
+		| 'skills'
+		| 'experience'
+		| 'education'
+		| 'projects'
+		| 'certifications'
+		| 'languages'
+		| 'links';
+
 	let planInfo: PlanInfo | null = null;
 	let loadingPlan = true;
+	let aiConfigured = false;
 	let extracting = false;
 	let saving = false;
 	let pasteText = '';
@@ -100,13 +113,22 @@
 	let upgradeMessage =
 		'Import resume is a Pro feature. Upgrade to extract a CV into your Foliyo library.';
 
-	$: pro = isProPlan(planInfo?.plan ?? 'free');
+	$: pro = hasProFeatures(planInfo?.plan ?? (isSaas ? 'free' : 'selfhost'), isSaas);
 	$: onboarding = $page.url.searchParams.get('onboarding') === '1';
 	$: importPhase = savedResult ? 3 : draft ? 2 : 1;
+	$: showAiImport = pro && (isSaas || aiConfigured);
 
 	onMount(async () => {
 		void loadSnapshots();
 		void loadLibraryIndex();
+		try {
+			const usage = await getAiUsage();
+			aiConfigured = Boolean(usage.openrouter);
+			setAiUsage(usage);
+		} catch {
+			aiConfigured = false;
+			setAiUsage(null);
+		}
 		if (!isSaas) {
 			loadingPlan = false;
 			return;
@@ -327,7 +349,12 @@
 			draft = coerceEditable(res.draft);
 			remainingToday = null;
 			initSelection(draft);
-			showToast('Signed .fio verified — review before saving', 'success');
+			showToast(
+				res.meta.signature_valid
+					? 'Signed .fio verified — review before saving'
+					: '.fio imported — review before saving',
+				res.meta.signature_valid ? 'success' : 'info'
+			);
 		} catch (err) {
 			await handleExtractError(err);
 		} finally {
@@ -346,6 +373,28 @@
 		return items.filter((_, i) => flags[i]);
 	}
 
+	function sectionAllChecked(key: SelectableKey): boolean {
+		const flags = selected[key];
+		return flags.length > 0 && flags.every(Boolean);
+	}
+
+	/** Header checkbox: check/uncheck every row in that category. */
+	function onSectionSelectAll(key: SelectableKey, e: Event) {
+		const checked = (e.currentTarget as HTMLInputElement).checked;
+		selected = {
+			...selected,
+			[key]: selected[key].map(() => checked)
+		};
+		include = { ...include, [key]: checked };
+	}
+
+	/** Keep header checkbox + `include` in sync when a single row is toggled. */
+	function onRowToggle(key: SelectableKey) {
+		// Reassign so the section "select all" checkbox recomputes (Svelte 4).
+		selected = { ...selected, [key]: [...selected[key]] };
+		include = { ...include, [key]: selected[key].some(Boolean) };
+	}
+
 	/** Keep only checked sections/rows — same Foliyo Resume Spec the AI/.fio already returned. */
 	function filteredDraft(): ResumeImportDraft | null {
 		if (!draft) return null;
@@ -357,21 +406,19 @@
 			location: '',
 			links: {} as Record<string, string>
 		};
-		const links = include.links
-			? Object.fromEntries(
-					Object.entries(draft.candidate.links || {}).filter((_, i) => selected.links[i])
-				)
-			: {};
+		const links = Object.fromEntries(
+			Object.entries(draft.candidate.links || {}).filter((_, i) => selected.links[i])
+		);
 		return {
 			candidate: include.candidate
 				? { ...draft.candidate, links }
 				: { ...emptyCandidate, links },
-			skills: include.skills ? pick(draft.skills, selected.skills) : [],
-			experience: include.experience ? pick(draft.experience, selected.experience) : [],
-			education: include.education ? pick(draft.education, selected.education) : [],
-			projects: include.projects ? pick(draft.projects, selected.projects) : [],
-			certifications: include.certifications ? pick(draft.certifications, selected.certifications) : [],
-			languages: include.languages ? pick(draft.languages, selected.languages) : []
+			skills: pick(draft.skills, selected.skills),
+			experience: pick(draft.experience, selected.experience),
+			education: pick(draft.education, selected.education),
+			projects: pick(draft.projects, selected.projects),
+			certifications: pick(draft.certifications, selected.certifications),
+			languages: pick(draft.languages, selected.languages)
 		};
 	}
 
@@ -446,7 +493,9 @@
 	title="Import resume"
 	description={isSaas
 		? 'Step through: add your resume → review the extraction → save to your library. Each save keeps an undo snapshot (up to 5).'
-		: 'Import a signed .fio package. Review the draft, then save into your library. Each save keeps an undo snapshot (up to 5).'}
+		: aiConfigured
+			? 'Upload a PDF, paste text, or import a .fio package. Review the draft, then save. Each save keeps an undo snapshot (up to 5).'
+			: 'Import a .fio package, or set OPENROUTER_API_KEY on the server for AI PDF/text import (BYOK).'}
 />
 
 {#if onboarding}
@@ -570,15 +619,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.links} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('links')}
+					disabled={Object.keys(draft.candidate.links || {}).length === 0}
+					on:change={(e) => onSectionSelectAll('links', e)}
+				/>
 				<span>Social links ({Object.keys(draft.candidate.links || {}).length})</span>
 			</label>
-			{#if include.links}
+			{#if Object.keys(draft.candidate.links || {}).length > 0}
 				<ul class="item-list">
 					{#each Object.entries(draft.candidate.links || {}) as [k, v], i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.links[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.links[i]}
+									on:change={() => onRowToggle('links')}
+								/>
 								<code>{k}</code> — {v}
 								{#if dup.links[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -588,15 +646,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.skills} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('skills')}
+					disabled={draft.skills.length === 0}
+					on:change={(e) => onSectionSelectAll('skills', e)}
+				/>
 				<span>Skills ({draft.skills.length})</span>
 			</label>
-			{#if include.skills}
+			{#if draft.skills.length > 0}
 				<ul class="item-list">
 					{#each draft.skills as s, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.skills[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.skills[i]}
+									on:change={() => onRowToggle('skills')}
+								/>
 								{s.name}{#if s.level} · {s.level}{/if}{#if s.category} · {s.category}{/if}
 								{#if dup.skills[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -606,15 +673,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.experience} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('experience')}
+					disabled={draft.experience.length === 0}
+					on:change={(e) => onSectionSelectAll('experience', e)}
+				/>
 				<span>Experience ({draft.experience.length})</span>
 			</label>
-			{#if include.experience}
+			{#if draft.experience.length > 0}
 				<ul class="item-list">
 					{#each draft.experience as e, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.experience[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.experience[i]}
+									on:change={() => onRowToggle('experience')}
+								/>
 								<strong>{e.role}</strong> @ {e.company}
 								<span class="meta">{e.start ?? '?'} – {e.current ? 'present' : e.end ?? '?'}</span>
 								{#if dup.experience[i]}<span class="dup-badge">Already in library</span>{/if}
@@ -626,15 +702,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.education} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('education')}
+					disabled={draft.education.length === 0}
+					on:change={(e) => onSectionSelectAll('education', e)}
+				/>
 				<span>Education ({draft.education.length})</span>
 			</label>
-			{#if include.education}
+			{#if draft.education.length > 0}
 				<ul class="item-list">
 					{#each draft.education as e, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.education[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.education[i]}
+									on:change={() => onRowToggle('education')}
+								/>
 								{e.institution}{#if e.degree} · {e.degree}{/if}
 								{#if dup.education[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -644,15 +729,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.projects} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('projects')}
+					disabled={draft.projects.length === 0}
+					on:change={(e) => onSectionSelectAll('projects', e)}
+				/>
 				<span>Projects ({draft.projects.length})</span>
 			</label>
-			{#if include.projects}
+			{#if draft.projects.length > 0}
 				<ul class="item-list">
 					{#each draft.projects as p, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.projects[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.projects[i]}
+									on:change={() => onRowToggle('projects')}
+								/>
 								{p.title}
 								{#if dup.projects[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -662,15 +756,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.certifications} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('certifications')}
+					disabled={draft.certifications.length === 0}
+					on:change={(e) => onSectionSelectAll('certifications', e)}
+				/>
 				<span>Certifications ({draft.certifications.length})</span>
 			</label>
-			{#if include.certifications}
+			{#if draft.certifications.length > 0}
 				<ul class="item-list">
 					{#each draft.certifications as c, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.certifications[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.certifications[i]}
+									on:change={() => onRowToggle('certifications')}
+								/>
 								{c.name}{#if c.issuer} · {c.issuer}{/if}
 								{#if dup.certifications[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -680,15 +783,24 @@
 			{/if}
 
 			<label class="section-toggle">
-				<input type="checkbox" bind:checked={include.languages} />
+				<input
+					type="checkbox"
+					checked={sectionAllChecked('languages')}
+					disabled={draft.languages.length === 0}
+					on:change={(e) => onSectionSelectAll('languages', e)}
+				/>
 				<span>Languages ({draft.languages.length})</span>
 			</label>
-			{#if include.languages}
+			{#if draft.languages.length > 0}
 				<ul class="item-list">
 					{#each draft.languages as l, i}
 						<li>
 							<label class="row-check">
-								<input type="checkbox" bind:checked={selected.languages[i]} />
+								<input
+									type="checkbox"
+									bind:checked={selected.languages[i]}
+									on:change={() => onRowToggle('languages')}
+								/>
 								{l.language}{#if l.proficiency} · {l.proficiency}{/if}
 								{#if dup.languages[i]}<span class="dup-badge">Already in library</span>{/if}
 							</label>
@@ -722,30 +834,9 @@
 				</Button>
 			</div>
 		</Card>
-{:else if !isSaas}
-	<Card>
-		<h2 class="section-title">Import .fio</h2>
-		<p class="hint">
-			Upload a Foliyo Resume Spec package (<code>.fio</code>) exported from this or another instance
-			that shares the same integrity secret. Signature is checked before you review. AI import is
-			hosted-only.
-		</p>
-		<div class="actions-row">
-			<input
-				bind:this={fioInput}
-				type="file"
-				accept=".fio,application/vnd.foliyo.resume+zip,application/zip"
-				hidden
-				on:change={onFioChange}
-			/>
-			<Button disabled={extracting} on:click={() => fioInput?.click()}>
-				{extracting ? 'Verifying…' : 'Upload .fio'}
-			</Button>
-		</div>
-	</Card>
-{:else if loadingPlan}
+{:else if isSaas && loadingPlan}
 	<p class="muted">Loading…</p>
-{:else if !pro}
+{:else if isSaas && !pro}
 	<Card>
 		<p class="muted">
 			Import resume is included with Pro. Upgrade to upload a PDF or paste your CV — free plans
@@ -764,7 +855,7 @@
 			}}
 		/>
 	</div>
-{:else if showUpgrade}
+{:else if isSaas && showUpgrade}
 	<div class="upgrade-wrap">
 		<UpgradePrompt
 			title="Upgrade for AI import"
@@ -778,12 +869,15 @@
 		/>
 	</div>
 {:else}
+	{#if showAiImport}
 		<Card>
 			<h2 class="section-title">{onboarding ? '1. Add resume' : 'Upload or paste'}</h2>
 			<p class="hint">
 				Text-based PDFs only (max 12 pages / 4MB). No scanned/image PDFs. We check the file before
 				sending anything to AI.
-				{#if remainingToday != null}
+				{#if !isSaas}
+					<span class="remain">Uses your OpenRouter key (BYOK)</span>
+				{:else if remainingToday != null}
 					<span class="remain">{remainingToday} left today</span>
 				{/if}
 			</p>
@@ -795,10 +889,7 @@
 					hidden
 					on:change={onFileChange}
 				/>
-				<Button
-					disabled={extracting}
-					on:click={() => fileInput?.click()}
-				>
+				<Button disabled={extracting} on:click={() => fileInput?.click()}>
 					{extracting ? 'Extracting…' : 'Upload PDF'}
 				</Button>
 			</div>
@@ -815,6 +906,37 @@
 				</Button>
 			</div>
 		</Card>
+	{:else if !isSaas}
+		<Card>
+			<p class="muted">
+				AI PDF/text import needs <code>OPENROUTER_API_KEY</code> on the server (bring your own key).
+				Until then, import a <code>.fio</code> package below.
+			</p>
+		</Card>
+	{/if}
+
+	{#if !isSaas}
+		<Card>
+			<h2 class="section-title">Import .fio</h2>
+			<p class="hint">
+				Upload a Foliyo Resume Spec package (<code>.fio</code>) from foliyo.dev or any Foliyo host —
+				portable by design. Cryptographic signature checks are for third-party verify APIs, not for your
+				own import.
+			</p>
+			<div class="actions-row">
+				<input
+					bind:this={fioInput}
+					type="file"
+					accept=".fio,application/vnd.foliyo.resume+zip,application/zip"
+					hidden
+					on:change={onFioChange}
+				/>
+				<Button disabled={extracting} on:click={() => fioInput?.click()}>
+					{extracting ? 'Verifying…' : 'Upload .fio'}
+				</Button>
+			</div>
+		</Card>
+	{/if}
 {/if}
 
 <style>

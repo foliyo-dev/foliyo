@@ -60,7 +60,8 @@ export type ResumeImportResponse = {
 		schema: string;
 		tokens_in: number;
 		tokens_out: number;
-		remaining_today: number;
+		remaining_today: number | null;
+		byok?: boolean;
 	};
 };
 
@@ -127,7 +128,11 @@ export async function importResumeFromPdf(file: File): Promise<ResumeImportRespo
 	return res.json() as Promise<ResumeImportResponse>;
 }
 
-/** OSS / self-host: parse + verify a signed `.fio` package into a library draft. */
+/**
+ * OSS / self-host: parse a `.fio` package into a library draft.
+ * `signature_valid` is false when the package was signed by another Foliyo instance
+ * (different FOLIYO_INTEGRITY_SECRET) — content is still returned for review.
+ */
 export async function importResumeFromFio(file: File): Promise<{
 	draft: ResumeImportDraft;
 	meta: {

@@ -61,7 +61,7 @@ MVP is not “feature complete” until a stranger can: **sign up → fill libra
 | Razorpay | Done (cloud Orders + webhook; needs keys) |
 | Email verification | Done (cloud signup → check-email → `/verify` → welcome mail) |
 | Plan middleware beyond portfolio create | Done (PDF gate + branding + GET /api/plan) |
-| File uploads | Project images shipped (`POST /api/upload/project-image`, `GET /uploads/:file`). Avatar still 501. |
+| File uploads | Project images via storage driver (`local` default, `s3` optional). Public URLs stay `/uploads/:file`. Avatar still 501. |
 | DPDP export/delete/consent UX | Done (Settings + privacy page; 30-day delete grace) |
 | Deno single-binary release | Replaced by Node 22 bundle (`foliyo-core.tar.gz`) |
 
@@ -165,7 +165,9 @@ Only after activation metrics exist:
 Make the existing library work for photo / research / writing without a blog CMS or gallery table:
 
 - [x] Render `project.image_url` on public portfolios; Atelier uses a real image instead of the CSS placeholder
-- [x] `POST /api/upload/project-image` → `{dataDir}/uploads/{id}.{ext}`; public `GET /uploads/:file`
+- [x] `POST /api/upload/project-image` → storage driver (`local` / `s3`); public `GET /uploads/:file` (stable URL contract)
+- [x] `pnpm --filter @foliyo/core storage:sync` for local→S3 cutover (no DB rewrite)
+- [x] ThemeConfig `chrome.sections_mode: gallery` — photo-folio display (hide library + resume chrome)
 - [x] Optional `url_label` / `repo_url_label` / `article_url_label` on projects; `article_url_label` on experience
 - [x] Per-portfolio section titles (`projects_title`, …); resume headings stay ATS-canonical
 - [x] User blog CMS (Pro / self-host)
@@ -179,12 +181,13 @@ Make the existing library work for photo / research / writing without a blog CMS
 - `POST /v1/status/notify` — authenticated ATS webhook (seed partner via `seed-ats-partner.ts`)
 - First Indian ATS PoC — still open (BD + one integration)
 
-### AI resume import (hosted Pro)
+### AI resume import (hosted Pro + OSS BYOK)
 
 - Entitlement `ai_resume_import` on Pro / lifetime / selfhost
-- Cloud `POST /api/import/resume` — PDF or pasted text → OpenRouter → Foliyo Resume Spec draft (no auto-write)
-- Dashboard `/import` — review/select → save via library CRUD
-- Daily cap via `ai_import_usage` + `AI_IMPORT_DAILY_CAP` (default 5)
+- Shared OpenRouter helpers in `@foliyo/core/ai`
+- Cloud `POST /api/import/resume` — Foliyo key + daily units (`AI_IMPORT_DAILY_CAP`, `AI_DAILY_UNITS`)
+- OSS `POST /api/import/resume` when `OPENROUTER_API_KEY` set (BYOK, no Foliyo unit pool); `.fio` always available
+- Dashboard `/import` — SaaS Pro or self-host with key; never UpgradePrompt on OSS
 - Env: `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`
 
 ---

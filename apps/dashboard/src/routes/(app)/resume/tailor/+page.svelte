@@ -25,9 +25,10 @@
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
 	import { showToast } from '$lib/stores/toast';
 	import { ApiError } from '$lib/api/client';
-	import { getPlan, isProPlan, type PlanInfo } from '$lib/api/plan';
+	import { getPlan, hasProFeatures, type PlanInfo } from '$lib/api/plan';
 	import { getAiUsage, type AiUsage } from '$lib/api/ai';
 	import { isSaas } from '$lib/config';
+	import { setAiUsage } from '$lib/stores/ai';
 
 	let portfolios: Portfolio[] = [];
 	let loading = true;
@@ -44,9 +45,12 @@
 	let jdHashTimer: ReturnType<typeof setTimeout> | null = null;
 	let planInfo: PlanInfo | null = null;
 	let aiUsage: AiUsage | null = null;
-	$: pro = isProPlan(planInfo?.plan ?? 'free');
+	$: pro = hasProFeatures(planInfo?.plan ?? (isSaas ? 'free' : 'selfhost'), isSaas);
+	$: byok = Boolean(aiUsage?.byok) || (!isSaas && Boolean(aiUsage?.openrouter));
+	$: aiEnabled = Boolean(aiUsage?.openrouter);
 	$: analyzeCost = aiUsage?.costs.analyze ?? 1;
-	$: outOfAiUnits = aiUsage != null && aiUsage.remaining < analyzeCost;
+	$: outOfAiUnits =
+		!byok && aiUsage != null && aiUsage.limit > 0 && aiUsage.remaining < analyzeCost;
 	$: summarySkillNames = jobAnalysis
 		? jobAnalysis.matches
 				.filter((m) => m.band !== 'missing' && m.skill_name)
@@ -114,14 +118,12 @@
 	}
 
 	async function refreshAiUsage() {
-		if (!isSaas) {
-			aiUsage = null;
-			return;
-		}
 		try {
 			aiUsage = await getAiUsage();
+			setAiUsage(aiUsage);
 		} catch {
 			aiUsage = null;
+			setAiUsage(null);
 		}
 	}
 
@@ -413,12 +415,14 @@
 						/>
 					</div>
 
-					{#if pro}
+					{#if pro && aiEnabled}
 						<label class="checkbox" class:dim={outOfAiUnits}>
 							<input type="checkbox" bind:checked={enhanceParse} disabled={outOfAiUnits} />
-							Smarter parse (1 AI unit)
+							{byok ? 'Smarter parse (OpenRouter BYOK)' : 'Smarter parse (1 AI unit)'}
 						</label>
-						{#if aiUsage}
+						{#if byok}
+							<p class="hint">Uses your server OpenRouter key — no Foliyo unit cap.</p>
+						{:else if aiUsage}
 							<p class="hint" class:warn={outOfAiUnits}>
 								{#if outOfAiUnits}
 									Daily AI budget used ({aiUsage.units}/{aiUsage.limit}). Heuristic parse is free —
@@ -463,10 +467,14 @@
 						{jdText}
 						skillNames={summarySkillNames}
 						{pro}
+						{aiEnabled}
+						{byok}
 						outOfUnits={outOfAiUnits}
-						unitsHint={aiUsage
-							? `${aiUsage.remaining} of ${aiUsage.limit} AI units left today`
-							: ''}
+						unitsHint={byok
+							? 'Uses your OpenRouter key (BYOK)'
+							: aiUsage
+								? `${aiUsage.remaining} of ${aiUsage.limit} AI units left today`
+								: ''}
 						disabled={analyzeBusy || saving}
 						on:upgrade={(e) => showToast(e.detail, 'error')}
 						on:generated={() => refreshAiUsage()}

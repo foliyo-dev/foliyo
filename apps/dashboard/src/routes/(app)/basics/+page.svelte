@@ -7,13 +7,14 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithPreview from '$lib/components/preview/EditorWithPreview.svelte';
 	import { getProfile, updateProfile, type Profile } from '$lib/api/profile';
+	import { resolveAvatarUrl } from '$lib/avatar';
 	import { showToast } from '$lib/stores/toast';
 	import { isSaas } from '$lib/config';
 
-	let shell: EditorWithPreview;
-	let loading = true;
-	let saving = false;
-	let profile: Profile = {
+	let shell: EditorWithPreview | undefined = $state();
+	let loading = $state(true);
+	let saving = $state(false);
+	let profile = $state<Profile>({
 		id: '',
 		name: '',
 		headline: '',
@@ -25,10 +26,12 @@
 		github: '',
 		linkedin: '',
 		twitter: ''
-	};
+	});
 
-	$: emptyBasics = !profile.name?.trim() || !profile.headline?.trim();
-	$: showImportCta = isSaas && emptyBasics;
+	const emptyBasics = $derived(!profile.name?.trim() || !profile.headline?.trim());
+	const showImportCta = $derived(emptyBasics);
+	const avatarPreview = $derived(resolveAvatarUrl(profile.avatar_url, profile.email, 128));
+	const avatarIsGravatar = $derived(!profile.avatar_url?.trim() && !!avatarPreview);
 
 	onMount(async () => {
 		try {
@@ -84,7 +87,35 @@
 				<Input label="Name" bind:value={profile.name} placeholder="Jane Doe" />
 				<Input label="Headline" bind:value={profile.headline} placeholder="Full-stack developer" />
 				<Textarea label="Bio" bind:value={profile.bio} placeholder="A short introduction…" rows={4} />
-				<Input label="Avatar URL" bind:value={profile.avatar_url} placeholder="https://…" />
+				<div class="avatar-row">
+					{#if avatarPreview}
+						<img
+							class="avatar-preview"
+							src={avatarPreview}
+							alt=""
+							width="64"
+							height="64"
+						/>
+					{:else}
+						<div class="avatar-preview avatar-preview--empty" aria-hidden="true"></div>
+					{/if}
+					<div class="avatar-fields">
+						<Input
+							label="Avatar URL"
+							bind:value={profile.avatar_url}
+							placeholder="https://… (optional)"
+						/>
+						<p class="field-hint">
+							{#if avatarIsGravatar}
+								Using Gravatar for your public email — paste a URL to override.
+							{:else if avatarPreview}
+								Custom avatar URL. Clear the field to fall back to Gravatar.
+							{:else}
+								Leave blank to use Gravatar for your public email (identicon if none).
+							{/if}
+						</p>
+					</div>
+				</div>
 				<Input label="Location" bind:value={profile.location} placeholder="Mumbai, India" />
 				<Input
 					label="Public email"
@@ -111,6 +142,38 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+	.avatar-row {
+		display: flex;
+		gap: var(--space-3);
+		align-items: flex-start;
+	}
+	.avatar-preview {
+		width: 64px;
+		height: 64px;
+		border-radius: 999px;
+		object-fit: cover;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		flex-shrink: 0;
+		margin-top: 1.4rem;
+	}
+	.avatar-preview--empty {
+		background: var(--color-border);
+		opacity: 0.35;
+	}
+	.avatar-fields {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	.field-hint {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+		line-height: 1.4;
 	}
 	.hint {
 		margin: var(--space-3) 0 0;

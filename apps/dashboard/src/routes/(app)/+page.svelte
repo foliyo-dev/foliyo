@@ -151,8 +151,8 @@
 			? ctx.pro
 				? 'Upload a PDF or paste your CV — AI fills your library in one pass.'
 				: 'Import resume is Pro — upgrade, or add Basics and library items by hand.'
-			: 'Import a signed .fio package, or add Basics and library items by hand.';
-		const importCta = isSaas ? (ctx.pro ? 'Import resume' : 'Open import') : 'Import .fio';
+			: 'Upload a PDF with OpenRouter BYOK, import a .fio package, or add Basics by hand.';
+		const importCta = isSaas ? (ctx.pro ? 'Import resume' : 'Open import') : 'Import resume';
 
 		return [
 			{
@@ -464,17 +464,20 @@
 					{/each}
 				</ul>
 			{/if}
-			{#if isSaas}
-				<Card variant="panel">
-					{#if pro}
-						<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
-						<a href="/import?onboarding=1">Import resume →</a>
-					{:else}
-						<p class="muted">Import resume is a Pro feature — upgrade to extract a CV into Foliyo.</p>
-						<a href="/import">Import resume (Pro) →</a>
-					{/if}
-				</Card>
-			{/if}
+			<Card variant="panel">
+				{#if isSaas && !pro}
+					<p class="muted">Import resume is a Pro feature — upgrade to extract a CV into Foliyo.</p>
+					<a href="/import">Import resume (Pro) →</a>
+				{:else if isSaas}
+					<p class="muted">Fill the library faster from a PDF or pasted CV.</p>
+					<a href="/import?onboarding=1">Import resume →</a>
+				{:else}
+					<p class="muted">
+						Import a .fio package, or set OPENROUTER_API_KEY for AI PDF/text import (BYOK).
+					</p>
+					<a href="/import?onboarding=1">Import resume →</a>
+				{/if}
+			</Card>
 		</div>
 	</section>
 {/if}

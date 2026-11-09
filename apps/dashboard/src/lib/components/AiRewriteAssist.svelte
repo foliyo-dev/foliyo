@@ -10,6 +10,10 @@
 	export let value = '';
 	export let jdContext = '';
 	export let disabled = false;
+	/** Hosted Pro or self-host with OPENROUTER_API_KEY. */
+	export let aiEnabled = false;
+	/** Self-host BYOK — hide Foliyo unit copy. */
+	export let byok = false;
 
 	const dispatch = createEventDispatcher<{ upgrade: string }>();
 
@@ -27,7 +31,7 @@
 
 	$: trimmedLen = value.trim().length;
 	$: tooShort = trimmedLen > 0 && trimmedLen < 24;
-	$: canRewrite = isSaas && trimmedLen >= 24 && !disabled && busy === null;
+	$: canRewrite = aiEnabled && trimmedLen >= 24 && !disabled && busy === null;
 	$: showPanel = Boolean(suggestion) || busy !== null;
 
 	async function run(tone: RewriteTone) {
@@ -93,14 +97,18 @@
 	}
 </script>
 
-{#if isSaas}
+{#if aiEnabled || isSaas}
 	<div class="assist" class:open={showPanel} class:busy={busy !== null}>
 		<div class="toolbar">
 			<div class="brand">
 				<span class="ai-badge">AI</span>
 				<div class="brand-copy">
 					<span class="title">Rewrite</span>
-					{#if unitsLeft != null}
+					{#if !aiEnabled}
+						<span class="meta warn">Unavailable</span>
+					{:else if byok}
+						<span class="meta">{tooShort ? 'Need ~24+ characters' : 'BYOK · review before apply'}</span>
+					{:else if unitsLeft != null}
 						<span class="meta">{unitsLeft} units left</span>
 					{:else if tooShort}
 						<span class="meta warn">Need ~24+ characters</span>

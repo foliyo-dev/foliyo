@@ -8,6 +8,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
+	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
 	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		getPortfolio,
@@ -16,12 +17,13 @@
 		deletePortfolio,
 		setDefaultPortfolio,
 		slugify,
-		portfolioThemes,
+		parsePortfolioThemeConfig,
 		portfolioPublicUrl,
 		portfolioPrivateUrl,
 		generatePortfolioAccessToken,
 		revokePortfolioAccessToken,
-		type PortfolioDetail
+		type PortfolioDetail,
+		type ThemeConfig
 	} from '$lib/api/portfolios';
 	import type { PortfolioDraftPreview } from '$lib/api/preview';
 	import { user } from '$lib/stores/auth';
@@ -47,6 +49,7 @@
 	let bio = '';
 	let customSummaryOpen = false;
 	let themeSlug = 'minimal';
+	let themeConfig: ThemeConfig | null = null;
 	let isPublic = false;
 	let isDefault = false;
 	let showSkills = true;
@@ -115,6 +118,7 @@
 				headline: customSummaryOpen || hasOwnSummary ? headline : '',
 				bio: customSummaryOpen || hasOwnSummary ? bio : '',
 				theme_slug: themeSlug,
+				theme_config: themeConfig,
 				show_skills: showSkills ? 1 : 0,
 				show_projects: showProjects ? 1 : 0,
 				show_experience: showExperience ? 1 : 0,
@@ -192,6 +196,7 @@
 		bio = p.bio ?? '';
 		customSummaryOpen = Boolean(String(p.headline ?? '').trim() || String(p.bio ?? '').trim());
 		themeSlug = p.theme_slug;
+		themeConfig = parsePortfolioThemeConfig(p.theme_config);
 		isPublic = p.is_public === 1;
 		isDefault = p.is_default === 1;
 		showSkills = p.show_skills === 1;
@@ -242,6 +247,7 @@
 				headline: headline.trim(),
 				bio: bio.trim(),
 				theme_slug: themeSlug,
+				theme_config: themeConfig,
 				is_public: isPublic ? 1 : 0,
 				is_default: isDefault ? 1 : 0,
 				show_skills: showSkills ? 1 : 0,
@@ -393,14 +399,7 @@
 							{/if}
 						{/if}
 					</div>
-					<label class="field">
-						<span class="label">Theme</span>
-						<select bind:value={themeSlug}>
-							{#each portfolioThemes as t}
-								<option value={t}>{t}</option>
-							{/each}
-						</select>
-					</label>
+					<ThemeLayoutPanel bind:themeSlug bind:themeConfig portfolioId={portfolio?.id} />
 					<div class="toggles">
 						<label class="checkbox"
 							><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label

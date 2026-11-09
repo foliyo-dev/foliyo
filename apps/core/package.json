@@ -1,6 +1,6 @@
 {
   "name": "@foliyo/core",
-  "version": "0.6.21",
+  "version": "0.6.22",
   "private": true,
   "type": "module",
   "description": "Foliyo API + public pages (Hono + MeshQL). Released as foliyo-core-*.tgz on GitHub Releases; npm later.",
@@ -9,11 +9,13 @@
     "build": "tsc --noEmit",
     "migrate": "tsx src/migrate-cli.ts",
     "seed:demo": "tsx src/seed-demo.ts",
-    "test": "tsx --test src/jobs/*.test.ts src/skills/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts src/markdown.test.ts",
+    "storage:sync": "tsx src/storage-sync.ts",
+    "test": "tsx --test src/jobs/*.test.ts src/skills/*.test.ts src/import/*.test.ts src/auth/*.test.ts src/http-url.test.ts src/config.test.ts src/content-order.test.ts src/markdown.test.ts src/avatar.test.ts src/spec/theme-config.test.ts src/public/themes.recipes.test.ts src/storage/*.test.ts",
     "clean": "rm -rf dist",
     "seed:ats": "tsx src/seed-ats-partner.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
     "@foliyo/jobs-client": "workspace:*",
     "@hono/node-server": "^1.12.0",
     "bcryptjs": "^2.4.3",
@@ -29,6 +31,7 @@
     "nanoid": "^5.0.7",
     "nodemailer": "^6.9.14",
     "pg": "^8.22.0",
+    "unpdf": "0.12.1",
     "yaml": "^2.4.5",
     "zod": "^3.23.8",
     "@types/pg": "^8.20.3"
@@ -69,14 +72,28 @@
     "./email/verify": "./src/email/verify.ts",
     "./email/password-reset": "./src/email/password-reset.ts",
     "./email/layout": "./src/email/layout.ts",
+    "./avatar": "./src/avatar.ts",
     "./public/pages": "./src/public/pages.ts",
     "./public/themes": "./src/public/themes.ts",
     "./social/providers": "./src/social/providers.ts",
     "./spec/resume": "./src/spec/resume.ts",
     "./spec/fio": "./src/spec/fio.ts",
+    "./spec/theme-config": "./src/spec/theme-config.ts",
     "./jobs": "./src/jobs/index.ts",
     "./account/clear-content": "./src/account/clear-content.ts",
     "./skills/ontology": "./src/skills/ontology.ts",
-    "./skills/seed-ontology": "./src/skills/seed-ontology.ts"
+    "./skills/seed-ontology": "./src/skills/seed-ontology.ts",
+    "./ai": "./src/ai/index.ts",
+    "./ai/types": "./src/ai/types.ts",
+    "./ai/gate-resume-input": "./src/ai/gate-resume-input.ts",
+    "./ai/gate-assist": "./src/ai/gate-assist.ts",
+    "./ai/openrouter-resume": "./src/ai/openrouter-resume.ts",
+    "./ai/openrouter-rewrite": "./src/ai/openrouter-rewrite.ts",
+    "./ai/openrouter-summary": "./src/ai/openrouter-summary.ts",
+    "./ai/openrouter-theme": "./src/ai/openrouter-theme.ts",
+    "./ai/openrouter-jd": "./src/ai/openrouter-jd.ts",
+    "./ai/gap-check": "./src/ai/gap-check.ts",
+    "./ai/job-parser": "./src/ai/job-parser.ts",
+    "./storage": "./src/storage/index.ts"
   }
 }

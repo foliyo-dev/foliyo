@@ -10,6 +10,7 @@ import {
   loadResumeContent,
 } from "../public/pages.js";
 import { renderPortfolioHtml, renderResumeHtml } from "../public/themes.js";
+import { themeConfigSchema } from "../spec/theme-config.js";
 
 const PORTFOLIO_THEME_SLUGS = new Set([
   "minimal",
@@ -26,6 +27,7 @@ const draftSchema = z.object({
   headline: z.string().optional(),
   bio: z.string().optional(),
   theme_slug: z.string().optional(),
+  theme_config: themeConfigSchema.nullable().optional(),
   show_skills: z.number().int().min(0).max(1).optional(),
   show_projects: z.number().int().min(0).max(1).optional(),
   show_experience: z.number().int().min(0).max(1).optional(),
@@ -48,7 +50,6 @@ const draftSchema = z.object({
   language_ids: z.array(z.string()).optional(),
   post_ids: z.array(z.string()).optional(),
 });
-
 const resumeDraftSchema = z.object({
   headline: z.string().max(200).optional(),
   bio: z.string().max(2000).optional(),

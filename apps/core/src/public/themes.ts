@@ -7,11 +7,24 @@ import type { PublicPortfolio } from "./pages.js";
 import { effectivePlan, showFoliyoBranding } from "../plan.js";
 import { absoluteHttpUrl } from "../http-url.js";
 import { markdownToSafeHtml } from "../markdown.js";
+import { resolveAvatarUrl } from "../avatar.js";
 import {
   resolveSocialUrl,
   socialDisplayLabel,
   socialIconSvg,
 } from "../social/providers.js";
+import {
+  isGallerySectionsMode,
+  resolveThemeConfig,
+  skinCssVars,
+  type ThemeConfig,
+} from "../spec/theme-config.js";
+import {
+  loadRecipeCss,
+  renderGalleryGridBody,
+  renderGlassmorphicBody,
+  renderPhotoHeroBody,
+} from "./recipes.js";
 
 const PORTFOLIO_SLUGS = new Set([
   "minimal",
@@ -547,7 +560,11 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
   const name = esc(displayName(data));
   const headline = esc(displayHeadline(data));
   const bio = esc(displayBio(data));
-  const avatar = String(data.profile.avatar_url || "").trim();
+  const avatar = resolveAvatarUrl(
+    data.profile.avatar_url as string | null | undefined,
+    data.profile.email as string | null | undefined,
+    176,
+  );
   const avatarHtml = avatar
     ? `<img class="avatar" src="${esc(avatar)}" alt="" width="88" height="88" />`
     : "";
@@ -704,29 +721,89 @@ ${shellCss}
 </html>`;
 }
 
+/** Strip resume/library chrome for photo-gallery display mode. */
+function galleryDisplayData(data: PublicPortfolio): PublicPortfolio {
+  return {
+    ...data,
+    skills: [],
+    experience: [],
+    education: [],
+    certifications: [],
+    languages: [],
+    download_resume_token: undefined,
+  };
+}
+
+function exoticBody(
+  data: PublicPortfolio,
+  themeConfig: ThemeConfig,
+  siteUrl: string,
+): string {
+  const galleryOnly = isGallerySectionsMode(themeConfig);
+  const base = galleryOnly ? galleryDisplayData(data) : data;
+  // For exotic recipes, hide the default projects heading block when gallery-grid owns it.
+  const hideProjects = themeConfig.recipe === "gallery-grid";
+  const dataForSections: PublicPortfolio = hideProjects
+    ? { ...base, projects: [] }
+    : base;
+  const sections = sectionsHtml(dataForSections, "portfolio", siteUrl);
+  if (themeConfig.recipe === "photo-hero") {
+    return renderPhotoHeroBody(data, themeConfig, siteUrl, sections);
+  }
+  if (themeConfig.recipe === "gallery-grid") {
+    return renderGalleryGridBody(data, themeConfig, siteUrl, sections);
+  }
+  return renderGlassmorphicBody(data, themeConfig, siteUrl, sections);
+}
+
 export function renderPortfolioHtml(data: PublicPortfolio, config: Config): string {
-  const slug = normalizeSlug("portfolio", data.portfolio.theme_slug);
-  const css = loadThemeCss("portfolio", slug);
+  const themeConfig = resolveThemeConfig(
+    data.portfolio.theme_config,
+    data.portfolio.theme_slug,
+  );
+  const galleryOnly = isGallerySectionsMode(themeConfig);
+  const viewData = galleryOnly ? galleryDisplayData(data) : data;
+  const classicSlug = normalizeSlug(
+    "portfolio",
+    themeConfig.skin.theme_slug || data.portfolio.theme_slug,
+  );
+  const isExotic = themeConfig.recipe !== "classic";
+
+  const css = isExotic
+    ? `${skinCssVars(themeConfig)}\n${loadRecipeCss(themesRoot, themeConfig.recipe)}`
+    : loadThemeCss("portfolio", classicSlug);
+
   const name = esc(displayName(data));
-  const topbar = siteNavHtml(data);
+  const navStyle = themeConfig.chrome.nav_style;
+  const showNav = themeConfig.chrome.show_nav !== false && navStyle !== "none";
+  const topbar = showNav ? siteNavHtml(viewData) : "";
   const plan = effectivePlan(data.plan, config, data.plan_expires);
   const footer = showFoliyoBranding(plan)
     ? `<footer class="site-footer">Made with <a href="https://foliyo.dev">Foliyo</a></footer>`
     : "";
-  const resumeHref = `${config.siteUrl.replace(/\/$/, "")}/r/${esc(data.download_resume_token ?? "")}`;
-  const chrome = data.download_resume_token
-    ? `<aside class="print-fab no-print" aria-label="Resume download">
+  const resumeHref = `${config.siteUrl.replace(/\/$/, "")}/r/${esc(viewData.download_resume_token ?? "")}`;
+  const chrome =
+    !galleryOnly && viewData.download_resume_token
+      ? `<aside class="print-fab no-print" aria-label="Resume download">
     <a class="print-btn" href="${resumeHref}" target="_blank" rel="noreferrer">Download resume</a>
   </aside>`
-    : "";
+      : "";
+
+  const themeClass = isExotic
+    ? `theme-portfolio theme-${themeConfig.recipe}`
+    : `theme-portfolio theme-${classicSlug}`;
+
+  const body = isExotic
+    ? exoticBody(data, themeConfig, config.siteUrl)
+    : `${heroHtml(viewData, "portfolio")}${sectionsHtml(viewData, "portfolio", config.siteUrl)}`;
 
   return documentShell({
     title: `${name} · Foliyo`,
-    themeClass: `theme-portfolio theme-${slug}`,
+    themeClass,
     css,
     variant: "site",
     topbar,
-    body: `${heroHtml(data, "portfolio")}${sectionsHtml(data, "portfolio", config.siteUrl)}`,
+    body,
     chrome,
     footer,
   });

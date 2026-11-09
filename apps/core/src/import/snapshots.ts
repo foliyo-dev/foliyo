@@ -172,7 +172,10 @@ export async function restoreSnapshot(
     return { ok: false, error: "read_failed", message: "Could not read snapshot file." };
   }
 
-  const parsed = parseAndVerifyFio(bytes, config.integritySecret);
+  // Snapshots were signed by this instance — require a matching local HMAC.
+  const parsed = parseAndVerifyFio(bytes, config.integritySecret, {
+    requireLocalSignature: true,
+  });
   if (!parsed.ok) {
     return { ok: false, error: parsed.error, message: parsed.message };
   }

@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import MarkdownEditor from '$lib/components/blog/MarkdownEditor.svelte';
+	import PostBodyEditor from '$lib/components/blog/PostBodyEditor.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -18,10 +18,12 @@
 		tagsFromJson,
 		type BlogPost
 	} from '$lib/api/blog';
+	import { listPortfolios } from '$lib/api/portfolios';
 	import { uploadProjectImage } from '$lib/api/projects';
 	import { ApiError } from '$lib/api/client';
 	import { mediaUrl } from '$lib/config';
 	import { markdownToSafeHtml } from '$lib/markdown';
+	import { getThemePreviewCss, normalizeThemeSlug } from '$lib/blog/themeCss';
 	import { showToast } from '$lib/stores/toast';
 	import { confirmDelete } from '$lib/stores/confirm';
 
@@ -42,6 +44,8 @@
 	let post = $state<BlogPost | null>(null);
 	let previewHidden = $state(false);
 	let mobilePreviewOpen = $state(false);
+	let detailsOpen = $state(true);
+	let themeSlug = $state('minimal');
 
 	let title = $state('');
 	let slug = $state('');
@@ -54,16 +58,20 @@
 	let slugTouched = $state(false);
 
 	let saved = $state<FormSnapshot | null>(null);
-	let mdEditor = $state<{
-		insertAround: (before: string, after?: string, placeholder?: string) => void;
+	let bodyEditor = $state<{
 		focus: () => void;
+		insertImage: (url: string, alt?: string) => void;
 	} | null>(null);
 	let coverFileInput = $state<HTMLInputElement | null>(null);
+	/** Bumps to force cover preview/input remount after async updates. */
+	let coverEpoch = $state(0);
 
 	let postId = $derived(page.params.id);
 
 	let coverPreview = $derived(mediaUrl(coverImage));
 	let previewHtml = $derived(markdownToSafeHtml(content));
+	let themeCss = $derived(getThemePreviewCss(themeSlug));
+	let themeClass = $derived(`blog-theme-preview theme-${normalizeThemeSlug(themeSlug)}`);
 	let charCount = $derived(content.length);
 	let wordCount = $derived(
 		content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0
@@ -100,6 +108,7 @@
 		slug = p.slug;
 		excerpt = p.excerpt;
 		coverImage = p.cover_image;
+		coverEpoch += 1;
 		tagsInput = tagsFromJson(p.tags);
 		content = p.content;
 		status = p.status;
@@ -115,18 +124,32 @@
 			status: p.status,
 			published_at: p.published_at
 		};
+		// Collapse details once optional metadata is already filled in.
+		detailsOpen = !(p.excerpt || p.cover_image || tagsFromJson(p.tags));
 	}
 
 	async function loadPost(id: string): Promise<BlogPost | null> {
 		try {
 			return await getPost(id);
 		} catch (err) {
-			// Older core builds lack GET /posts/:id — fall back to list.
 			if (err instanceof ApiError && err.status === 404) {
 				const items = await listPosts();
 				return items.find((p) => p.id === id) ?? null;
 			}
 			throw err;
+		}
+	}
+
+	async function loadTheme() {
+		try {
+			const portfolios = await listPortfolios();
+			const preferred =
+				portfolios.find((p) => p.is_default === 1) ??
+				portfolios.find((p) => p.show_posts === 1) ??
+				portfolios[0];
+			themeSlug = normalizeThemeSlug(preferred?.theme_slug);
+		} catch {
+			themeSlug = 'minimal';
 		}
 	}
 
@@ -139,7 +162,7 @@
 		}
 		loading = true;
 		try {
-			const loaded = await loadPost(id);
+			const [loaded] = await Promise.all([loadPost(id), loadTheme()]);
 			if (!loaded) {
 				showToast('Post not found', 'error');
 				goto('/blog');
@@ -165,7 +188,6 @@
 	}
 
 	$effect(() => {
-		// Debounced autosave for drafts only — intentional side effect.
 		if (loading || !post || saving || status !== 'draft' || !isDirty) return;
 		const timer = setTimeout(() => {
 			void save('draft', { silent: true });
@@ -207,7 +229,6 @@
 			} else {
 				nextStatus = 'published';
 				body.status = 'published';
-				// Preserve first-publish date on updates and republish.
 				if (publishedAt) {
 					body.published_at = publishedAt;
 					nextPublishedAt = publishedAt;
@@ -254,42 +275,6 @@
 		e.returnValue = '';
 	}
 
-	function tool(action: string) {
-		const insert = (before: string, after = '', placeholder = '') => {
-			if (mdEditor) {
-				mdEditor.insertAround(before, after, placeholder);
-			} else {
-				content = content + before + placeholder + after;
-			}
-		};
-		switch (action) {
-			case 'h2':
-				insert('## ', '', 'Heading');
-				break;
-			case 'h3':
-				insert('### ', '', 'Heading');
-				break;
-			case 'bold':
-				insert('**', '**', 'bold');
-				break;
-			case 'italic':
-				insert('*', '*', 'italic');
-				break;
-			case 'link':
-				insert('[', '](https://)', 'label');
-				break;
-			case 'code':
-				insert('```\n', '\n```', 'code');
-				break;
-			case 'list':
-				insert('- ', '', 'item');
-				break;
-			case 'image':
-				insert('![', '](https://)', 'alt');
-				break;
-		}
-	}
-
 	function uploadErrorMessage(err: unknown): string {
 		if (err instanceof ApiError) {
 			try {
@@ -303,20 +288,83 @@
 		return 'Image upload failed — try JPEG, PNG, or WebP under 3 MB';
 	}
 
+	async function uploadImage(file: File): Promise<string | null> {
+		uploading = true;
+		try {
+			const res = await uploadProjectImage(file);
+			showToast('Image uploaded', 'success');
+			return res.url;
+		} catch (err) {
+			showToast(uploadErrorMessage(err), 'error');
+			return null;
+		} finally {
+			uploading = false;
+		}
+	}
+
+	function setCoverLocal(next: string) {
+		coverImage = next;
+		coverEpoch += 1;
+		if (coverFileInput) coverFileInput.value = '';
+	}
+
+	async function persistCover(next: string): Promise<boolean> {
+		if (!post) return false;
+		try {
+			await updatePost(post.id, { cover_image: next });
+			post = { ...post, cover_image: next };
+			if (saved) saved = { ...saved, coverImage: next };
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
 	async function onCoverFile(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
 		input.value = '';
-		if (!file) return;
-		uploading = true;
+		if (!file || !post || uploading || saving) return;
+
+		const previous = coverImage;
+		const url = await uploadImage(file);
+		if (!url) return;
+
+		// Update UI first (do not disable the text field — that can fight bind:value).
+		setCoverLocal(url);
+
+		saving = true;
 		try {
-			const res = await uploadProjectImage(file);
-			coverImage = res.url;
-			showToast('Cover uploaded', 'success');
-		} catch (err) {
-			showToast(uploadErrorMessage(err), 'error');
+			const ok = await persistCover(url);
+			if (!ok) {
+				setCoverLocal(previous);
+				showToast('Cover uploaded but failed to save on the post', 'error');
+			}
 		} finally {
-			uploading = false;
+			saving = false;
+		}
+	}
+
+	async function clearCoverImage(e?: Event) {
+		e?.preventDefault();
+		e?.stopPropagation();
+		if (!post || uploading || saving) return;
+		if (!coverImage.trim()) return;
+
+		const previous = coverImage;
+		setCoverLocal('');
+
+		saving = true;
+		try {
+			const ok = await persistCover('');
+			if (!ok) {
+				setCoverLocal(previous);
+				showToast('Failed to remove cover', 'error');
+				return;
+			}
+			showToast('Cover removed', 'success');
+		} finally {
+			saving = false;
 		}
 	}
 </script>
@@ -334,89 +382,115 @@
 				</button>
 			</div>
 
-			<PageHeader title="Edit post" description="Write in Markdown — preview, save draft, or publish." />
+			<div class="title-row">
+				<PageHeader
+					title="Edit post"
+					description="Write visually — content is saved as Markdown and styled by your portfolio theme."
+				/>
+				<span class="status-chip" class:published={status === 'published'}>
+					{status === 'published' ? 'Published' : 'Draft'}
+				</span>
+			</div>
 
 			<Card variant="panel">
 				<div class="fields">
-					<Input label="Title" bind:value={title} oninput={syncSlugFromTitle} />
-					<Input label="Slug" bind:value={slug} oninput={() => (slugTouched = true)} />
-					<Textarea label="Excerpt" bind:value={excerpt} rows={2} />
-
-					<div class="cover">
-						<div class="cover-row">
-							<div class="cover-input">
-								<Input
-									label="Cover image URL"
-									bind:value={coverImage}
-									placeholder="/uploads/… or https://"
-								/>
-							</div>
-							<div class="cover-actions">
-								<input
-									bind:this={coverFileInput}
-									type="file"
-									accept="image/jpeg,image/png,image/webp"
-									class="sr-only"
-									onchange={onCoverFile}
-								/>
-								<Button
-									variant="ghost"
-									size="sm"
-									disabled={uploading}
-									on:click={() => coverFileInput?.click()}
-								>
-									{uploading ? 'Uploading…' : 'Upload'}
-								</Button>
-							</div>
-						</div>
-						{#if coverPreview}
-							<img class="cover-thumb" src={coverPreview} alt="Cover preview" />
-						{/if}
+					<div class="title-field">
+						<Input
+							label="Title"
+							bind:value={title}
+							oninput={syncSlugFromTitle}
+							placeholder="Post title"
+						/>
 					</div>
 
-					<Input label="Tags (comma-separated)" bind:value={tagsInput} />
-
-					<div class="md-block">
-						<div class="toolbar" role="toolbar" aria-label="Markdown">
-							<button type="button" class="tool" onclick={() => tool('h2')} title="Heading 2"
-								>H2</button
-							>
-							<button type="button" class="tool" onclick={() => tool('h3')} title="Heading 3"
-								>H3</button
-							>
-							<button type="button" class="tool" onclick={() => tool('bold')} title="Bold"
-								><strong>B</strong></button
-							>
-							<button type="button" class="tool" onclick={() => tool('italic')} title="Italic"
-								><em>I</em></button
-							>
-							<button type="button" class="tool" onclick={() => tool('link')} title="Link"
-								>Link</button
-							>
-							<button type="button" class="tool" onclick={() => tool('code')} title="Code fence"
-								>Code</button
-							>
-							<button type="button" class="tool" onclick={() => tool('list')} title="List"
-								>List</button
-							>
-							<button type="button" class="tool" onclick={() => tool('image')} title="Image"
-								>Image</button
-							>
-						</div>
-						<div class="content-label">
-							<span class="label">Content (Markdown)</span>
-							<MarkdownEditor
-								bind:this={mdEditor}
-								bind:value={content}
-								ariaLabel="Post content Markdown"
-							/>
-						</div>
+					<div class="body-block">
+						<span class="label">Content</span>
+						<PostBodyEditor
+							bind:this={bodyEditor}
+							bind:value={content}
+							uploading={uploading}
+							onUploadImage={uploadImage}
+							ariaLabel="Post content"
+							minHeight="18rem"
+						/>
 						<p class="counts">{wordCount} words · {charCount} characters</p>
 					</div>
+
+					<details class="details" bind:open={detailsOpen}>
+						<summary>Post details</summary>
+						<div class="details-body">
+							<Input label="Slug" bind:value={slug} oninput={() => (slugTouched = true)} />
+							<Textarea label="Excerpt" bind:value={excerpt} rows={2} />
+
+							<div class="cover">
+								<div class="cover-row">
+									{#key coverEpoch}
+										<label class="cover-input">
+											<span class="label">Cover image URL</span>
+											<input
+												type="text"
+												value={coverImage}
+												placeholder="/uploads/… or https://"
+												oninput={(e) => {
+													coverImage = (e.currentTarget as HTMLInputElement).value;
+												}}
+											/>
+										</label>
+									{/key}
+									<div class="cover-actions">
+										<input
+											bind:this={coverFileInput}
+											type="file"
+											accept="image/jpeg,image/png,image/webp"
+											class="sr-only"
+											onchange={onCoverFile}
+										/>
+										<button
+											type="button"
+											class="cover-btn"
+											disabled={uploading || saving}
+											onclick={() => coverFileInput?.click()}
+										>
+											{uploading ? 'Uploading…' : coverPreview ? 'Replace' : 'Upload'}
+										</button>
+										{#if coverImage.trim()}
+											<button
+												type="button"
+												class="cover-btn"
+												disabled={uploading || saving}
+												onclick={(e) => void clearCoverImage(e)}
+											>
+												Remove
+											</button>
+										{/if}
+									</div>
+								</div>
+								{#key coverEpoch}
+									{#if coverPreview}
+										<div class="cover-preview">
+											<img class="cover-thumb" src={coverPreview} alt="Cover preview" />
+											<button
+												type="button"
+												class="cover-clear"
+												disabled={uploading || saving}
+												onclick={(e) => void clearCoverImage(e)}
+												aria-label="Remove cover image"
+												title="Remove cover image"
+											>
+												<span aria-hidden="true">×</span>
+											</button>
+										</div>
+									{/if}
+								{/key}
+							</div>
+
+							<Input label="Tags (comma-separated)" bind:value={tagsInput} />
+						</div>
+					</details>
 				</div>
 
 				<div class="form-actions">
-					<Button disabled={saving} on:click={() => save('draft')}>
+					<Button variant="ghost" disabled={saving} on:click={() => save('draft')}>
 						{saving ? 'Saving…' : 'Save draft'}
 					</Button>
 					<Button disabled={saving} on:click={() => save('publish')}>
@@ -433,8 +507,7 @@
 
 				{#if status === 'published'}
 					<p class="hint">
-						Published at <code>/u/&#123;your-handle&#125;/blog/{slug}</code> — paste that URL into
-						project/experience write-up fields if you want.
+						Published at <code>/u/&#123;your-handle&#125;/blog/{slug}</code>
 					</p>
 				{:else if isDirty}
 					<p class="hint">Unsaved changes — drafts autosave after a short pause.</p>
@@ -443,25 +516,30 @@
 		</div>
 
 		{#if !previewHidden}
-			<aside class="pane desktop" aria-label="Markdown preview">
+			<aside class="pane desktop" aria-label="Theme preview">
 				<div class="preview-toolbar">
-					<span class="preview-title">Live preview</span>
+					<span class="preview-title">Live preview · {normalizeThemeSlug(themeSlug)}</span>
 				</div>
-				{#if coverPreview}
-					<img class="preview-cover" src={coverPreview} alt="" />
-				{/if}
-				{#if title.trim()}
-					<h2 class="preview-post-title">{title}</h2>
-				{/if}
-				{#if excerpt.trim()}
-					<p class="preview-excerpt">{excerpt}</p>
-				{/if}
 				<div class="preview-scroll">
-					{#if previewHtml}
-						<div class="preview-body">{@html previewHtml}</div>
-					{:else}
-						<p class="muted">Nothing to preview yet — start writing on the left.</p>
-					{/if}
+					<div class={themeClass}>
+						{@html `<style>${themeCss}</style>`}
+						{#key coverEpoch}
+							{#if coverPreview}
+								<img class="post-cover post-cover-hero" src={coverPreview} alt="" />
+							{/if}
+						{/key}
+						{#if title.trim()}
+							<header class="hero"><div><h1>{title}</h1></div></header>
+						{/if}
+						{#if excerpt.trim()}
+							<p class="headline">{excerpt}</p>
+						{/if}
+						{#if previewHtml}
+							<div class="prose">{@html previewHtml}</div>
+						{:else}
+							<p class="muted">Nothing to preview yet — start writing on the left.</p>
+						{/if}
+					</div>
 				</div>
 			</aside>
 		{/if}
@@ -476,22 +554,25 @@
 				role="presentation"
 				onclick={() => (mobilePreviewOpen = false)}
 			></div>
-			<aside class="drawer mobile" aria-label="Markdown preview">
+			<aside class="drawer mobile" aria-label="Theme preview">
 				<div class="preview-toolbar">
-					<span class="preview-title">Live preview</span>
+					<span class="preview-title">Live preview · {normalizeThemeSlug(themeSlug)}</span>
 					<button type="button" class="toggle" onclick={() => (mobilePreviewOpen = false)}
 						>Close</button
 					>
 				</div>
 				<div class="preview-scroll drawer-scroll">
-					{#if title.trim()}
-						<h2 class="preview-post-title">{title}</h2>
-					{/if}
-					{#if previewHtml}
-						<div class="preview-body">{@html previewHtml}</div>
-					{:else}
-						<p class="muted">Nothing to preview yet.</p>
-					{/if}
+					<div class={themeClass}>
+						{@html `<style>${themeCss}</style>`}
+						{#if title.trim()}
+							<header class="hero"><div><h1>{title}</h1></div></header>
+						{/if}
+						{#if previewHtml}
+							<div class="prose">{@html previewHtml}</div>
+						{:else}
+							<p class="muted">Nothing to preview yet.</p>
+						{/if}
+					</div>
 				</div>
 			</aside>
 		{/if}
@@ -538,10 +619,89 @@
 		color: var(--color-primary);
 		background: var(--color-primary-light);
 	}
+	.title-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-2);
+	}
+	.title-row :global(.page-header) {
+		margin-bottom: 0;
+	}
+	.status-chip {
+		flex-shrink: 0;
+		margin-top: 0.35rem;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		font-size: 0.6875rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		border: 1px solid var(--color-border);
+		color: var(--color-muted);
+		background: var(--color-surface);
+	}
+	.status-chip.published {
+		border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+		color: var(--color-primary);
+		background: var(--color-primary-light);
+	}
 	.fields {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+	.title-field :global(input) {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+	.body-block {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+	.label {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text);
+	}
+	.counts {
+		margin: var(--space-1) 0 0;
+		font-size: 0.75rem;
+		color: var(--color-muted);
+	}
+	.details {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+		padding: 0.35rem 0.85rem 0.85rem;
+	}
+	.details summary {
+		cursor: pointer;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-muted);
+		padding: 0.5rem 0;
+		list-style: none;
+	}
+	.details summary::-webkit-details-marker {
+		display: none;
+	}
+	.details summary::before {
+		content: '▸ ';
+		display: inline-block;
+		transition: transform 0.15s ease;
+	}
+	.details[open] summary::before {
+		transform: rotate(90deg);
+	}
+	.details-body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+		padding-top: var(--space-1);
 	}
 	.cover-row {
 		display: flex;
@@ -552,18 +712,98 @@
 	.cover-input {
 		flex: 1 1 16rem;
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	.cover-input input {
+		min-height: var(--control-height);
+		padding: 0 var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 0.875rem;
+	}
+	.cover-input input:focus {
+		border-color: var(--color-primary-muted);
+		box-shadow: var(--focus-ring);
+		outline: none;
+	}
+	.cover-input input:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 	.cover-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1);
 		padding-bottom: 0.05rem;
+	}
+	.cover-btn {
+		min-height: 1.875rem;
+		padding: 0 var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.cover-btn:hover:not(:disabled) {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+		background: var(--color-primary-light);
+	}
+	.cover-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	.cover-preview {
+		position: relative;
+		display: inline-block;
+		margin-top: var(--space-2);
+		max-width: 12rem;
+		isolation: isolate;
 	}
 	.cover-thumb {
 		display: block;
-		margin-top: var(--space-2);
-		max-width: 12rem;
+		width: 100%;
 		max-height: 8rem;
 		object-fit: cover;
 		border-radius: var(--radius);
 		border: 1px solid var(--color-border);
+		pointer-events: none;
+	}
+	.cover-clear {
+		position: absolute;
+		top: 0.35rem;
+		right: 0.35rem;
+		z-index: 2;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: 1.15rem;
+		line-height: 1;
+		cursor: pointer;
+		box-shadow: var(--shadow-sm);
+	}
+	.cover-clear:hover:not(:disabled) {
+		border-color: var(--color-primary);
+		color: var(--color-primary);
+		background: var(--color-primary-light);
+	}
+	.cover-clear:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 	.sr-only {
 		position: absolute;
@@ -575,49 +815,6 @@
 		clip: rect(0, 0, 0, 0);
 		white-space: nowrap;
 		border: 0;
-	}
-	.md-block {
-		min-width: 0;
-	}
-	.toolbar {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-1);
-		margin-bottom: var(--space-2);
-	}
-	.tool {
-		padding: 0.25rem 0.5rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		background: var(--color-surface);
-		color: var(--color-text);
-		cursor: pointer;
-	}
-	.tool:hover {
-		border-color: var(--color-primary);
-		color: var(--color-primary);
-	}
-	.content-label {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		width: 100%;
-		min-width: 0;
-	}
-	.label {
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-text);
-	}
-	.content-label :global(.cm-wrap) {
-		width: 100%;
-	}
-	.counts {
-		margin: var(--space-1) 0 0;
-		font-size: 0.75rem;
-		color: var(--color-muted);
 	}
 	.pane.desktop {
 		position: sticky;
@@ -645,30 +842,6 @@
 		text-transform: uppercase;
 		color: var(--color-muted);
 	}
-	.preview-cover {
-		display: block;
-		width: 100%;
-		max-height: 10rem;
-		object-fit: cover;
-		border-radius: var(--radius);
-		border: 1px solid var(--color-border);
-		flex-shrink: 0;
-	}
-	.preview-post-title {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		line-height: 1.25;
-		flex-shrink: 0;
-	}
-	.preview-excerpt {
-		margin: 0;
-		font-size: 0.875rem;
-		color: var(--color-muted);
-		line-height: 1.4;
-		flex-shrink: 0;
-	}
 	.preview-scroll {
 		flex: 1 1 0;
 		min-height: 0;
@@ -678,50 +851,12 @@
 		background: var(--color-surface);
 		box-shadow: var(--shadow-sm);
 	}
-	.preview-body {
+	.preview-scroll :global(.blog-theme-preview) {
 		padding: var(--space-4);
-		line-height: 1.6;
-		overflow-wrap: anywhere;
+		min-height: 100%;
+		box-sizing: border-box;
 	}
-	.preview-body :global(h1),
-	.preview-body :global(h2),
-	.preview-body :global(h3) {
-		margin: 1em 0 0.4em;
-		line-height: 1.25;
-	}
-	.preview-body :global(p),
-	.preview-body :global(ul),
-	.preview-body :global(ol),
-	.preview-body :global(blockquote) {
-		margin: 0.65em 0;
-	}
-	.preview-body :global(pre) {
-		padding: 0.75rem;
-		overflow-x: auto;
-		border-radius: var(--radius);
-		background: var(--color-bg);
-		border: 1px solid var(--color-border);
-		font-size: 0.8125rem;
-	}
-	.preview-body :global(code) {
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-		font-size: 0.875em;
-	}
-	.preview-body :global(blockquote) {
-		padding-left: 0.85rem;
-		border-left: 3px solid var(--color-border);
-		color: var(--color-muted);
-	}
-	.preview-body :global(img) {
-		max-width: 100%;
-		height: auto;
-		border-radius: var(--radius);
-	}
-	.preview-body :global(a) {
-		color: var(--color-primary);
-	}
-	.preview-scroll > .muted {
-		padding: var(--space-4);
+	.preview-scroll :global(.blog-theme-preview .muted) {
 		margin: 0;
 	}
 	.form-actions {

@@ -14,6 +14,9 @@
 	export let skillNames: string[] = [];
 	export let disabled = false;
 	export let pro = false;
+	/** Hosted Pro with Foliyo key, or self-host BYOK. */
+	export let aiEnabled = false;
+	export let byok = false;
 	export let outOfUnits = false;
 	export let unitsHint = '';
 
@@ -23,7 +26,7 @@
 	let errorMsg = '';
 
 	$: canGenerate =
-		isSaas && pro && !disabled && !busy && !outOfUnits && jdText.trim().length > 0;
+		aiEnabled && pro && !disabled && !busy && !outOfUnits && jdText.trim().length > 0;
 
 	async function generate() {
 		if (!pro) {
@@ -96,7 +99,7 @@
 			</div>
 		</div>
 
-		{#if isSaas && pro}
+		{#if aiEnabled && pro}
 			<Button
 				variant="secondary"
 				disabled={!canGenerate}
@@ -118,8 +121,13 @@
 	</div>
 
 	<p class="hint">
-		Uses your library + JD. Does not invent skills. Costs 1 AI unit when generated. You can edit
-		anytime.
+		Uses your library + JD. Does not invent skills.
+		{#if byok}
+			Uses your OpenRouter key (BYOK).
+		{:else}
+			Costs 1 AI unit when generated.
+		{/if}
+		You can edit anytime.
 	</p>
 
 	{#if errorMsg}

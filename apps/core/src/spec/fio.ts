@@ -68,7 +68,15 @@ export type FioImportDraft = {
 };
 
 export type ParseFioResult =
-  | { ok: true; document: FoliyoResumeDocument; signature: FioSignature; manifest: FioManifest; draft: FioImportDraft }
+  | {
+      ok: true;
+      document: FoliyoResumeDocument;
+      signature: FioSignature;
+      manifest: FioManifest;
+      draft: FioImportDraft;
+      /** True only when HMAC verifies with this instance's FOLIYO_INTEGRITY_SECRET. */
+      signatureValid: boolean;
+    }
   | { ok: false; error: string; message: string };
 
 export function buildFioFromPortfolio(
@@ -126,13 +134,16 @@ function strOrNull(v: unknown): string | null {
 }
 
 /**
- * Unzip + verify a `.fio` package.
- * HMAC proves content integrity for this instance secret — not email ownership.
+ * Unzip + parse a `.fio` package.
+ * HMAC with this instance's secret proves local integrity — not email ownership.
+ * Foreign-signed packages (e.g. foliyo.dev → self-host) still yield a draft when
+ * schema + content hash are intact; set `requireLocalSignature` to reject those.
  * Never maps anything to users.email / email_verified.
  */
 export function parseAndVerifyFio(
   bytes: Uint8Array,
   integritySecret: string,
+  opts?: { requireLocalSignature?: boolean },
 ): ParseFioResult {
   let files: Record<string, Uint8Array>;
   try {
@@ -178,7 +189,8 @@ export function parseAndVerifyFio(
     };
   }
 
-  if (!verifySignature(hash, signature.signature, integritySecret)) {
+  const signatureValid = verifySignature(hash, signature.signature, integritySecret);
+  if (!signatureValid && opts?.requireLocalSignature) {
     return {
       ok: false,
       error: "signature_invalid",
@@ -191,6 +203,7 @@ export function parseAndVerifyFio(
     ok: true,
     document,
     signature,
+    signatureValid,
     manifest: manifest ?? {
       format: "fio",
       format_version: "1",

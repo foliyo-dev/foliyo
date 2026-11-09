@@ -8,6 +8,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
+	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
 	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		listPortfolios,
@@ -17,10 +18,10 @@
 		setDefaultPortfolio,
 		slugify,
 		portfolioPublicUrl,
-		portfolioThemes,
 		FREE_PORTFOLIO_LIMIT,
 		parseApiError,
-		type Portfolio
+		type Portfolio,
+		type ThemeConfig
 	} from '$lib/api/portfolios';
 	import type { PortfolioDraftPreview } from '$lib/api/preview';
 	import { createResume } from '$lib/api/resumes';
@@ -46,7 +47,8 @@
 
 	let name = '';
 	let slug = '';
-	let themeSlug: (typeof portfolioThemes)[number] = 'minimal';
+	let themeSlug = 'minimal';
+	let themeConfig: ThemeConfig | null = null;
 	let isPublic = false;
 	let slugTouched = false;
 
@@ -110,6 +112,7 @@
 				name: name.trim() || 'New portfolio',
 				description: '',
 				theme_slug: themeSlug,
+				theme_config: themeConfig,
 				show_skills: showSkills ? 1 : 0,
 				show_projects: showProjects ? 1 : 0,
 				show_experience: showExperience ? 1 : 0,
@@ -200,6 +203,7 @@
 		name = '';
 		slug = '';
 		themeSlug = 'minimal';
+		themeConfig = null;
 		isPublic = false;
 		slugTouched = false;
 		showSkills = true;
@@ -242,6 +246,7 @@
 				slug: createdSlug,
 				description: '',
 				theme_slug: themeSlug,
+				theme_config: themeConfig,
 				is_public: isPublic ? 1 : 0,
 				is_default: wasFirstPortfolio ? 1 : 0,
 				show_skills: showSkills ? 1 : 0,
@@ -492,14 +497,7 @@
 					<div class="fields">
 						<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
 						<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-						<label class="field">
-							<span class="label">Theme</span>
-							<select bind:value={themeSlug}>
-								{#each portfolioThemes as t}
-									<option value={t}>{t}</option>
-								{/each}
-							</select>
-						</label>
+						<ThemeLayoutPanel bind:themeSlug bind:themeConfig />
 						<label class="checkbox">
 							<input type="checkbox" bind:checked={isPublic} />
 							Publish publicly

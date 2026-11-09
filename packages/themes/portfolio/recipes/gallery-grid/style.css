@@ -1,0 +1,235 @@
+/* Gallery-grid — cream minimalist image-first portfolio */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@400;500;600&display=swap");
+
+.theme-gallery-grid {
+  --bg: #f5f2e9;
+  --ink: #1c1a17;
+  --muted: #6b6358;
+  --accent: #c45c26;
+  --surface: #fffdf8;
+  --line: rgba(28, 26, 23, 0.12);
+  --radius: 0.35rem;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(196, 92, 38, 0.08), transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(28, 26, 23, 0.04), transparent 35%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+.theme-gallery-grid .page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+.theme-gallery-grid h1,
+.theme-gallery-grid h2 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.theme-gallery-grid .site-nav {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  border-bottom-color: var(--line);
+}
+
+.theme-gallery-grid .gg-hero {
+  text-align: center;
+  padding: 3.5rem 0 2.5rem;
+}
+
+.theme-gallery-grid .gg-monogram {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  display: inline-grid;
+  place-items: center;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.theme-gallery-grid .gg-hero h1 {
+  font-size: clamp(2.6rem, 6vw, 3.8rem);
+  margin: 0 0 0.85rem;
+  line-height: 1.05;
+  position: relative;
+  display: inline-block;
+}
+
+.theme-gallery-grid .gg-hero h1 .mark {
+  position: relative;
+}
+
+.theme-gallery-grid .gg-hero h1 .mark::after {
+  content: "";
+  position: absolute;
+  inset: -0.15em -0.25em;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 50% 45% 55% 48%;
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+
+.theme-gallery-grid .gg-hero .bio {
+  max-width: 34rem;
+  margin: 0 auto 1.25rem;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.theme-gallery-grid .gg-cta {
+  color: var(--accent);
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.15rem;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  padding-bottom: 0.1rem;
+}
+
+.theme-gallery-grid .gg-gallery {
+  padding: 1rem 0 3rem;
+}
+
+.theme-gallery-grid .gg-gallery-head {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.theme-gallery-grid .gg-gallery-head h2 {
+  font-size: 1.85rem;
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+}
+
+.theme-gallery-grid .gg-gallery-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.theme-gallery-grid .gg-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem 1.25rem;
+}
+
+.theme-gallery-grid .gg-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.theme-gallery-grid .gg-grid figure {
+  margin: 0;
+}
+
+.theme-gallery-grid .gg-grid img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: #e8e2d6;
+  border-radius: var(--radius);
+}
+
+.theme-gallery-grid .gg-grid figcaption {
+  margin-top: 0.55rem;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.theme-gallery-grid .gg-grid figcaption .cat {
+  color: var(--muted);
+}
+
+.theme-gallery-grid .gg-empty {
+  aspect-ratio: 4 / 3;
+  background: #e8e2d6;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.theme-gallery-grid .section {
+  padding: 1.5rem 0;
+}
+
+.theme-gallery-grid .section h2 {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin: 0 0 1rem;
+}
+
+.theme-gallery-grid .cards,
+.theme-gallery-grid .timeline,
+.theme-gallery-grid .tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-gallery-grid .cards {
+  display: grid;
+  gap: 1rem;
+}
+
+.theme-gallery-grid .timeline > li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-gallery-grid .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.theme-gallery-grid .tags li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.theme-gallery-grid .muted {
+  color: var(--muted);
+}
+
+.theme-gallery-grid .site-footer {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem 0;
+  font-size: 0.85rem;
+}
+
+.theme-gallery-grid .site-footer a {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  .theme-gallery-grid .gg-grid,
+  .theme-gallery-grid .gg-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .theme-gallery-grid .gg-grid,
+  .theme-gallery-grid .gg-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+}

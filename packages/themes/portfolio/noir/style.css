@@ -144,6 +144,108 @@ body.theme-noir {
 .theme-noir .links a:hover { text-decoration: underline; }
 .theme-noir .muted { color: var(--muted); font-size: 0.875rem; }
 
+.theme-noir .post-cover {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.theme-noir .post-cover-hero {
+  margin: 0 0 1.75rem;
+}
+
+.theme-noir .post-cover-list {
+  margin: 0 0 0.75rem;
+  max-height: 10rem;
+}
+
+.theme-noir .prose {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.theme-noir .prose > :first-child { margin-top: 0; }
+
+.theme-noir .prose h1,
+.theme-noir .prose h2,
+.theme-noir .prose h3 {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 1.75em 0 0.5em;
+}
+
+.theme-noir .prose h1 { font-size: 1.85rem; }
+.theme-noir .prose h2 { font-size: 1.4rem; }
+.theme-noir .prose h3 { font-size: 1.15rem; }
+
+.theme-noir .prose p,
+.theme-noir .prose ul,
+.theme-noir .prose ol,
+.theme-noir .prose blockquote,
+.theme-noir .prose pre {
+  margin: 0.85em 0;
+}
+
+.theme-noir .prose ul,
+.theme-noir .prose ol {
+  padding-left: 1.35rem;
+}
+
+.theme-noir .prose li { margin: 0.25em 0; }
+
+.theme-noir .prose a { color: var(--accent); }
+
+.theme-noir .prose blockquote {
+  margin-left: 0;
+  padding: 0.15rem 0 0.15rem 1rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.theme-noir .prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+
+.theme-noir .prose pre {
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.theme-noir .prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+.theme-noir .prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+}
+
+.theme-noir .prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2rem 0;
+}
+
 .theme-noir .site-footer {
   text-align: center;
   padding: 2rem 1rem 3rem;

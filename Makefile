@@ -21,6 +21,7 @@ CLOUD_DB_PATH := $(CLOUD_API_DATA)/foliyo-cloud.db
 .PHONY: all help setup deps build test clean release bundle-core
 .PHONY: dev dev-all-tmux dev-stop-tmux dev-attach-tmux dev-status-tmux
 .PHONY: dev-core dev-dashboard dev-landing sync-brand migrate migrate-fresh seed-demo seed-demo-cloud health
+.PHONY: docker-up docker-down
 
 dev: deps dev-all-tmux
 
@@ -123,6 +124,13 @@ health:
 	@curl -sf -o /dev/null $(DASHBOARD_URL) && echo "Dashboard OK" || echo "Dashboard DOWN"
 	@curl -sf -o /dev/null $(LANDING_URL) && echo "Landing OK" || echo "Landing DOWN"
 
+docker-up:
+	@docker compose -f infra/docker-compose.yml up -d --build
+	@echo "API → http://localhost:8080  dashboard → http://localhost:3000  DBAdminer → http://127.0.0.1:8090"
+
+docker-down:
+	@docker compose -f infra/docker-compose.yml down
+
 help:
 	@echo "Foliyo — Hono + MeshQL + SvelteKit"
 	@echo "  make setup        One-time dev setup (Node 22.5+, pnpm)"
@@ -135,5 +143,7 @@ help:
 	@echo "  make seed-demo    fill OSS DB data/foliyo.db (ARGS=--force to reset)"
 	@echo "  make seed-demo-cloud  fill cloud Postgres (FOLIYO_DB_URL, ARGS=--force)"
 	@echo "  make migrate-fresh wipe DB + migrate"
+	@echo "  make docker-up    Build & run OSS Docker stack (infra/docker-compose.yml)"
+	@echo "  make docker-down  Stop OSS Docker stack"
 
 .DEFAULT_GOAL := help

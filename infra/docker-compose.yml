@@ -1,43 +1,95 @@
-# Future Docker support — VPS + pqpm is the primary deployment method.
-version: "3.8"
+# Foliyo OSS — self-host stack (core + dashboard + Postgres + DBAdminer)
+#
+# From foliyo/:  docker compose -f infra/docker-compose.yml up -d --build
+# From stack:    make docker-oss
+
+name: foliyo-oss
+
 services:
   postgres:
     image: postgres:16-alpine
-    ports: ["5432:5432"]
+    container_name: foliyo-oss-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: foliyo
       POSTGRES_PASSWORD: foliyo
       POSTGRES_DB: foliyo
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    volumes:
+      - foliyo_oss_pg:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U foliyo -d foliyo"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   core:
-    build: ./apps/core
-    ports: ["8080:8080"]
-    volumes: ["./data:/data"]
-    environment:
-      - NODE_ENV=production
-      - FOLIYO_DB_DRIVER=postgres
-      - FOLIYO_DB_URL=postgres://foliyo:foliyo@postgres:5432/foliyo
-      - FOLIYO_DATA_DIR=/data
+    build:
+      context: ..
+      dockerfile: Dockerfile.core
+    image: foliyo-core:local
+    container_name: foliyo-oss-core
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      # Optional local BYOK — copy OPENROUTER_* into foliyo/.env (see .env.example)
+      - path: ../.env
+        required: false
+    environment:
+      NODE_ENV: production
+      FOLIYO_HOST: 0.0.0.0
+      FOLIYO_PORT: "8080"
+      FOLIYO_DB_DRIVER: postgres
+      FOLIYO_DB_URL: postgres://foliyo:foliyo@postgres:5432/foliyo
+      FOLIYO_DATA_DIR: /data
+      FOLIYO_ASSETS_DIR: /app/assets
+      FOLIYO_SITE_URL: http://localhost:8080
+      FOLIYO_DASHBOARD_URL: http://localhost:3000
+      FOLIYO_ADMIN_EMAIL: ${FOLIYO_ADMIN_EMAIL:-admin@foliyo.dev}
+      FOLIYO_ADMIN_PASSWORD: ${FOLIYO_ADMIN_PASSWORD:-changeme}
+      FOLIYO_INTEGRITY_SECRET: ${FOLIYO_INTEGRITY_SECRET:-docker-oss-integrity-secret}
+      FOLIYO_MASTER_SECRET: ${FOLIYO_MASTER_SECRET:-docker-oss-master-secret}
+      FOLIYO_TOKEN_SECRET: ${FOLIYO_TOKEN_SECRET:-docker-oss-token-secret}
+      # OPENROUTER_* comes from env_file (foliyo/.env) when present — do not blank-override here
+    volumes:
+      - foliyo_oss_data:/data
+    ports:
+      - "8080:8080"
 
   dashboard:
-    build: ./apps/dashboard
-    ports: ["3000:80"]
+    build:
+      context: ..
+      dockerfile: Dockerfile.dashboard
+      args:
+        VITE_SAAS: "false"
+        VITE_API_URL: /api
+        VITE_SITE_URL: http://localhost:8080
+        VITE_APP_URL: http://localhost:3000
+    image: foliyo-dashboard:local
+    container_name: foliyo-oss-dashboard
+    restart: unless-stopped
+    depends_on:
+      - core
+    ports:
+      - "3000:80"
 
-  nginx:
-    image: nginx:alpine
-    ports: ["80:80", "443:443"]
-    volumes:
-      - ./infra/example.nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on: [core, dashboard]
+  dbadminer:
+    image: dbadminer/dbadminer:latest
+    container_name: foliyo-oss-dbadminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8090:8080"
+    environment:
+      DATABASE_URL: postgres://postgres:5432/foliyo?sslmode=disable
+      DB_USER: foliyo
+      DB_PASSWORD: foliyo
+      # Read-only by default. Set DBADMINER_ACCESS=full to allow writes.
+      # DBADMINER_ACCESS: full
 
 volumes:
-  pgdata:
+  foliyo_oss_pg:
+  foliyo_oss_data:

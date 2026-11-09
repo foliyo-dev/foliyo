@@ -65,6 +65,49 @@ Register callback URLs with each provider:
 
 The dashboard shows “Continue with Google/GitHub” only when the matching secrets are set and `FOLIYO_OAUTH_ENABLED` is not false.
 
+### Optional: AI features (bring your own OpenRouter key)
+
+Self-host unlocks Pro entitlements (unlimited portfolios, PDF, blog, etc.) with **no upgrade path**. AI features (resume PDF/text import, rewrite, summary, theme generation, smarter JD parse) need your own OpenRouter key:
+
+```bash
+# https://openrouter.ai/keys — you pay the provider; Foliyo does not meter units on OSS
+OPENROUTER_API_KEY=sk-or-…
+# Optional (default google/gemini-2.5-flash)
+# OPENROUTER_MODEL=google/gemini-2.5-flash
+# AI_REWRITE_MAX_TOKENS=400
+```
+
+Without a key, `.fio` import and manual library editing still work. Never put a Foliyo-hosted API key in a public self-host install.
+
+### Optional: S3-compatible uploads (R2 / MinIO / AWS)
+
+Project images are always stored and served as **`/uploads/{32hex}.{ext}`** in the DB and HTML. The storage driver only changes where bytes live:
+
+| `FOLIYO_STORAGE` | Behavior |
+|---|---|
+| `local` (default) | Files under `{dataDir}/uploads` — zero-config OSS |
+| `s3` | Put/Get via S3 API (AWS, Cloudflare R2, MinIO) |
+
+```bash
+FOLIYO_STORAGE=s3
+FOLIYO_S3_BUCKET=my-bucket
+FOLIYO_S3_REGION=auto
+# R2 / MinIO — set endpoint; AWS can leave empty
+# FOLIYO_S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com
+FOLIYO_S3_ACCESS_KEY_ID=…
+FOLIYO_S3_SECRET_ACCESS_KEY=…
+# FOLIYO_S3_PREFIX=uploads/
+```
+
+**Cutover from local disk** (no DB migration):
+
+1. Configure `FOLIYO_S3_*` while still on `FOLIYO_STORAGE=local`
+2. `pnpm --filter @foliyo/core storage:sync` (add `-- --dry-run` first)
+3. Set `FOLIYO_STORAGE=s3` and restart core
+4. Keep local `uploads/` as backup
+
+Avatar upload (still 501) should use the same driver when implemented.
+
 ## Database (SQLite vs Postgres)
 
 Default self-host uses **SQLite** (`FOLIYO_DB_DRIVER=sqlite`) — fine for most installs.
