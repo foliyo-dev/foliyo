@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bundle @foliyo/core into a Node-runnable tree (no node_modules on the VPS).
-# Same ship path as foliyo-cloud — Node 22.5+ on the host, not Deno.
+# Host Node is not required at install time — install.sh downloads Node 22 from nodejs.org
+# into apps/foliyo/bin/. Local/CI can use PATH node via the wrapper fallback.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,7 +20,7 @@ if [[ "${SKIP_PNPM_INSTALL:-}" != "1" ]]; then
 fi
 
 rm -rf "$OUT"
-mkdir -p "$ASSETS/core" "$ASSETS/themes"
+mkdir -p "$ASSETS/core" "$ASSETS/themes" "$OUT/bin"
 
 echo "Bundling core → $OUT/server.mjs"
 pnpm exec esbuild "$ROOT/apps/core/src/index.ts" \
@@ -44,17 +45,21 @@ if [[ -f "$ROOT/packages/themes/package.json" ]]; then
   cp "$ROOT/packages/themes/package.json" "$ASSETS/themes/package.json"
 fi
 
-# Wrapper so pqpm can exec a single path
+# Wrapper: prefer install.sh-managed bin/node; fall back to PATH for local/CI smoke.
 cat > "$OUT/foliyo" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 export FOLIYO_ASSETS_DIR="${FOLIYO_ASSETS_DIR:-$DIR/assets}"
-if ! command -v node >/dev/null; then
-  echo "Node.js 22.5+ is required (node:sqlite)." >&2
-  exit 1
+if [[ -x "$DIR/bin/node" ]]; then
+  exec "$DIR/bin/node" "$DIR/server.mjs" "$@"
 fi
-exec node "$DIR/server.mjs" "$@"
+if command -v node >/dev/null 2>&1; then
+  exec node "$DIR/server.mjs" "$@"
+fi
+echo "Node.js not found. Re-run: curl -sSL https://foliyo.dev/install.sh | bash" >&2
+echo "(or install Node 22.5+ on PATH for local smoke)" >&2
+exit 1
 EOF
 chmod +x "$OUT/foliyo"
 
@@ -62,4 +67,4 @@ mkdir -p "$ROOT/dist"
 tar -czf "$ROOT/dist/foliyo-core.tar.gz" -C "$OUT" .
 echo "Created $ROOT/dist/foliyo-core.tar.gz"
 echo "Run:  $OUT/foliyo"
-echo "  or:  FOLIYO_ASSETS_DIR=$ASSETS node $OUT/server.mjs"
+echo "  (install.sh places Node at bin/node; PATH node works for local/CI)"

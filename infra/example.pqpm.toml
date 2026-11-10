@@ -1,6 +1,6 @@
 # Foliyo process config for pqpm
 # Copy this file, fill in real paths / secrets, run: pqpm start foliyo
-# Layout matches scripts/install.sh (Node 22.5+ bundle under apps/foliyo).
+# Layout matches scripts/install.sh (bundle under apps/foliyo; Node in apps/foliyo/bin/).
 
 [service.foliyo]
 command = "/home/foliyo/apps/foliyo/foliyo"

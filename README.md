@@ -45,7 +45,7 @@ make help             # all commands
 
 ## Self-hosting
 
-See [docs/self-hosting.md](docs/self-hosting.md). Requires **Node.js 22.5+** on the VPS.
+See [docs/self-hosting.md](docs/self-hosting.md). Host Node is **not** required — `install.sh` downloads Node 22 from nodejs.org.
 
 ```bash
 curl -sSL https://foliyo.dev/install.sh | bash

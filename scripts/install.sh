@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Foliyo self-host installer — Node 22.5+ bundle from GitHub Releases.
+# Foliyo self-host installer — downloads release artifacts + Node 22 from nodejs.org.
+# Host needs curl|wget + tar (xz). No system Node.js required.
 set -euo pipefail
 
 RELEASE_BASE="${FOLIYO_RELEASE_BASE:-https://github.com/foliyo-dev/foliyo/releases/latest/download}"
@@ -9,25 +10,14 @@ DASHBOARD_DIR="${INSTALL_ROOT}/apps/dashboard"
 DATA_DIR="${INSTALL_ROOT}/data"
 LOG_DIR="${INSTALL_ROOT}/logs"
 NGINX_OUT="${INSTALL_ROOT}/nginx-foliyo.conf"
+# Pin major line for node:sqlite (22.5+). Override with FOLIYO_NODE_VERSION=22.x.y
+NODE_MAJOR="${FOLIYO_NODE_MAJOR:-22}"
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "Missing required command: $1" >&2
     exit 1
   }
-}
-
-check_node() {
-  if ! command -v node >/dev/null 2>&1; then
-    echo "Node.js 22.5+ is required (built-in node:sqlite)." >&2
-    echo "Install: https://nodejs.org/ or: curl -fsSL https://fnm.vercel.app/install | bash && fnm install 22" >&2
-    exit 1
-  fi
-  # node:sqlite landed in 22.5
-  if ! node -e "require('node:sqlite')" 2>/dev/null; then
-    echo "Node $(node -v) cannot load node:sqlite. Upgrade to Node.js 22.5+." >&2
-    exit 1
-  fi
 }
 
 download() {
@@ -39,8 +29,118 @@ download() {
   fi
 }
 
-echo "Installing Foliyo (Node bundle)..."
-check_node
+download_stdout() {
+  local url="$1"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url"
+  else
+    wget -q "$url" -O -
+  fi
+}
+
+detect_node_arch() {
+  local m
+  m="$(uname -m)"
+  case "$m" in
+    x86_64|amd64) echo "linux-x64" ;;
+    aarch64|arm64) echo "linux-arm64" ;;
+    *)
+      echo "Unsupported CPU arch: $m (need x86_64 or aarch64)" >&2
+      exit 1
+      ;;
+  esac
+}
+
+# Latest Node ${NODE_MAJOR}.x from nodejs.org (prefer LTS flag when present).
+resolve_node_version() {
+  if [[ -n "${FOLIYO_NODE_VERSION:-}" ]]; then
+    echo "$FOLIYO_NODE_VERSION"
+    return 0
+  fi
+  local ver=""
+  if command -v python3 >/dev/null 2>&1; then
+    ver="$(
+      download_stdout "https://nodejs.org/dist/index.json" | python3 -c "
+import json, sys
+major = int('${NODE_MAJOR}')
+data = json.load(sys.stdin)
+# Prefer LTS on this major, then any release on this major. node:sqlite needs >=22.5.
+for prefer_lts in (True, False):
+    for row in data:
+        v = row.get('version', '').lstrip('v')
+        parts = v.split('.')
+        if len(parts) < 2:
+            continue
+        try:
+            maj, minor = int(parts[0]), int(parts[1])
+        except ValueError:
+            continue
+        if maj != major:
+            continue
+        if maj == 22 and minor < 5:
+            continue
+        lts = row.get('lts')
+        is_lts = bool(lts) and lts is not False
+        if prefer_lts and not is_lts:
+            continue
+        print(v)
+        raise SystemExit
+"
+    )" || true
+  fi
+  if [[ -z "$ver" ]]; then
+    ver="22.22.2"
+    echo "Could not resolve Node ${NODE_MAJOR}.x from nodejs.org — using ${ver}" >&2
+  fi
+  echo "$ver"
+}
+
+node_ok() {
+  local bin="$1"
+  [[ -x "$bin" ]] && "$bin" -e "require('node:sqlite')" >/dev/null 2>&1
+}
+
+# Download official Node binary into CORE_DIR/bin/node when missing/incompatible.
+ensure_node() {
+  local node_bin="$CORE_DIR/bin/node"
+  if node_ok "$node_bin"; then
+    echo "Using Node $($node_bin -v) at $node_bin"
+    return 0
+  fi
+
+  local ver arch tarball url tmp
+  ver="$(resolve_node_version)"
+  arch="$(detect_node_arch)"
+  tarball="node-v${ver}-${arch}.tar.xz"
+  url="https://nodejs.org/dist/v${ver}/${tarball}"
+  echo "Downloading Node v${ver} (${arch}) from nodejs.org…"
+  mkdir -p "$CORE_DIR/bin"
+  tmp="$(mktemp -d)"
+  if ! download "$url" "$tmp/$tarball"; then
+    echo "Failed to download $url" >&2
+    echo "Check network / set FOLIYO_NODE_VERSION=22.x.y" >&2
+    rm -rf "$tmp"
+    exit 1
+  fi
+  if ! tar -xJf "$tmp/$tarball" -C "$CORE_DIR/bin" --strip-components=2 "node-v${ver}-${arch}/bin/node" 2>/dev/null; then
+    echo "Failed to extract Node binary (need tar with xz/lzma support)." >&2
+    rm -rf "$tmp"
+    exit 1
+  fi
+  chmod +x "$node_bin"
+  rm -rf "$tmp"
+  if ! node_ok "$node_bin"; then
+    echo "Downloaded Node $($node_bin -v 2>/dev/null || echo '?') cannot load node:sqlite (need 22.5+)." >&2
+    exit 1
+  fi
+  echo "Installed Node $($node_bin -v) → $node_bin"
+}
+
+echo "Installing Foliyo…"
+if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+  echo "Need curl or wget to download release artifacts." >&2
+  exit 1
+fi
 need_cmd tar
 
 mkdir -p "$CORE_DIR" "$DASHBOARD_DIR" "$DATA_DIR" "$LOG_DIR"
@@ -48,18 +148,47 @@ mkdir -p "$CORE_DIR" "$DASHBOARD_DIR" "$DATA_DIR" "$LOG_DIR"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-echo "Downloading core bundle..."
+# Keep previously installed Node across reinstalls when still valid.
+SAVED_NODE=""
+if node_ok "$CORE_DIR/bin/node"; then
+  SAVED_NODE="$TMP/saved-node"
+  cp -a "$CORE_DIR/bin/node" "$SAVED_NODE"
+fi
+
+echo "Downloading core bundle…"
 if ! download "$RELEASE_BASE/foliyo-core.tar.gz" "$TMP/foliyo-core.tar.gz"; then
   echo "Release artifact not found: $RELEASE_BASE/foliyo-core.tar.gz" >&2
   echo "Build from source: git clone https://github.com/foliyo-dev/foliyo && make release" >&2
   exit 1
 fi
 
-echo "Downloading dashboard..."
-download "$RELEASE_BASE/dashboard-build.tar.gz" "$TMP/dashboard.tar.gz"
+echo "Downloading dashboard…"
+if ! download "$RELEASE_BASE/dashboard-build.tar.gz" "$TMP/dashboard.tar.gz"; then
+  echo "Release artifact not found: $RELEASE_BASE/dashboard-build.tar.gz" >&2
+  exit 1
+fi
 
 rm -rf "${CORE_DIR:?}/"*
 tar -xzf "$TMP/foliyo-core.tar.gz" -C "$CORE_DIR"
+mkdir -p "$CORE_DIR/bin"
+if [[ -n "$SAVED_NODE" ]]; then
+  cp -a "$SAVED_NODE" "$CORE_DIR/bin/node"
+  chmod +x "$CORE_DIR/bin/node"
+fi
+ensure_node
+
+cat > "$CORE_DIR/foliyo" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+export FOLIYO_ASSETS_DIR="${FOLIYO_ASSETS_DIR:-$DIR/assets}"
+NODE="$DIR/bin/node"
+if [[ ! -x "$NODE" ]]; then
+  echo "Node missing at $NODE — re-run: curl -sSL https://foliyo.dev/install.sh | bash" >&2
+  exit 1
+fi
+exec "$NODE" "$DIR/server.mjs" "$@"
+EOF
 chmod +x "$CORE_DIR/foliyo"
 
 # dashboard-build.tar.gz may contain a top-level build/ or flat static files
@@ -132,8 +261,9 @@ server {
 EOF
 
 echo ""
-echo "Foliyo installed."
+echo "Foliyo installed (Node from nodejs.org — no system Node required)."
 echo "  Core:      ${CORE_DIR}/foliyo"
+echo "  Node:      ${CORE_DIR}/bin/node ($("$CORE_DIR/bin/node" -v))"
 echo "  Dashboard: ${DASHBOARD_DIR}/build"
 echo "  Data:      ${DATA_DIR}"
 echo "  nginx:     ${NGINX_OUT}"

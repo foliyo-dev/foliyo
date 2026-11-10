@@ -2,10 +2,12 @@
 
 ## Prerequisites
 
-- VPS with Linux (Ubuntu/Debian recommended)
-- **Node.js 22.5+** (for built-in `node:sqlite`)
+- VPS with Linux x86_64 or aarch64 (Ubuntu/Debian recommended)
+- `curl` or `wget`, and `tar` with xz/lzma support
 - [pqpm](https://github.com/pqpm/pqpm) for process management (recommended)
 - nginx or Apache
+
+**Host Node.js is not required.** `install.sh` downloads the latest Node **22.x** (LTS line, ≥22.5 for `node:sqlite`) from [nodejs.org](https://nodejs.org) into `~/apps/foliyo/bin/node`. Override with `FOLIYO_NODE_VERSION=22.x.y` if needed.
 
 ## Install (release artifacts)
 
@@ -16,7 +18,7 @@ curl -sSL https://raw.githubusercontent.com/pqpm/pqpm/main/install.sh | sudo bas
 curl -sSL https://foliyo.dev/install.sh | bash
 ```
 
-The installer downloads `foliyo-core.tar.gz` and `dashboard-build.tar.gz` from GitHub Releases, writes `~/.pqpm.toml`, and emits `~/nginx-foliyo.conf`.
+The installer downloads `foliyo-core.tar.gz` + `dashboard-build.tar.gz` from GitHub Releases, installs Node into `apps/foliyo/bin/`, writes `~/.pqpm.toml`, and emits `~/nginx-foliyo.conf`.
 
 Or build from source:
 
