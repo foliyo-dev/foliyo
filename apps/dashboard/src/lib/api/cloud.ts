@@ -24,7 +24,7 @@ export async function signup(
 	email: string,
 	consentPrivacyPolicy: boolean
 ): Promise<{ ok: boolean }> {
-	const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'}/auth/signup`, {
+	const res = await fetch(`${import.meta.env.VITE_API_URL ?? '/api'}/auth/signup`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
@@ -85,7 +85,7 @@ export const getDataRequests = () =>
 		grace_days: number;
 	}>('/account/data-requests');
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 /** Download a JSON export of the user's data (DPDP). */
 export async function downloadExport(): Promise<void> {

@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { accessToken } from '$lib/stores/token';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export type BulkResult<T> = { items: T[]; failed: { index: number; error: string }[] };
 

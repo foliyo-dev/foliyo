@@ -19,6 +19,9 @@ jobs:
       - name: Sync brand assets
         run: ./scripts/sync-brand-assets.sh
       - name: Build dashboard
+        env:
+          # .env.production may be absent in shallow checkouts; never bake localhost into the artifact
+          VITE_API_URL: /api
         run: pnpm --filter @foliyo/dashboard build
       - name: Bundle core (Node 22)
         env:

@@ -24,4 +24,4 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm --filter @foliyo/dashboard check
-      - run: pnpm --filter @foliyo/dashboard build
+      - run: VITE_API_URL=/api pnpm --filter @foliyo/dashboard build

@@ -128,6 +128,16 @@ export function createFoliyoApp(
 
   app.route("/api/auth", authRoutes(db, config));
 
+  // Unauthenticated — dashboard reads FOLIYO_SITE_URL / FOLIYO_DASHBOARD_URL at runtime
+  // so one static build works on any self-host domain (no VITE_SITE_URL rebuild).
+  app.get("/api/public-config", (c) =>
+    c.json({
+      siteUrl: config.siteUrl.replace(/\/$/, ""),
+      dashboardUrl: config.dashboardUrl.replace(/\/$/, ""),
+      mode: config.mode,
+    }),
+  );
+
   const api = new Hono();
   // Last-resort net: a route-level bug that lets a DB unique-constraint violation
   // bubble up should surface as a clean 409, not an unhandled 500 + leaked stack trace.

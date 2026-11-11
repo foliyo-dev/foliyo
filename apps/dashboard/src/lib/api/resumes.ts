@@ -96,7 +96,7 @@ export function resumeShareUrl(shareToken: string): string {
 	return corePublicUrl(`/r/${shareToken}`);
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export async function downloadResumeFio(resumeId: string, filenameHint = 'resume'): Promise<void> {
 	const token = get(accessToken);

@@ -1,4 +1,4 @@
-import { isSaas, siteUrl } from '$lib/config';
+import { siteUrl } from '$lib/config';
 import { api, ApiError } from './client';
 
 import type { ThemeConfig, ThemeRecipe } from './ai';
@@ -133,12 +133,11 @@ export const portfolioThemes = [
 	'editorial'
 ] as const;
 
-/** Public origin for /u /r /p links. SaaS dashboard is app.foliyo.dev; folios live on VITE_SITE_URL. */
+/** Public origin for /u /r /p links. Prefers runtime siteUrl (FOLIYO_SITE_URL via /api/public-config). */
 export function corePublicUrl(path = ''): string {
-	if (isSaas || import.meta.env.VITE_SITE_URL) {
-		return `${siteUrl}${path}`;
-	}
-	const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+	if (siteUrl) return `${siteUrl}${path}`;
+	if (typeof window !== 'undefined') return `${window.location.origin}${path}`;
+	const apiUrl = import.meta.env.VITE_API_URL ?? '/api';
 	const base = apiUrl.replace(/\/api\/?$/, '');
 	return `${base}${path}`;
 }

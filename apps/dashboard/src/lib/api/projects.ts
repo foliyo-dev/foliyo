@@ -36,7 +36,7 @@ export const restoreProject = (id: string) =>
 export const purgeProject = (id: string) =>
 	api<void>(`/projects/${id}/purge`, { method: 'DELETE' });
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export async function uploadProjectImage(file: File): Promise<{ url: string }> {
 	const token = get(accessToken);

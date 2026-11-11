@@ -33,8 +33,8 @@ make release          # sync brand → dashboard → Node core bundle
 
 ## Configure
 
-1. Edit `~/.pqpm.toml` (or copy [`infra/example.pqpm.toml`](../infra/example.pqpm.toml)) — set admin credentials and URLs.
-2. Install nginx from `~/nginx-foliyo.conf` or [`infra/example.nginx.conf`](../infra/example.nginx.conf) (replace domains).
+1. Edit `~/.pqpm.toml` (or copy [`infra/example.pqpm.toml`](../infra/example.pqpm.toml)) — set admin credentials and URLs (`FOLIYO_SITE_URL` = public site, `FOLIYO_DASHBOARD_URL` = `app.` host).
+2. Install nginx from `~/nginx-foliyo.conf` or [`infra/example.nginx.conf`](../infra/example.nginx.conf) (replace domains). The dashboard is a static build that calls same-origin `/api` (proxied to Foliyo) and loads `GET /api/public-config` at runtime for your domain URLs — no rebuild per domain.
 3. Ensure `FOLIYO_ASSETS_DIR` points at the extracted `assets/` next to `server.mjs` (the `./foliyo` wrapper sets this by default).
 
 ```bash

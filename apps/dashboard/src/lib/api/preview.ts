@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import { accessToken } from '$lib/stores/token';
 import { ApiError } from './client';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 /** Fetch rendered library preview HTML (auth required). */
 export async function fetchLibraryPreviewHtml(theme?: string): Promise<string> {

@@ -12,7 +12,8 @@ mkdir -p "$DIST"
 echo "Building release artifacts (version: $VERSION)..."
 
 ./scripts/sync-brand-assets.sh
-pnpm --filter @foliyo/dashboard build
+# Same-origin /api for self-host nginx (must not bake localhost:8080 into the static build)
+VITE_API_URL=/api pnpm --filter @foliyo/dashboard build
 SKIP_PNPM_INSTALL="${SKIP_PNPM_INSTALL:-0}" ./scripts/build-core-bundle.sh
 ./scripts/pack-libs.sh
 ./scripts/pack-extension.sh "$VERSION"
