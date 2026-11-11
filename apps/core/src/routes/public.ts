@@ -210,19 +210,21 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
   });
 
   // Self-host (single): site root is the default public portfolio.
-  // Cloud (multi): marketing lives on FOLIYO_SITE_URL — never pick a random SaaS folio.
+  // Cloud (multi): if FOLIYO_SITE_URL is a *different* origin, redirect there (marketing).
+  // Same-origin multi (misconfigured self-host) falls through to the default portfolio —
+  // never force /welcome when a public default exists.
   r.get("/", async (c) => {
     if (config.mode === "multi") {
       const site = config.siteUrl.replace(/\/$/, "");
-      if (!site) return c.redirect("/welcome");
-      try {
-        const here = new URL(c.req.url);
-        const dest = new URL(site);
-        if (here.origin === dest.origin) return c.redirect("/welcome");
-      } catch {
-        /* invalid siteUrl — still try redirect below */
+      if (site) {
+        try {
+          const here = new URL(c.req.url);
+          const dest = new URL(site);
+          if (here.origin !== dest.origin) return c.redirect(site);
+        } catch {
+          return c.redirect(site);
+        }
       }
-      return c.redirect(site);
     }
     const data = await getDefaultPublicPortfolio(db);
     if (!data) return c.redirect("/welcome");
