@@ -440,6 +440,10 @@ export async function loadLibraryPreview(
       show_education: 1,
       show_certifications: 1,
       show_languages: 1,
+      show_skill_levels: 0,
+      projects_layout: "featured_timeline",
+      hero_cta_primary: "View work",
+      hero_cta_secondary: "Contact",
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
     skills: await queryAll(db, "SELECT * FROM skills WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, name", [
@@ -488,6 +492,10 @@ export type PortfolioDraftPreviewInput = {
   show_certifications?: number;
   show_languages?: number;
   show_posts?: number;
+  show_skill_levels?: number;
+  projects_layout?: string;
+  hero_cta_primary?: string;
+  hero_cta_secondary?: string;
   skills_title?: string;
   projects_title?: string;
   experience_title?: string;
@@ -570,6 +578,10 @@ export async function loadPortfolioDraftPreview(
       show_certifications: show(input.show_certifications),
       show_languages: show(input.show_languages),
       show_posts: show(input.show_posts),
+      show_skill_levels: show(input.show_skill_levels, 0),
+      projects_layout: String(input.projects_layout ?? "featured_timeline"),
+      hero_cta_primary: String(input.hero_cta_primary ?? ""),
+      hero_cta_secondary: String(input.hero_cta_secondary ?? ""),
       skills_title: String(input.skills_title ?? ""),
       projects_title: String(input.projects_title ?? ""),
       experience_title: String(input.experience_title ?? ""),

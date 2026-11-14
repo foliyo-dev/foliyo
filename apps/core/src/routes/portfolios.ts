@@ -36,6 +36,15 @@ const portfolioSchema = z.object({
   show_certifications: z.number().int().default(1),
   show_languages: z.number().int().default(1),
   show_posts: z.number().int().default(1),
+  /** When 1, public portfolio shows skill proficiency labels. Default off. */
+  show_skill_levels: z.number().int().default(0),
+  /**
+   * Public projects presentation.
+   * New portfolios default to featured_timeline; existing rows stay cards via migration.
+   */
+  projects_layout: z.enum(["cards", "featured_timeline", "timeline"]).default("featured_timeline"),
+  hero_cta_primary: z.string().max(40).default(""),
+  hero_cta_secondary: z.string().max(40).default(""),
   skills_title: z.string().max(40).default(""),
   projects_title: z.string().max(40).default(""),
   experience_title: z.string().max(40).default(""),
@@ -271,13 +280,15 @@ export function portfoliosRoutes(db: FoliyoDb, config: Config) {
       db,
       `INSERT INTO portfolios (user_id, name, slug, description, headline, bio, theme_slug, theme_config, is_public, is_default,
        show_skills, show_projects, show_experience, show_education, show_certifications, show_languages, show_posts,
+       show_skill_levels, projects_layout, hero_cta_primary, hero_cta_secondary,
        skills_title, projects_title, experience_title, education_title, certifications_title, languages_title, posts_title,
        sort_order, resume_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         userId, d.name, d.slug, d.description, d.headline, d.bio, d.theme_slug, themeConfigJson, d.is_public, isDefault,
         d.show_skills, d.show_projects, d.show_experience, d.show_education, d.show_certifications,
-        d.show_languages, d.show_posts, d.skills_title, d.projects_title, d.experience_title, d.education_title,
+        d.show_languages, d.show_posts, d.show_skill_levels, d.projects_layout, d.hero_cta_primary, d.hero_cta_secondary,
+        d.skills_title, d.projects_title, d.experience_title, d.education_title,
         d.certifications_title, d.languages_title, d.posts_title, d.sort_order, d.resume_id,
       ],
     );

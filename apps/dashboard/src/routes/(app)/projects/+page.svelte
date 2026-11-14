@@ -44,6 +44,9 @@
 	let imageUrl = '';
 	let skills: string[] = [];
 	let featured = false;
+	let startDate = '';
+	let endDate = '';
+	let ongoing = false;
 	let sortOrder = '0';
 	let uploading = false;
 	let imageInput: HTMLInputElement | null = null;
@@ -87,6 +90,8 @@
 				image_url: imageUrl,
 				skills_developed: skillsArrayToJson(skills),
 				featured: featured ? 1 : 0,
+				start_date: startDate,
+				end_date: ongoing ? null : endDate || null,
 				sort_order: Number(sortOrder) || 0
 			}),
 			applyToForm: (item) => {
@@ -102,6 +107,9 @@
 				pasteImageUrl = /^https?:\/\//i.test(item.image_url ?? '');
 				skills = parseSkillsJson(item.skills_developed ?? '[]');
 				featured = item.featured === 1;
+				startDate = item.start_date ?? '';
+				endDate = item.end_date ?? '';
+				ongoing = !item.end_date && Boolean(item.start_date);
 				sortOrder = String(item.sort_order);
 			},
 			resetFields: () => {
@@ -117,6 +125,9 @@
 				pasteImageUrl = false;
 				skills = [];
 				featured = false;
+				startDate = '';
+				endDate = '';
+				ongoing = false;
 				sortOrder = String($items.length);
 			},
 			getDeleteLabel: (item) => item.title?.trim() || 'this project',
@@ -191,7 +202,7 @@
 <EditorWithPreview bind:this={shell}>
 	<PageHeader
 		title={$editingId ? 'Edit project' : 'Projects'}
-		description="Showcase your work — list order is how they appear on folios and resumes."
+		description="Showcase your work — featured projects lead; dates power the build-log timeline on storytelling folios."
 	/>
 	<RecentlyDeleted
 		bind:this={trash}
@@ -303,6 +314,14 @@
 					{/if}
 				</div>
 				<SkillTagsInput label="Skills developed" bind:value={skills} placeholder="Type a skill and press Enter" />
+				<div class="row">
+					<Input label="Start date" bind:value={startDate} placeholder="2024-01" />
+					<Input label="End date" bind:value={endDate} placeholder="2025-06" disabled={ongoing} />
+				</div>
+				<label class="checkbox">
+					<input type="checkbox" bind:checked={ongoing} />
+					Ongoing / still active
+				</label>
 				<label class="checkbox">
 					<input type="checkbox" bind:checked={featured} />
 					Featured project

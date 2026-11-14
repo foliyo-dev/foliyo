@@ -60,6 +60,8 @@ export type FoliyoResumeDocument = {
     repo_url?: string | null;
     skills_developed: string[];
     featured: boolean;
+    start?: string | null;
+    end?: string | null;
   }>;
   certifications: Array<{
     name: string;
@@ -286,6 +288,8 @@ export function buildFoliyoResumeDocument(input: BuildInput): {
       repo_url: str(p.repo_url),
       skills_developed: parseTags(p.skills_developed ?? p.tags),
       featured: Number(p.featured) === 1,
+      start: str(p.start_date),
+      end: str(p.end_date),
     })),
     certifications: input.certifications.map((c) => ({
       name: str(c.name) ?? "",

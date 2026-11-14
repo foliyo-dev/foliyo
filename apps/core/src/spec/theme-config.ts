@@ -55,7 +55,10 @@ const hexColor = z
 const optionalUrl = z
   .string()
   .max(2048)
-  .refine((v) => !v || /^https?:\/\//i.test(v), "must be an http(s) URL")
+  .refine(
+    (v) => !v || /^https?:\/\//i.test(v) || v.startsWith("/uploads/"),
+    "must be an http(s) URL or /uploads/ path",
+  )
   .optional();
 
 const badgeSchema = z.object({

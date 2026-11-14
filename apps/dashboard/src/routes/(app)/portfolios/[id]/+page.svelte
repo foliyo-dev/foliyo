@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
+	import StorytellingPanel from '$lib/components/portfolio/StorytellingPanel.svelte';
 	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		getPortfolio,
@@ -59,6 +60,10 @@
 	let showCertifications = true;
 	let showLanguages = true;
 	let showPosts = true;
+	let showSkillLevels = false;
+	let projectsLayout: 'cards' | 'featured_timeline' | 'timeline' = 'cards';
+	let heroCtaPrimary = '';
+	let heroCtaSecondary = '';
 	let skillsTitle = '';
 	let projectsTitle = '';
 	let experienceTitle = '';
@@ -126,6 +131,10 @@
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
 				show_posts: showPosts ? 1 : 0,
+				show_skill_levels: showSkillLevels ? 1 : 0,
+				projects_layout: projectsLayout,
+				hero_cta_primary: heroCtaPrimary,
+				hero_cta_secondary: heroCtaSecondary,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
@@ -206,6 +215,13 @@
 		showCertifications = (p.show_certifications ?? 1) === 1;
 		showLanguages = (p.show_languages ?? 1) === 1;
 		showPosts = (p.show_posts ?? 1) === 1;
+		showSkillLevels = (p.show_skill_levels ?? 0) === 1;
+		projectsLayout =
+			p.projects_layout === 'featured_timeline' || p.projects_layout === 'timeline'
+				? p.projects_layout
+				: 'cards';
+		heroCtaPrimary = p.hero_cta_primary ?? '';
+		heroCtaSecondary = p.hero_cta_secondary ?? '';
 		skillsTitle = p.skills_title ?? '';
 		projectsTitle = p.projects_title ?? '';
 		experienceTitle = p.experience_title ?? '';
@@ -236,6 +252,27 @@
 		customSummaryOpen = false;
 	}
 
+	function applyDeveloperPreset() {
+		projectsLayout = 'featured_timeline';
+		showSkillLevels = false;
+		showProjects = true;
+		showSkills = true;
+		showExperience = true;
+		showEducation = false;
+		showCertifications = false;
+		showLanguages = false;
+		showPosts = true;
+		heroCtaPrimary = 'View work';
+		heroCtaSecondary = 'Contact';
+		selectedProjects = new Set(projects.map((p) => p.id));
+		selectedExperience = new Set(experiences.map((e) => e.id));
+		selectedSkills = new Set(skills.map((s) => s.id));
+		selectedEducation = new Set();
+		selectedCertifications = new Set();
+		selectedLanguages = new Set();
+		showToast('Developer site preset applied — save to publish', 'success');
+	}
+
 	async function save() {
 		if (!portfolio || !name.trim() || !slug.trim()) return;
 		saving = true;
@@ -257,6 +294,10 @@
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
 				show_posts: showPosts ? 1 : 0,
+				show_skill_levels: showSkillLevels ? 1 : 0,
+				projects_layout: projectsLayout,
+				hero_cta_primary: heroCtaPrimary,
+				hero_cta_secondary: heroCtaSecondary,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
@@ -408,6 +449,22 @@
 							><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label
 						>
 					</div>
+				</div>
+			</details>
+		</Card>
+
+		<Card variant="panel">
+			<details class="block" open>
+				<summary>Storytelling</summary>
+				<div class="fields">
+					<StorytellingPanel
+						bind:projectsLayout
+						bind:showSkillLevels
+						bind:heroCtaPrimary
+						bind:heroCtaSecondary
+						showPreset
+						onApplyDeveloperPreset={applyDeveloperPreset}
+					/>
 				</div>
 			</details>
 		</Card>

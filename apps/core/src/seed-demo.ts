@@ -114,6 +114,8 @@ type SeedBundle = {
     article_url_label?: string;
     skills_developed: string;
     featured: number;
+    start_date?: string;
+    end_date?: string | null;
   }[];
   experience: {
     company: string;
@@ -143,6 +145,10 @@ type SeedBundle = {
     theme_slug: string;
     is_public: number;
     is_default: number;
+    projects_layout?: "cards" | "featured_timeline" | "timeline";
+    show_skill_levels?: number;
+    hero_cta_primary?: string;
+    hero_cta_secondary?: string;
     skillIndexes: number[];
     projectIndexes: number[];
     experienceIndexes: number[];
@@ -219,8 +225,8 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
     const pid = id();
     await run(
       db,
-      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, image_url, url_label, repo_url_label, article_url_label, skills_developed, featured, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO projects (id, user_id, title, description, url, repo_url, article_url, image_url, url_label, repo_url_label, article_url_label, skills_developed, featured, start_date, end_date, sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         pid,
         userId,
@@ -235,6 +241,8 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
         pr.article_url_label ?? "",
         pr.skills_developed,
         pr.featured,
+        pr.start_date ?? "",
+        pr.end_date === undefined ? null : pr.end_date,
         i,
       ],
     );
@@ -315,8 +323,9 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
       `INSERT INTO portfolios (
          id, user_id, name, slug, description, headline, bio, theme_slug,
          is_public, is_default, show_skills, show_projects, show_experience,
-         show_education, show_certifications, show_languages, sort_order
-       ) VALUES (?,?,?,?,?,?,?,?,?,?,1,1,1,1,1,1,?)`,
+         show_education, show_certifications, show_languages, show_skill_levels,
+         projects_layout, hero_cta_primary, hero_cta_secondary, sort_order
+       ) VALUES (?,?,?,?,?,?,?,?,?,?,1,1,1,1,1,1,?,?,?,?,?)`,
       [
         pid,
         userId,
@@ -328,6 +337,10 @@ async function seedLibrary(db: FoliyoDb, userId: string, email: string, data: Se
         fol.theme_slug,
         fol.is_public,
         fol.is_default,
+        fol.show_skill_levels ?? 0,
+        fol.projects_layout ?? "featured_timeline",
+        fol.hero_cta_primary ?? "View work",
+        fol.hero_cta_secondary ?? "Contact",
         portfolioIds.length,
       ],
     );
@@ -425,6 +438,8 @@ const adminBundle: SeedBundle = {
       article_url: "https://dev.to/foliyo/why-we-built-a-content-library-for-portfolios",
       skills_developed: '["typescript","svelte","hono"]',
       featured: 1,
+      start_date: "2025-01",
+      end_date: null,
     },
     {
       title: "pqpm",
@@ -433,6 +448,8 @@ const adminBundle: SeedBundle = {
       repo_url: "https://github.com/example/pqpm",
       skills_developed: '["go","ops"]',
       featured: 0,
+      start_date: "2024-06",
+      end_date: "2024-12",
     },
   ],
   experience: [
@@ -486,6 +503,10 @@ const adminBundle: SeedBundle = {
       theme_slug: "minimal",
       is_public: 1,
       is_default: 1,
+      projects_layout: "featured_timeline",
+      show_skill_levels: 0,
+      hero_cta_primary: "View work",
+      hero_cta_secondary: "Contact",
       skillIndexes: [0, 1, 2, 3, 4, 5],
       projectIndexes: [0, 1],
       experienceIndexes: [0, 1],
@@ -526,6 +547,8 @@ const priyaBundle: SeedBundle = {
       article_url_label: "Talk",
       skills_developed: '["go","postgres"]',
       featured: 1,
+      start_date: "2023-01",
+      end_date: null,
     },
     {
       title: "mesh-queue",
@@ -535,6 +558,8 @@ const priyaBundle: SeedBundle = {
       article_url: "https://medium.com/@priya/sqlite-job-queues-that-dont-hurt",
       skills_developed: '["typescript","sqlite"]',
       featured: 1,
+      start_date: "2024-03",
+      end_date: "2024-11",
     },
     {
       title: "Campus clubs site",
@@ -543,6 +568,8 @@ const priyaBundle: SeedBundle = {
       repo_url: "",
       skills_developed: '["php"]',
       featured: 0,
+      start_date: "2017",
+      end_date: "2018",
     },
   ],
   experience: [
@@ -596,6 +623,10 @@ const priyaBundle: SeedBundle = {
       theme_slug: "modern",
       is_public: 1,
       is_default: 1,
+      projects_layout: "featured_timeline",
+      show_skill_levels: 0,
+      hero_cta_primary: "See projects",
+      hero_cta_secondary: "Contact",
       skillIndexes: [0, 1, 2, 3],
       projectIndexes: [0, 1],
       experienceIndexes: [0, 1],
@@ -612,6 +643,10 @@ const priyaBundle: SeedBundle = {
       theme_slug: "creative",
       is_public: 1,
       is_default: 0,
+      projects_layout: "featured_timeline",
+      show_skill_levels: 0,
+      hero_cta_primary: "View work",
+      hero_cta_secondary: "",
       skillIndexes: [0, 1, 4],
       projectIndexes: [1, 2],
       experienceIndexes: [],
@@ -650,6 +685,8 @@ const arjunBundle: SeedBundle = {
       image_url: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80",
       skills_developed: '["brand","figma"]',
       featured: 1,
+      start_date: "2025-02",
+      end_date: null,
     },
     {
       title: "Checkout redesign",
@@ -660,6 +697,8 @@ const arjunBundle: SeedBundle = {
       article_url_label: "Case study",
       skills_developed: '["ux","conversion"]',
       featured: 1,
+      start_date: "2022-04",
+      end_date: "2022-09",
     },
   ],
   experience: [
@@ -697,6 +736,10 @@ const arjunBundle: SeedBundle = {
       theme_slug: "creative",
       is_public: 1,
       is_default: 1,
+      projects_layout: "featured_timeline",
+      show_skill_levels: 0,
+      hero_cta_primary: "View work",
+      hero_cta_secondary: "Contact",
       skillIndexes: [0, 1, 2, 3],
       projectIndexes: [0, 1],
       experienceIndexes: [0],

@@ -22,6 +22,10 @@ export type Portfolio = {
 	show_certifications: number;
 	show_languages: number;
 	show_posts?: number;
+	show_skill_levels?: number;
+	projects_layout?: 'cards' | 'featured_timeline' | 'timeline';
+	hero_cta_primary?: string;
+	hero_cta_secondary?: string;
 	skills_title: string;
 	projects_title: string;
 	experience_title: string;
@@ -33,6 +37,16 @@ export type Portfolio = {
 	resume_id: string | null;
 	access_token: string | null;
 };
+
+export const projectsLayoutOptions = [
+	{ id: 'cards' as const, label: 'Cards', hint: 'Classic project cards' },
+	{
+		id: 'featured_timeline' as const,
+		label: 'Featured + timeline',
+		hint: 'Featured cards, then build-log timeline'
+	},
+	{ id: 'timeline' as const, label: 'Timeline', hint: 'Chronological build log only' }
+];
 
 export type { ThemeConfig, ThemeRecipe };
 

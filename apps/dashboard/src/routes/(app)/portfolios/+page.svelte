@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
+	import StorytellingPanel from '$lib/components/portfolio/StorytellingPanel.svelte';
 	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
 	import {
 		listPortfolios,
@@ -73,6 +74,10 @@
 	let showCertifications = true;
 	let showLanguages = true;
 	let showPosts = true;
+	let showSkillLevels = false;
+	let projectsLayout: 'cards' | 'featured_timeline' | 'timeline' = 'featured_timeline';
+	let heroCtaPrimary = 'View work';
+	let heroCtaSecondary = 'Contact';
 	let skillsTitle = '';
 	let projectsTitle = '';
 	let experienceTitle = '';
@@ -120,6 +125,10 @@
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
 				show_posts: showPosts ? 1 : 0,
+				show_skill_levels: showSkillLevels ? 1 : 0,
+				projects_layout: projectsLayout,
+				hero_cta_primary: heroCtaPrimary,
+				hero_cta_secondary: heroCtaSecondary,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
@@ -213,6 +222,10 @@
 		showCertifications = true;
 		showLanguages = true;
 		showPosts = true;
+		showSkillLevels = false;
+		projectsLayout = 'featured_timeline';
+		heroCtaPrimary = 'View work';
+		heroCtaSecondary = 'Contact';
 		skillsTitle = '';
 		projectsTitle = '';
 		experienceTitle = '';
@@ -226,6 +239,27 @@
 		selectedEducation = new Set(educations.map((e) => e.id));
 		selectedCertifications = new Set(certifications.map((c) => c.id));
 		selectedLanguages = new Set(languages.map((l) => l.id));
+	}
+
+	function applyDeveloperPreset() {
+		projectsLayout = 'featured_timeline';
+		showSkillLevels = false;
+		showProjects = true;
+		showSkills = true;
+		showExperience = true;
+		showEducation = false;
+		showCertifications = false;
+		showLanguages = false;
+		showPosts = true;
+		heroCtaPrimary = 'View work';
+		heroCtaSecondary = 'Contact';
+		selectedProjects = new Set(projects.map((p) => p.id));
+		selectedExperience = new Set(experiences.map((e) => e.id));
+		selectedSkills = new Set(skills.map((s) => s.id));
+		selectedEducation = new Set();
+		selectedCertifications = new Set();
+		selectedLanguages = new Set();
+		showToast('Developer site preset applied — review and create', 'success');
 	}
 
 	async function add() {
@@ -256,6 +290,10 @@
 				show_certifications: showCertifications ? 1 : 0,
 				show_languages: showLanguages ? 1 : 0,
 				show_posts: showPosts ? 1 : 0,
+				show_skill_levels: showSkillLevels ? 1 : 0,
+				projects_layout: projectsLayout,
+				hero_cta_primary: heroCtaPrimary,
+				hero_cta_secondary: heroCtaSecondary,
 				skills_title: skillsTitle,
 				projects_title: projectsTitle,
 				experience_title: experienceTitle,
@@ -506,8 +544,22 @@
 				</details>
 
 				<details class="step" open>
+					<summary>2. Storytelling</summary>
+					<div class="fields">
+						<StorytellingPanel
+							bind:projectsLayout
+							bind:showSkillLevels
+							bind:heroCtaPrimary
+							bind:heroCtaSecondary
+							showPreset
+							onApplyDeveloperPreset={applyDeveloperPreset}
+						/>
+					</div>
+				</details>
+
+				<details class="step" open>
 					<summary>
-						2. What visitors will see
+						3. What visitors will see
 						<span class="step-meta">{selectedSummary}</span>
 					</summary>
 					<PortfolioLibraryPicker

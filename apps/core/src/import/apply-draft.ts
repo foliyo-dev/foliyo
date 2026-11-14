@@ -391,8 +391,8 @@ export async function applyImportDraft(
       try {
         await run(
           db,
-          `INSERT INTO projects (title, description, url, repo_url, article_url, image_url, url_label, repo_url_label, article_url_label, skills_developed, featured, sort_order, user_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO projects (title, description, url, repo_url, article_url, image_url, url_label, repo_url_label, article_url_label, skills_developed, featured, start_date, end_date, sort_order, user_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             title,
             str(p.description),
@@ -405,6 +405,8 @@ export async function applyImportDraft(
             "",
             JSON.stringify(tags(p as unknown as Record<string, unknown>)),
             asBool(p.featured) ? 1 : 0,
+            str(p.start),
+            p.end == null || str(p.end) === "" ? null : str(p.end),
             i,
             userId,
           ],

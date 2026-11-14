@@ -4,11 +4,13 @@
 .theme-photo-hero {
   --bg: #0a0e17;
   --ink: #f8fafc;
-  --muted: #94a3b8;
+  --muted: #a8b4c4;
   --accent: #3b82f6;
   --accent-soft: #1e3a8a;
+  /* Lighter than --accent so Live/Repo/write-up stay readable on dark cards */
+  --link: #93c5fd;
   --surface: #111827;
-  --line: rgba(148, 163, 184, 0.2);
+  --line: rgba(148, 163, 184, 0.28);
   --radius: 1rem;
   --font-heading: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Outfit", system-ui, sans-serif;
@@ -44,7 +46,11 @@
 }
 
 .theme-photo-hero .site-nav-links a {
-  color: var(--muted);
+  color: #cbd5e1;
+}
+
+.theme-photo-hero .site-nav .handle {
+  color: #94a3b8;
 }
 
 .theme-photo-hero .ph-hero {
@@ -310,6 +316,27 @@
   color: var(--muted);
 }
 
+.theme-photo-hero .links {
+  margin: 0.65rem 0 0;
+  font-size: 0.875rem;
+}
+
+.theme-photo-hero .links a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.theme-photo-hero .links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: #bfdbfe;
+}
+
+.theme-photo-hero .site-footer a {
+  color: var(--link);
+}
+
 .theme-photo-hero .timeline {
   list-style: none;
   margin: 0;
@@ -330,10 +357,6 @@
   color: var(--muted);
   padding: 2rem 0;
   font-size: 0.85rem;
-}
-
-.theme-photo-hero .site-footer a {
-  color: var(--accent);
 }
 
 @media (max-width: 860px) {

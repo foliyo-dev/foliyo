@@ -4,9 +4,10 @@
 .theme-glassmorphic {
   --bg: #0b1224;
   --ink: #f8fafc;
-  --muted: #b6c2d9;
+  --muted: #c5d0e4;
   --accent: #38bdf8;
   --accent-soft: #818cf8;
+  --link: #7dd3fc;
   --surface: rgba(255, 255, 255, 0.1);
   --line: var(--glass-border, rgba(255, 255, 255, 0.18));
   --radius: 1.1rem;
@@ -215,6 +216,27 @@
   color: var(--muted);
 }
 
+.theme-glassmorphic .links {
+  margin: 0.65rem 0 0;
+  font-size: 0.875rem;
+}
+
+.theme-glassmorphic .links a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.theme-glassmorphic .links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: #bae6fd;
+}
+
+.theme-glassmorphic .site-footer a {
+  color: var(--link);
+}
+
 .theme-glassmorphic .timeline {
   list-style: none;
   margin: 0;
@@ -235,10 +257,6 @@
   color: var(--muted);
   padding: 2rem 0;
   font-size: 0.85rem;
-}
-
-.theme-glassmorphic .site-footer a {
-  color: var(--accent);
 }
 
 @media (max-width: 800px) {

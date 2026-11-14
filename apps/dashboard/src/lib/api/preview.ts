@@ -45,6 +45,10 @@ export type PortfolioDraftPreview = {
 	show_certifications?: number;
 	show_languages?: number;
 	show_posts?: number;
+	show_skill_levels?: number;
+	projects_layout?: 'cards' | 'featured_timeline' | 'timeline';
+	hero_cta_primary?: string;
+	hero_cta_secondary?: string;
 	skills_title?: string;
 	projects_title?: string;
 	experience_title?: string;

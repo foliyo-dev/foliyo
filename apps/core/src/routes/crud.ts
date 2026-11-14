@@ -28,6 +28,8 @@ export function projectsRoutes(db: FoliyoDb) {
       article_url_label: z.string().max(40).default(""),
       skills_developed: z.string().default("[]"),
       featured: z.number().int().default(0),
+      start_date: z.string().default(""),
+      end_date: z.string().nullable().optional(),
       sort_order: z.number().int().default(0),
     }),
     {

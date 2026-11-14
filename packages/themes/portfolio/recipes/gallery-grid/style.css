@@ -205,6 +205,22 @@
   font-size: 0.75rem;
 }
 
+.theme-gallery-grid .links {
+  margin: 0.55rem 0 0;
+  font-size: 0.875rem;
+}
+
+.theme-gallery-grid .links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.theme-gallery-grid .links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .theme-gallery-grid .muted {
   color: var(--muted);
 }

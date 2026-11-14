@@ -24,10 +24,24 @@ Both share the library data model (`PublicPortfolio` shape) and loaders in `page
 
 ### Portfolio section anchors
 
-When content exists, nav links target:
+When content exists, nav links target (work-first order):
 
-- `#about` — hero
-- `#skills`, `#projects`, `#experience`, `#education`, `#certifications`, `#languages`
+- `#about` — hero (optional `hero_cta_primary` / `hero_cta_secondary` on the portfolio row)
+- `#projects`, `#skills`, `#experience`, `#education`, `#certifications`, `#languages`
+
+### Portfolio storytelling settings
+
+Stored on `portfolios` (not ThemeConfig):
+
+| Field | Values / default | Effect |
+|-------|------------------|--------|
+| `projects_layout` | `cards` (existing) · `featured_timeline` (new creates) · `timeline` | Cards only, featured cards + build-log timeline, or timeline only |
+| `show_skill_levels` | `0` default | When `1`, classic portfolio skill chips include proficiency labels |
+| `hero_cta_primary` / `hero_cta_secondary` | empty = hidden | Classic hero CTAs → `#projects` and `mailto:` / `#about` |
+
+Projects need optional `start_date` / `end_date` for timeline sorting. Featured projects (`featured=1`) lead the `featured_timeline` layout; non-featured items form the chronological build log.
+
+Resume documents keep classic CV section order (skills before projects) and always use project cards.
 
 ### Resume document frame
 
@@ -65,6 +79,8 @@ Rules:
 | `photo-hero` | Dark cinematic split hero, stats, feature strip, about |
 | `gallery-grid` | Cream centered brand + image-first project grid |
 | `glassmorphic` | Frosted glass panels over a vivid atmospheric background |
+
+Hero image for **Photo hero** / **Glassmorphic**: set in the dashboard Layout panel (or ThemeConfig `content.hero.image_url`). Without one, the recipe may fall back to the first project image.
 
 ## Structure
 

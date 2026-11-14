@@ -54,6 +54,8 @@ export type FioImportDraft = {
     repo_url: string | null;
     skills_developed: string[];
     featured: boolean;
+    start?: string | null;
+    end?: string | null;
   }>;
   certifications: Array<{
     name: string;
@@ -259,6 +261,8 @@ export function documentToImportDraft(doc: FoliyoResumeDocument): FioImportDraft
       repo_url: strOrNull(p.repo_url),
       skills_developed: Array.isArray(p.skills_developed) ? p.skills_developed.map(String) : [],
       featured: Boolean(p.featured),
+      start: strOrNull(p.start),
+      end: strOrNull(p.end),
     })),
     certifications: (doc.certifications ?? []).map((c) => ({
       name: strOrEmpty(c.name),

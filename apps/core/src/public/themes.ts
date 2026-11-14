@@ -262,6 +262,117 @@ function projectMediaHtml(
   return `<img class="card-media" src="${esc(abs)}" alt="" />`;
 }
 
+type ProjectRow = Record<string, unknown> & {
+  title: string;
+  description?: string | null;
+  skills_developed?: unknown;
+  featured?: number | boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+  sort_order?: number;
+};
+
+function projectsLayoutOf(data: PublicPortfolio): "cards" | "featured_timeline" | "timeline" {
+  const raw = String(data.portfolio.projects_layout ?? "cards");
+  if (raw === "featured_timeline" || raw === "timeline") return raw;
+  return "cards";
+}
+
+function projectDateSpan(pr: ProjectRow): string {
+  const start = String(pr.start_date ?? "").trim();
+  const endRaw = pr.end_date == null ? "" : String(pr.end_date).trim();
+  if (!start && !endRaw) return "";
+  if (!start) return endRaw;
+  if (!endRaw) return `${start} – Present`;
+  return `${start} – ${endRaw}`;
+}
+
+function compareProjectsByDateDesc(a: ProjectRow, b: ProjectRow): number {
+  const as = String(a.start_date ?? "").trim();
+  const bs = String(b.start_date ?? "").trim();
+  if (as && !bs) return -1;
+  if (!as && bs) return 1;
+  if (as !== bs) return bs.localeCompare(as);
+  const ao = Number(a.sort_order ?? 0);
+  const bo = Number(b.sort_order ?? 0);
+  if (ao !== bo) return ao - bo;
+  return String(a.title).localeCompare(String(b.title));
+}
+
+function projectCardLi(
+  pr: ProjectRow,
+  mode: "portfolio" | "resume",
+  siteUrl: string,
+  linkFn: (pr: Record<string, unknown>) => string,
+): string {
+  const media = projectMediaHtml(pr, mode, siteUrl);
+  return `<li${media ? ' class="has-media"' : ""}>${media}<strong>${esc(pr.title)}</strong>${
+    pr.description ? `<p>${esc(String(pr.description))}</p>` : ""
+  }${skillsDevelopedHtml(pr.skills_developed)}${linkFn(pr)}</li>`;
+}
+
+function projectTimelineLi(
+  pr: ProjectRow,
+  mode: "portfolio" | "resume",
+  linkFn: (pr: Record<string, unknown>) => string,
+): string {
+  const span = projectDateSpan(pr);
+  return `<li>
+    <div class="item-head">
+      <strong>${esc(pr.title)}</strong>
+      ${span ? `<span class="muted">${esc(span)}</span>` : ""}
+    </div>
+    ${pr.description ? `<p>${esc(String(pr.description))}</p>` : ""}
+    ${skillsDevelopedHtml(pr.skills_developed)}
+    ${linkFn(pr)}
+  </li>`;
+}
+
+function projectsBodyHtml(
+  data: PublicPortfolio,
+  mode: "portfolio" | "resume",
+  siteUrl: string,
+  linkFn: (pr: Record<string, unknown>) => string,
+): string {
+  const projects = data.projects as ProjectRow[];
+  const layout = mode === "resume" ? "cards" : projectsLayoutOf(data);
+
+  if (layout === "cards") {
+    return `<ul class="cards">${projects
+      .map((pr) => projectCardLi(pr, mode, siteUrl, linkFn))
+      .join("")}</ul>`;
+  }
+
+  if (layout === "timeline") {
+    const ordered = [...projects].sort(compareProjectsByDateDesc);
+    return `<ul class="timeline project-timeline">${ordered
+      .map((pr) => projectTimelineLi(pr, mode, linkFn))
+      .join("")}</ul>`;
+  }
+
+  // featured_timeline: featured cards first, then chronological build log of the rest
+  const featured = projects.filter((p) => Number(p.featured) === 1);
+  const rest = projects
+    .filter((p) => Number(p.featured) !== 1)
+    .sort(compareProjectsByDateDesc);
+  const featuredBlock = featured.length
+    ? `<ul class="cards featured-projects">${featured
+        .map((pr) => projectCardLi(pr, mode, siteUrl, linkFn))
+        .join("")}</ul>`
+    : "";
+  const timelineBlock = rest.length
+    ? `${featured.length ? `<h3 class="project-log-heading">Build log</h3>` : ""}<ul class="timeline project-timeline">${rest
+        .map((pr) => projectTimelineLi(pr, mode, linkFn))
+        .join("")}</ul>`
+    : "";
+  if (!featuredBlock && !timelineBlock) {
+    return `<ul class="cards">${projects
+      .map((pr) => projectCardLi(pr, mode, siteUrl, linkFn))
+      .join("")}</ul>`;
+  }
+  return `${featuredBlock}${timelineBlock}`;
+}
+
 function sectionParts(
   data: PublicPortfolio,
   mode: "portfolio" | "resume",
@@ -294,9 +405,14 @@ function sectionParts(
                   const heading = multi
                     ? `<h3 class="skill-group">${esc(cat)}</h3>`
                     : "";
+                  const showLevels =
+                    mode === "portfolio" && Number(data.portfolio.show_skill_levels) === 1;
                   const items = list
                     .map((s) => {
-                      const level = s.level ? ` <span class="muted">${esc(String(s.level))}</span>` : "";
+                      const level =
+                        showLevels && s.level
+                          ? ` <span class="muted">${esc(String(s.level))}</span>`
+                          : "";
                       return `<li>${esc(String(s.name))}${level}</li>`;
                     })
                     .join("");
@@ -313,14 +429,7 @@ function sectionParts(
         mode,
         "projects",
         "section-projects",
-        `<h2>${esc(sectionTitle(data, "projects", mode))}</h2><ul class="cards">${data.projects
-          .map((pr) => {
-            const media = projectMediaHtml(pr, mode, siteUrl);
-            return `<li${media ? ' class="has-media"' : ""}>${media}<strong>${esc(pr.title)}</strong>${
-              pr.description ? `<p>${esc(pr.description)}</p>` : ""
-            }${skillsDevelopedHtml(pr.skills_developed)}${linkFn(pr)}</li>`;
-          })
-          .join("")}</ul>`,
+        `<h2>${esc(sectionTitle(data, "projects", mode))}</h2>${projectsBodyHtml(data, mode, siteUrl, linkFn)}`,
       )
     : "";
 
@@ -426,8 +535,9 @@ function sectionParts(
 
 function navItemsFor(data: PublicPortfolio): NavItem[] {
   const items: NavItem[] = [{ id: "about", label: "About" }];
-  if (data.skills.length) items.push({ id: "skills", label: sectionTitle(data, "skills", "portfolio") });
+  // Portfolio nav mirrors body order: projects before skills.
   if (data.projects.length) items.push({ id: "projects", label: sectionTitle(data, "projects", "portfolio") });
+  if (data.skills.length) items.push({ id: "skills", label: sectionTitle(data, "skills", "portfolio") });
   if (data.experience.length) {
     items.push({ id: "experience", label: sectionTitle(data, "experience", "portfolio") });
   }
@@ -488,7 +598,11 @@ function sparseSectionHtml(mode: "portfolio" | "resume"): string {
 
 function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume", siteUrl = ""): string {
   const p = sectionParts(data, mode, siteUrl);
-  const body = `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`;
+  // Portfolio: work-first (projects before skills). Resume keeps classic CV order.
+  const body =
+    mode === "portfolio"
+      ? `${p.contactHtml}${p.projectsHtml}${p.skillsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`
+      : `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`;
   if (mode === "portfolio" && isSparsePortfolio(data) && !body.trim()) {
     return sparseSectionHtml(mode);
   }
@@ -556,6 +670,25 @@ function socialLinksHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): s
   return `<ul class="social-links">${items}</ul>`;
 }
 
+function classicHeroCtasHtml(data: PublicPortfolio): string {
+  const primary = String(data.portfolio.hero_cta_primary ?? "").trim();
+  const secondary = String(data.portfolio.hero_cta_secondary ?? "").trim();
+  if (!primary && !secondary) return "";
+  const handle = data.handle?.trim();
+  const home = handle ? `/u/${esc(handle)}` : "";
+  const projectsHref = `${home}#projects`;
+  const email = String(data.profile.email ?? "").trim();
+  const contactHref = email ? `mailto:${esc(email)}` : `${home}#about`;
+  const bits: string[] = [];
+  if (primary) {
+    bits.push(`<a class="hero-cta hero-cta-primary" href="${projectsHref}">${esc(primary)}</a>`);
+  }
+  if (secondary) {
+    bits.push(`<a class="hero-cta hero-cta-secondary" href="${contactHref}">${esc(secondary)}</a>`);
+  }
+  return `<div class="hero-ctas">${bits.join("")}</div>`;
+}
+
 function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
   const name = esc(displayName(data));
   const headline = esc(displayHeadline(data));
@@ -590,12 +723,15 @@ function heroHtml(data: PublicPortfolio, mode: "portfolio" | "resume"): string {
     </header>`;
   }
 
+  const ctas = classicHeroCtasHtml(data);
+
   return `<header id="about" class="hero">
     ${avatarHtml}
     <div class="hero-text">
       <h1>${name}</h1>
       ${headline ? `<p class="headline">${headline}</p>` : ""}
       ${bio ? `<p class="bio">${bio}</p>` : ""}
+      ${ctas}
       ${social}
     </div>
   </header>`;
@@ -606,8 +742,23 @@ const SITE_SHELL_CSS = `
 .social-links a{display:inline-flex;align-items:center;gap:0.4rem;padding:0.4rem 0.75rem;border-radius:999px;border:1px solid var(--line,#e7e5e4);background:var(--surface,#fff);color:var(--ink,inherit);font-size:0.8125rem;font-weight:500;line-height:1;text-decoration:none;transition:border-color .15s ease,color .15s ease,background .15s ease}
 .social-links a:hover{border-color:var(--accent,#0f766e);color:var(--accent,#0f766e)}
 .social-links svg{width:1rem;height:1rem;flex-shrink:0;display:block}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:0.65rem;margin:1.1rem 0 0}
+.hero-cta{display:inline-flex;align-items:center;justify-content:center;padding:0.55rem 1.05rem;border-radius:8px;font-size:0.875rem;font-weight:600;text-decoration:none;line-height:1.2}
+.hero-cta-primary{background:var(--accent,#0f766e);color:#fff;border:1px solid transparent}
+.hero-cta-primary:hover{opacity:.92}
+.hero-cta-secondary{background:transparent;color:var(--ink,inherit);border:1px solid var(--line,#e7e5e4)}
+.hero-cta-secondary:hover{border-color:var(--accent,#0f766e);color:var(--accent,#0f766e)}
+.theme-creative .hero-cta-primary{background:#e8c4a0;color:#1a1510}
+.theme-creative .hero-cta-secondary{border-color:rgba(232,196,160,.35);color:#f8f1e8}
+.theme-noir .hero-cta-primary{background:var(--accent,#d4a574);color:#0c0d10}
+.theme-noir .hero-cta-secondary{border-color:var(--line,#2a2e36);color:var(--ink,#e8e6e3)}
 .card-media{display:block;width:100%;height:9rem;object-fit:cover;margin:0 0 0.85rem;border-radius:6px;background:var(--line,#e7e5e4)}
 .theme-atelier .card-media{height:8.5rem;margin:0;border-radius:0}
+.project-log-heading{margin:1.5rem 0 0.75rem;font-size:0.8125rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted,#78716c)}
+/* Baseline content links — never fall back to browser blue; dark recipes set --link lighter than --accent */
+.links{margin:0.5rem 0 0;font-size:0.875rem}
+.links a{color:var(--link,var(--accent,#0f766e));text-decoration:none;font-weight:500}
+.links a:hover{text-decoration:underline;text-underline-offset:2px}
 .theme-creative .social-links a{background:rgba(255,255,255,.08);border-color:rgba(232,196,160,.35);color:#f8f1e8}
 .theme-creative .social-links a:hover{border-color:#e8c4a0;color:#f0a06a;background:rgba(255,255,255,.12)}
 .theme-noir .social-links a{background:var(--surface,#181b22);border-color:var(--line,#2a2e36);color:var(--ink,#e8e6e3)}

@@ -15,6 +15,8 @@ export type Project = {
   article_url_label: string;
   skills_developed: string;
   featured: number;
+  start_date: string;
+  end_date: string | null;
   sort_order: number;
   deleted_at?: string | null;
 };
