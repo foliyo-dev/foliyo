@@ -33,7 +33,7 @@ function projectById(data: PublicPortfolio, id?: string): Record<string, unknown
   return data.projects.find((p) => String(p.id) === id) ?? null;
 }
 
-function resolveImage(
+export function resolveImage(
   data: PublicPortfolio,
   siteUrl: string,
   opts: { projectId?: string; url?: string; fallbackProject?: boolean },

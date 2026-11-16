@@ -40,6 +40,12 @@ export const purgeProject = (id: string) =>
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
+export type MediaAsset = { id: string; url: string; created_at: string };
+
+export const listUploadedMedia = () => api<{ items: MediaAsset[] }>('/upload');
+export const deleteUploadedMedia = (id: string) =>
+	api<void>(`/upload/${id}`, { method: 'DELETE' });
+
 export async function uploadProjectImage(file: File): Promise<{ url: string }> {
 	const token = get(accessToken);
 	const form = new FormData();

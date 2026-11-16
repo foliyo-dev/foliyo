@@ -81,7 +81,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit link' : 'Social'}
 		description="Profiles and sites shown on your public folio — pick a common network or add any URL."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add link</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedSocialLinks}
@@ -97,12 +103,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add link</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<ContentFormCard title={$editingId ? 'Edit link' : 'Add link'}>
@@ -158,9 +158,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
-	}
 	.field {
 		display: flex;
 		flex-direction: column;

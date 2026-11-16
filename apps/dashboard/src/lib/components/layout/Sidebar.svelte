@@ -3,6 +3,9 @@
 	import { page } from '$app/state';
 	import { Logo } from '@foliyo/ui';
 	import { foliyoVersion, isSaas } from '$lib/config';
+	import { formatPlanLabel, isPaidHostedPlan } from '$lib/api/plan';
+	import { logout, user } from '$lib/stores/auth';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	type Props = {
 		open?: boolean;
@@ -13,6 +16,15 @@
 
 	let { open = false, collapsed = false, onclose, ontogglecollapse }: Props = $props();
 
+	const planSlug = $derived($user?.plan ?? (isSaas ? 'free' : 'selfhost'));
+	const planLabel = $derived(formatPlanLabel(planSlug));
+	const paid = $derived(isPaidHostedPlan(planSlug));
+
+	async function handleLogout() {
+		await logout();
+		window.location.href = '/login';
+	}
+
 	const STORAGE_GROUPS = 'foliyo.nav.groups';
 
 	type NavIcon =
@@ -22,6 +34,7 @@
 		| 'link'
 		| 'spark'
 		| 'folder'
+		| 'image'
 		| 'briefcase'
 		| 'grad'
 		| 'award'
@@ -60,6 +73,7 @@
 					{ href: '/social', label: 'Social', icon: 'link' },
 					{ href: '/skills', label: 'Skills', icon: 'spark' },
 					{ href: '/projects', label: 'Projects', icon: 'folder' },
+					{ href: '/media', label: 'Media', icon: 'image' },
 					{ href: '/experience', label: 'Experience', icon: 'briefcase' },
 					{ href: '/education', label: 'Education', icon: 'grad' },
 					{ href: '/certifications', label: 'Certifications', icon: 'award' },
@@ -224,6 +238,10 @@
 											<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
 												><path d="M2.5 4.5h4l1.5 1.5h5.5v7H2.5v-8.5z" /></svg
 											>
+										{:else if item.icon === 'image'}
+											<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+												><rect x="2.5" y="3.5" width="11" height="9" rx="1" /><circle cx="5.5" cy="6.5" r="1" /><path d="M2.5 10.5 5.5 8l2 1.5 2.5-3 3.5 4" /></svg
+											>
 										{:else if item.icon === 'briefcase'}
 											<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
 												><rect x="2" y="5" width="12" height="8.5" rx="1" /><path d="M6 5V3.5h4V5M2 8.5h12" /></svg
@@ -280,11 +298,50 @@
 			</div>
 		{/each}
 	</nav>
-	{#if !collapsed}
-		<div class="footer">
+	<div class="footer" class:collapsed>
+		{#if $user}
+			<div class="footer-account">
+				{#if !collapsed}
+					<a
+						href="/settings"
+						class="plan-badge"
+						class:paid
+						class:free={planSlug === 'free'}
+						title="Account plan — open Settings"
+						onclick={close}
+					>
+						{planLabel}
+					</a>
+					<Button variant="ghost" size="sm" on:click={handleLogout}>Log out</Button>
+				{:else}
+					<a
+						href="/settings"
+						class="plan-badge compact"
+						class:paid
+						class:free={planSlug === 'free'}
+						title="{planLabel} — open Settings"
+						onclick={close}
+					>
+						{planLabel.slice(0, 1)}
+					</a>
+					<button
+						type="button"
+						class="logout-icon"
+						aria-label="Log out"
+						title="Log out"
+						onclick={handleLogout}
+					>
+						<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+							<path d="M6 3H3.5A.5.5 0 0 0 3 3.5v9a.5.5 0 0 0 .5.5H6M10.5 11.5 13.5 8.5 10.5 5.5M7 8.5h6.5" />
+						</svg>
+					</button>
+				{/if}
+			</div>
+		{/if}
+		{#if !collapsed}
 			<p class="version" title="Foliyo version">Foliyo v{foliyoVersion}</p>
-		</div>
-	{/if}
+		{/if}
+	</div>
 </aside>
 
 <style>
@@ -473,6 +530,83 @@
 	.footer {
 		padding: var(--space-3) var(--space-4);
 		border-top: 1px solid var(--color-border);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		flex-shrink: 0;
+	}
+	.footer.collapsed {
+		padding: var(--space-2);
+		align-items: center;
+	}
+	.footer-account {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+	.footer.collapsed .footer-account {
+		flex-direction: column;
+		justify-content: center;
+		gap: var(--space-1);
+	}
+	.plan-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.625rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		text-decoration: none;
+		line-height: 1.2;
+		border: 1px solid var(--color-border);
+		background: var(--color-bg);
+		color: var(--color-muted);
+		flex-shrink: 0;
+	}
+	.plan-badge.compact {
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		border-radius: var(--radius);
+	}
+	.plan-badge.paid {
+		border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+		background: var(--color-primary);
+		color: #fff;
+	}
+	.plan-badge.free:hover,
+	.plan-badge:not(.paid):hover {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+	}
+	.plan-badge.paid:hover {
+		filter: brightness(1.05);
+	}
+	.logout-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius);
+		background: transparent;
+		color: var(--color-muted);
+		cursor: pointer;
+	}
+	.logout-icon:hover {
+		background: var(--color-bg);
+		color: var(--color-text);
+	}
+	.logout-icon svg {
+		width: 1rem;
+		height: 1rem;
 	}
 	.version {
 		margin: 0;

@@ -28,8 +28,16 @@
 	let syncingFromParent = false;
 	let updatingFromEditor = false;
 
+	let bumpScheduled = false;
 	function bumpUi() {
-		uiTick += 1;
+		// Batch toolbar refreshes — TipTap can emit many transactions per gesture.
+		// Sync $state writes from onTransaction during mount wedged parent reactivity.
+		if (bumpScheduled) return;
+		bumpScheduled = true;
+		queueMicrotask(() => {
+			bumpScheduled = false;
+			uiTick += 1;
+		});
 	}
 
 	function isActive(name: string, attrs?: Record<string, unknown>): boolean {
@@ -51,46 +59,53 @@
 
 	onMount(() => {
 		if (!hostEl) return;
+		let cancelled = false;
 
-		editor = new Editor({
-			element: hostEl,
-			extensions: [
-				StarterKit.configure({
-					heading: { levels: [1, 2, 3] },
-					link: {
-						openOnClick: false,
-						autolink: true,
-						HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' }
+		// Create outside the current Svelte flush — Editor init runs transactions
+		// that must not write $state synchronously during component mount.
+		queueMicrotask(() => {
+			if (cancelled || !hostEl) return;
+			editor = new Editor({
+				element: hostEl,
+				extensions: [
+					StarterKit.configure({
+						heading: { levels: [1, 2, 3] },
+						link: {
+							openOnClick: false,
+							autolink: true,
+							HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' }
+						}
+					}),
+					Image.configure({
+						allowBase64: false,
+						HTMLAttributes: { loading: 'lazy' }
+					}),
+					Markdown
+				],
+				content: value || '',
+				contentType: 'markdown',
+				editorProps: {
+					attributes: {
+						class: 'tiptap-body',
+						role: 'textbox',
+						'aria-multiline': 'true',
+						'aria-label': ariaLabel
 					}
-				}),
-				Image.configure({
-					allowBase64: false,
-					HTMLAttributes: { loading: 'lazy' }
-				}),
-				Markdown
-			],
-			content: value || '',
-			contentType: 'markdown',
-			editorProps: {
-				attributes: {
-					class: 'tiptap-body',
-					role: 'textbox',
-					'aria-multiline': 'true',
-					'aria-label': ariaLabel
-				}
-			},
-			onUpdate: ({ editor: ed }) => {
-				if (syncingFromParent || sourceMode) return;
-				updatingFromEditor = true;
-				value = ed.getMarkdown();
-				updatingFromEditor = false;
-				bumpUi();
-			},
-			onSelectionUpdate: bumpUi,
-			onTransaction: bumpUi
+				},
+				onUpdate: ({ editor: ed }) => {
+					if (syncingFromParent || sourceMode) return;
+					updatingFromEditor = true;
+					value = ed.getMarkdown();
+					updatingFromEditor = false;
+					bumpUi();
+				},
+				onSelectionUpdate: bumpUi
+			});
+			bumpUi();
 		});
 
 		return () => {
+			cancelled = true;
 			editor?.destroy();
 			editor = null;
 		};

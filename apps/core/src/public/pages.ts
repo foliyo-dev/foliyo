@@ -10,6 +10,7 @@ import {
   orderedJunctionIds,
   sortIdsByLibraryOrder,
 } from "../content-order.js";
+import { defaultThemeConfig, serializeThemeConfig } from "../spec/theme-config.js";
 import { renderPortfolioHtml } from "./themes.js";
 
 export type PublicPortfolio = {
@@ -392,8 +393,8 @@ export async function getPublicPortfolioByToken(
 /**
  * Synthetic portfolio from the user's full content library (no portfolio required).
  * Used by the dashboard live preview pane.
- * Theme matches the default portfolio when present so content preview shares
- * the same design language as portfolio live preview.
+ * Look matches the default portfolio when present (theme_slug + theme_config +
+ * storytelling); otherwise classic. Optional themeOverride forces a classic skin.
  */
 export async function loadLibraryPreview(
   db: FoliyoDb,
@@ -408,19 +409,30 @@ export async function loadLibraryPreview(
   if (!user) return null;
 
   const profile = await queryOne(db, "SELECT * FROM profile WHERE user_id = ?", [userId]);
-  const defaultPortfolio = await queryOne<{ theme_slug: string }>(
+  const defaultPortfolio = await queryOne<{
+    theme_slug: string;
+    theme_config: string | null;
+    show_skill_levels: number | null;
+    projects_layout: string | null;
+    hero_cta_primary: string | null;
+    hero_cta_secondary: string | null;
+  }>(
     db,
-    "SELECT theme_slug FROM portfolios WHERE user_id = ? AND is_default = 1 LIMIT 1",
-    [userId],
-  );
-  const settings = await queryOne<{ theme_slug: string }>(
-    db,
-    "SELECT theme_slug FROM settings WHERE user_id = ?",
+    `SELECT theme_slug, theme_config, show_skill_levels, projects_layout,
+            hero_cta_primary, hero_cta_secondary
+     FROM portfolios WHERE user_id = ? AND is_default = 1 LIMIT 1`,
     [userId],
   );
 
-  const themeSlug =
-    themeOverride || defaultPortfolio?.theme_slug || settings?.theme_slug || "minimal";
+  const themeSlug = themeOverride
+    ? themeOverride
+    : defaultPortfolio?.theme_slug?.trim() || "minimal";
+  const classicConfig = serializeThemeConfig(defaultThemeConfig(themeSlug));
+  const themeConfig = themeOverride
+    ? classicConfig
+    : defaultPortfolio?.theme_config != null && String(defaultPortfolio.theme_config).trim() !== ""
+      ? defaultPortfolio.theme_config
+      : classicConfig;
 
   return {
     portfolio: {
@@ -432,6 +444,7 @@ export async function loadLibraryPreview(
       headline: "",
       bio: "",
       theme_slug: themeSlug,
+      theme_config: themeConfig,
       is_public: 1,
       is_default: 1,
       show_skills: 1,
@@ -440,10 +453,10 @@ export async function loadLibraryPreview(
       show_education: 1,
       show_certifications: 1,
       show_languages: 1,
-      show_skill_levels: 0,
-      projects_layout: "featured_timeline",
-      hero_cta_primary: "View work",
-      hero_cta_secondary: "Contact",
+      show_skill_levels: defaultPortfolio?.show_skill_levels === 1 ? 1 : 0,
+      projects_layout: String(defaultPortfolio?.projects_layout ?? "featured_timeline"),
+      hero_cta_primary: String(defaultPortfolio?.hero_cta_primary ?? "View work"),
+      hero_cta_secondary: String(defaultPortfolio?.hero_cta_secondary ?? "Contact"),
     },
     profile: profile ?? { name: "", headline: "", bio: "" },
     skills: await queryAll(db, "SELECT * FROM skills WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, name", [
@@ -638,8 +651,12 @@ function esc(s: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
-export function renderPortfolioPage(data: PublicPortfolio, config: Config): string {
-  return renderPortfolioHtml(data, config);
+export function renderPortfolioPage(
+  data: PublicPortfolio,
+  config: Config,
+  seo?: { robots?: string },
+): string {
+  return renderPortfolioHtml(data, config, seo);
 }
 
 export function renderNotFound(message: string, dashboardUrl: string): string {

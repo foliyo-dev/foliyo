@@ -43,7 +43,12 @@ export {
 
 export {
   buildLibraryContext,
+  buildPortfolioSummaryContext,
   generateSummaryWithOpenRouter,
+  generatePortfolioSummaryWithOpenRouter,
+  hasLibraryFacts,
+  type LibraryContext,
+  type PortfolioSummarySelection,
   type SummaryResult,
 } from "./openrouter-summary.js";
 

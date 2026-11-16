@@ -107,7 +107,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit role' : 'Experience'}
 		description="Work history — list order is how they appear on folios and resumes. Add skills developed so Foliyo can suggest skills for your library."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add experience</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedExperience}
@@ -123,12 +129,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add experience</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<ContentFormCard title={$editingId ? 'Edit role' : 'Add role'}>
@@ -203,9 +203,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
-	}
 	.row {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

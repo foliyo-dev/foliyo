@@ -128,6 +128,34 @@ export async function generateResumeSummary(input: {
 	}
 }
 
+export async function generatePortfolioSummary(input: {
+	skill_ids?: string[];
+	project_ids?: string[];
+	experience_ids?: string[];
+	education_ids?: string[];
+}): Promise<SummaryResult> {
+	// Match server caps — large folio selections (e.g. 59 skills) used to fail Zod .max().
+	const body = {
+		mode: 'portfolio' as const,
+		skill_ids: input.skill_ids?.slice(0, 40),
+		project_ids: input.project_ids?.slice(0, 8),
+		experience_ids: input.experience_ids?.slice(0, 8),
+		education_ids: input.education_ids?.slice(0, 4)
+	};
+	try {
+		return await api<SummaryResult>('/ai/summary', {
+			method: 'POST',
+			body: JSON.stringify(body)
+		});
+	} catch (err) {
+		if (err instanceof ApiError) {
+			const upgrade = parseUpgradeError(err);
+			if (upgrade) throw Object.assign(err, { upgrade });
+		}
+		throw err;
+	}
+}
+
 export async function generateThemeConfig(input: {
 	prompt: string;
 	portfolio_id?: string;

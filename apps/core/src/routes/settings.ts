@@ -5,6 +5,7 @@ import type { AppEnv } from "../middleware/auth.js";
 import { queryOne, run, type FoliyoDb } from "../db.js";
 import type { Config } from "../config.js";
 import { clearUserContent } from "../account/clear-content.js";
+import { deleteMediaAsset, insertMediaAsset, listMediaAssets } from "../media.js";
 import { getStorage, publicUploadUrl } from "../storage/index.js";
 
 const settingsSchema = z.object({
@@ -112,10 +113,26 @@ function isBlobLike(file: unknown): file is { arrayBuffer: () => Promise<ArrayBu
   );
 }
 
-export function uploadRoutes(_db: FoliyoDb, config: Config) {
+export function uploadRoutes(db: FoliyoDb, config: Config) {
   const r = new Hono<AppEnv>();
+
+  r.get("/", async (c) => {
+    const userId = c.get("userId");
+    const items = await listMediaAssets(db, userId);
+    return c.json({ items });
+  });
+
+  r.delete("/:id", async (c) => {
+    const userId = c.get("userId");
+    const id = c.req.param("id");
+    const ok = await deleteMediaAsset(db, config, userId, id);
+    if (!ok) return c.json({ error: "not found" }, 404);
+    return c.body(null, 204);
+  });
+
   r.post("/avatar", (c) => c.json({ error: "upload not implemented yet" }, 501));
   r.post("/project-image", async (c) => {
+    const userId = c.get("userId");
     const contentType = c.req.header("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {
       return c.json({ error: "file_required", message: "Send the image as multipart field \"file\"." }, 400);
@@ -140,7 +157,9 @@ export function uploadRoutes(_db: FoliyoDb, config: Config) {
     const imageType =
       ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
     await getStorage(config).put(name, buf, imageType);
-    return c.json({ url: publicUploadUrl(name) });
+    const url = publicUploadUrl(name);
+    await insertMediaAsset(db, userId, url);
+    return c.json({ url });
   });
   return r;
 }

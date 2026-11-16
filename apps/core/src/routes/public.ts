@@ -41,6 +41,23 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
 
   r.get("/welcome", (c) => c.html(renderWelcome(config)));
 
+  r.get("/robots.txt", (c) =>
+    c.text(
+      [
+        "User-agent: *",
+        "Allow: /u/",
+        "Disallow: /p/",
+        "Disallow: /r/",
+        "Disallow: /api/",
+        "Disallow: /mesh/",
+        "Disallow: /v1/",
+        "",
+      ].join("\n"),
+      200,
+      { "Content-Type": "text/plain; charset=utf-8" },
+    ),
+  );
+
   // OSS: site root is the default portfolio; dashboard lives on FOLIYO_DASHBOARD_URL.
   // Cloud keeps a separate marketing landing. Bridge common auth entry paths.
   const dash = config.dashboardUrl.replace(/\/$/, "");
@@ -50,6 +67,8 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
       return c.redirect(`${dash}${path}${q}`);
     });
   }
+
+  const privateShareRobots = { robots: "noindex, nofollow" } as const;
 
   r.get("/r/:token", async (c) => {
     const resume = await queryOne<{
@@ -76,6 +95,7 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
         data,
         { name: resume.name, theme_slug: resume.theme_slug },
         config,
+        privateShareRobots,
       ),
     );
   });
@@ -83,7 +103,7 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
   r.get("/p/:token", async (c) => {
     const data = await getPublicPortfolioByToken(db, c.req.param("token"));
     if (!data) return c.html(renderNotFound("Portfolio not found.", config.dashboardUrl), 404);
-    return c.html(renderPortfolioPage(data, config));
+    return c.html(renderPortfolioPage(data, config, privateShareRobots));
   });
 
   // Blog routes must register before /u/:handle/:slug so "blog" is never a portfolio slug.
@@ -246,6 +266,7 @@ export function publicRoutes(db: FoliyoDb, config: Config) {
     "r",
     "p",
     "uploads",
+    "robots.txt",
   ]);
   r.get("/:slug", async (c) => {
     const slug = c.req.param("slug");

@@ -99,7 +99,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit certification' : 'Certifications'}
 		description="Credentials and licenses — add skills covered to feed your skill library."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add certification</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedCertifications}
@@ -112,12 +118,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add certification</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<ContentFormCard title={$editingId ? 'Edit certification' : 'Add certification'}>
@@ -179,9 +179,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
-	}
 	.row {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

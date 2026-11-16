@@ -1,28 +1,26 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { logout, user } from '$lib/stores/auth';
+	import type { Snippet } from 'svelte';
 	import { pageChrome } from '$lib/stores/pageChrome';
-	import { formatPlanLabel, isPaidHostedPlan } from '$lib/api/plan';
-	import { isSaas } from '$lib/config';
-	import Button from '$lib/components/ui/Button.svelte';
+	import {
+		libraryPreviewChrome,
+		toggleLibraryPreview
+	} from '$lib/stores/libraryPreviewChrome';
 
-	const dispatch = createEventDispatcher<{ menu: void }>();
+	type Props = {
+		onmenu?: () => void;
+		children?: Snippet;
+	};
 
-	$: planSlug = $user?.plan ?? (isSaas ? 'free' : 'selfhost');
-	$: planLabel = formatPlanLabel(planSlug);
-	$: paid = isPaidHostedPlan(planSlug);
-	$: title = $pageChrome.title;
-	$: description = $pageChrome.description;
+	let { onmenu, children }: Props = $props();
 
-	async function handleLogout() {
-		await logout();
-		window.location.href = '/login';
-	}
+	const title = $derived($pageChrome.title);
+	const description = $derived($pageChrome.description);
+	const preview = $derived($libraryPreviewChrome);
 </script>
 
 <header>
 	<div class="left">
-		<button type="button" class="menu-btn" aria-label="Open menu" on:click={() => dispatch('menu')}>
+		<button type="button" class="menu-btn" aria-label="Open menu" onclick={() => onmenu?.()}>
 			<span class="bar"></span>
 			<span class="bar"></span>
 			<span class="bar"></span>
@@ -33,26 +31,24 @@
 				{#if description}
 					<p class="desc">{description}</p>
 				{/if}
-			{:else}
+			{:else if children}
 				<div class="slot">
-					<slot />
+					{@render children()}
 				</div>
 			{/if}
 		</div>
 	</div>
 	<div class="right">
-		{#if $user}
-			<a
-				href="/settings"
-				class="plan-badge"
-				class:paid
-				class:free={planSlug === 'free'}
-				title="Account plan — open Settings"
+		<div id="app-header-actions" class="page-actions"></div>
+		{#if preview}
+			<button
+				type="button"
+				class="preview-toggle desktop-only"
+				onclick={toggleLibraryPreview}
 			>
-				{planLabel}
-			</a>
+				{preview.hidden ? 'Show preview' : 'Hide preview'}
+			</button>
 		{/if}
-		<Button variant="ghost" size="sm" on:click={handleLogout}>Log out</Button>
 	</div>
 </header>
 
@@ -106,38 +102,62 @@
 	}
 	.right {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
+		justify-content: flex-end;
 		gap: var(--space-2);
 		flex-shrink: 0;
 	}
-	.plan-badge {
-		display: inline-flex;
+	.page-actions {
+		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		justify-content: center;
-		padding: 0.15rem 0.45rem;
-		border-radius: var(--radius-sm);
-		font-size: 0.625rem;
+		justify-content: flex-end;
+		gap: var(--space-2);
+	}
+	.page-actions:empty {
+		display: none;
+	}
+	.right :global(.count) {
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+	}
+	.right :global(.status-chip) {
+		flex-shrink: 0;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		font-size: 0.6875rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		text-decoration: none;
-		line-height: 1.2;
 		border: 1px solid var(--color-border);
-		background: var(--color-bg);
 		color: var(--color-muted);
+		background: var(--color-surface);
 	}
-	.plan-badge.paid {
-		border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
-		background: var(--color-primary);
-		color: #fff;
+	.right :global(.status-chip.published) {
+		border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+		color: var(--color-primary);
+		background: var(--color-primary-light);
 	}
-	.plan-badge.free:hover,
-	.plan-badge:not(.paid):hover {
+	.preview-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 1.875rem;
+		padding: 0 var(--space-3);
+		border-radius: var(--radius);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-weight: 500;
+		font-size: 0.8125rem;
+		line-height: 1.25;
+		cursor: pointer;
+	}
+	.preview-toggle:hover {
 		border-color: var(--color-primary-muted);
 		color: var(--color-primary);
-	}
-	.plan-badge.paid:hover {
-		filter: brightness(1.05);
+		background: var(--color-primary-light);
 	}
 	.menu-btn {
 		display: none;
@@ -172,6 +192,12 @@
 			display: inline-flex;
 		}
 		.desc {
+			display: none;
+		}
+	}
+
+	@media (max-width: 1099px) {
+		.desktop-only {
 			display: none;
 		}
 	}

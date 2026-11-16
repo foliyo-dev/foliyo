@@ -35,7 +35,7 @@
 		ontogglecollapse={toggleCollapse}
 	/>
 	<div class="main">
-		<Header on:menu={() => (navOpen = true)} />
+		<Header onmenu={() => (navOpen = true)} />
 		<div class="content">
 			<PlanExpiryBanner />
 			<div class="content-inner">
@@ -74,12 +74,16 @@
 	}
 	/* :global — child component class hashes differ under Svelte scoping */
 	.content-inner:has(:global(.editor-with-preview)),
-	.content-inner:has(:global(.blog-list-page)) {
+	.content-inner:has(:global(.blog-list-page)),
+	.content-inner:has(:global(.library-page)),
+	.content-inner:has(:global(.settings-page)) {
 		max-width: none;
 		height: 100%;
 	}
 	.content:has(:global(.editor-with-preview)),
-	.content:has(:global(.blog-list-page)) {
+	.content:has(:global(.blog-list-page)),
+	.content:has(:global(.library-page)),
+	.content:has(:global(.settings-page)) {
 		padding: var(--space-2) var(--space-3);
 	}
 
@@ -88,7 +92,9 @@
 			padding: var(--space-3) var(--space-3) var(--space-4);
 		}
 		.content:has(:global(.editor-with-preview)),
-		.content:has(:global(.blog-list-page)) {
+		.content:has(:global(.blog-list-page)),
+		.content:has(:global(.library-page)),
+		.content:has(:global(.settings-page)) {
 			padding: var(--space-2) var(--space-3) var(--space-3);
 		}
 	}

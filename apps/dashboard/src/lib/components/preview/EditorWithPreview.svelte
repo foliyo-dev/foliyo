@@ -1,7 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import LibraryPreview from './LibraryPreview.svelte';
+	import {
+		libraryPreviewChrome,
+		setLibraryPreviewChrome
+	} from '$lib/stores/libraryPreviewChrome';
 
 	type Props = {
 		children?: Snippet;
@@ -13,24 +17,32 @@
 
 	let preview: LibraryPreview | undefined = $state();
 	let root: HTMLDivElement | undefined = $state();
-	let previewHidden = $state(false);
+
+	const previewHidden = $derived($libraryPreviewChrome?.hidden ?? false);
 
 	onMount(() => {
+		let hidden = false;
 		try {
-			previewHidden = localStorage.getItem(STORAGE_KEY) === '1';
+			hidden = localStorage.getItem(STORAGE_KEY) === '1';
+		} catch {
+			/* ignore */
+		}
+		setLibraryPreviewChrome({ hidden });
+	});
+
+	$effect(() => {
+		const chrome = $libraryPreviewChrome;
+		if (!chrome) return;
+		try {
+			localStorage.setItem(STORAGE_KEY, chrome.hidden ? '1' : '0');
 		} catch {
 			/* ignore */
 		}
 	});
 
-	function togglePreview() {
-		previewHidden = !previewHidden;
-		try {
-			localStorage.setItem(STORAGE_KEY, previewHidden ? '1' : '0');
-		} catch {
-			/* ignore */
-		}
-	}
+	onDestroy(() => {
+		setLibraryPreviewChrome(null);
+	});
 
 	export async function refreshPreview(): Promise<void> {
 		await preview?.refresh();
@@ -53,11 +65,6 @@
 
 <div class="editor-with-preview" class:preview-hidden={previewHidden} bind:this={root}>
 	<div class="editor">
-		<div class="preview-toggle-bar desktop-only">
-			<button type="button" class="toggle" onclick={togglePreview}>
-				{previewHidden ? 'Show preview' : 'Hide preview'}
-			</button>
-		</div>
 		{#if children}
 			{@render children()}
 		{/if}
@@ -88,34 +95,11 @@
 		min-width: 0;
 		max-width: none;
 	}
-	.preview-toggle-bar {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: var(--space-2);
-	}
-	.toggle {
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		border-radius: var(--radius);
-		padding: 0.25rem 0.65rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-muted);
-		cursor: pointer;
-	}
-	.toggle:hover {
-		border-color: var(--color-primary-muted);
-		color: var(--color-primary);
-		background: var(--color-primary-light);
-	}
 
 	@media (max-width: 1099px) {
 		.editor-with-preview {
 			display: block;
 			min-height: 0;
-		}
-		.desktop-only {
-			display: none;
 		}
 	}
 </style>

@@ -17,10 +17,13 @@ import {
   MIN_BULLET_CHARS,
   MIN_JD_CHARS,
   buildLibraryContext,
+  buildPortfolioSummaryContext,
   gateBulletText,
   gateJdText,
+  generatePortfolioSummaryWithOpenRouter,
   generateSummaryWithOpenRouter,
   generateThemeWithOpenRouter,
+  hasLibraryFacts,
   normalizeTone,
   rewriteBulletWithOpenRouter,
   runGapCheck,
@@ -36,9 +39,21 @@ const rewriteSchema = z.object({
   jd_text: z.string().max(MAX_JD_CHARS).optional(),
 });
 
+/** Accept oversized selections — slice to caps (folio pickers often select 40+ skills). */
+const idList = (max: number) =>
+  z
+    .array(z.string().min(1).max(64))
+    .optional()
+    .transform((ids) => (ids ? ids.slice(0, max) : undefined));
+
 const summarySchema = z.object({
-  jd_text: z.string().min(MIN_JD_CHARS).max(MAX_JD_CHARS),
+  mode: z.enum(["resume", "portfolio"]).optional().default("resume"),
+  jd_text: z.string().optional(),
   skill_names: z.array(z.string().min(1).max(80)).max(40).optional(),
+  skill_ids: idList(40),
+  project_ids: idList(8),
+  experience_ids: idList(8),
+  education_ids: idList(4),
 });
 
 const themeSchema = z.object({
@@ -180,7 +195,7 @@ export function aiRoutes(db: FoliyoDb, config: Config) {
       return c.json(
         upgradePayload(
           "ai_assist",
-          "AI resume summary is a Pro feature (₹99/mo). Upgrade to generate a tailored headline and summary.",
+          "AI summary is a Pro feature (₹99/mo). Upgrade to generate a tailored headline and summary.",
         ),
         402,
       );
@@ -201,10 +216,80 @@ export function aiRoutes(db: FoliyoDb, config: Config) {
     try {
       json = await c.req.json();
     } catch {
-      return c.json({ error: "Send JSON { jd_text, skill_names? }." }, 400);
+      return c.json(
+        { error: "Send JSON { mode?, jd_text?, skill_names?, skill_ids?, project_ids?, experience_ids?, education_ids? }." },
+        400,
+      );
     }
     const parsed = summarySchema.safeParse(json);
     if (!parsed.success) {
+      return c.json(
+        {
+          error:
+            "Invalid summary request. For resume mode, jd_text is required; for portfolio mode, select library IDs.",
+        },
+        400,
+      );
+    }
+
+    const mode = parsed.data.mode;
+
+    if (mode === "portfolio") {
+      const library = await buildPortfolioSummaryContext(db, userId, {
+        skill_ids: parsed.data.skill_ids,
+        project_ids: parsed.data.project_ids,
+        experience_ids: parsed.data.experience_ids,
+        education_ids: parsed.data.education_ids,
+      });
+      if (!hasLibraryFacts(library)) {
+        return c.json(
+          {
+            error: "library_empty",
+            message:
+              "Select at least one skill, project, experience, or education item from your library before generating a portfolio summary.",
+          },
+          400,
+        );
+      }
+
+      try {
+        const result = await generatePortfolioSummaryWithOpenRouter(library, openRouter);
+        return c.json({
+          headline: result.headline,
+          bio: result.bio,
+          meta: {
+            model: result.model,
+            tokens_in: result.tokensIn,
+            tokens_out: result.tokensOut,
+            units_spent: 0,
+            units_remaining: null,
+          },
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[ai:summary] portfolio failed:", message);
+        if (message === "library_empty") {
+          return c.json(
+            {
+              error: "library_empty",
+              message:
+                "Select at least one skill, project, experience, or education item from your library before generating a portfolio summary.",
+            },
+            400,
+          );
+        }
+        return c.json(
+          {
+            error: "summary_failed",
+            message: "Could not generate a portfolio summary. Try again with different selections.",
+          },
+          502,
+        );
+      }
+    }
+
+    const jdRaw = parsed.data.jd_text ?? "";
+    if (jdRaw.length < MIN_JD_CHARS || jdRaw.length > MAX_JD_CHARS) {
       return c.json(
         {
           error: `jd_text must be ${MIN_JD_CHARS}–${MAX_JD_CHARS.toLocaleString()} characters.`,
@@ -213,11 +298,11 @@ export function aiRoutes(db: FoliyoDb, config: Config) {
       );
     }
 
-    const gated = gateJdText(parsed.data.jd_text);
+    const gated = gateJdText(jdRaw);
     if ("error" in gated) return c.json({ error: gated.error }, gated.status);
 
     const library = await buildLibraryContext(db, userId, parsed.data.skill_names ?? []);
-    if (!library.skills.length && !library.experience.length && !library.projects.length) {
+    if (!hasLibraryFacts(library)) {
       return c.json(
         {
           error: "library_empty",

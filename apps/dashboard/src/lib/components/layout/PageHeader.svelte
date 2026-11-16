@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { onDestroy } from 'svelte';
 	import { setPageChrome, clearPageChrome } from '$lib/stores/pageChrome';
+	import HeaderActionsPortal from './HeaderActionsPortal.svelte';
 
 	type Props = {
 		title?: string;
@@ -25,18 +26,17 @@
 	<title>{title ? `${title} · Foliyo` : 'Foliyo'}</title>
 </svelte:head>
 
-{#if children || actions}
+{#if actions}
+	<HeaderActionsPortal>
+		{@render actions()}
+	</HeaderActionsPortal>
+{/if}
+
+{#if children}
 	<div class="page-toolbar">
-		{#if children}
-			<div class="toolbar-main">
-				{@render children()}
-			</div>
-		{/if}
-		{#if actions}
-			<div class="toolbar-actions">
-				{@render actions()}
-			</div>
-		{/if}
+		<div class="toolbar-main">
+			{@render children()}
+		</div>
 	</div>
 {/if}
 
@@ -52,12 +52,5 @@
 	.toolbar-main {
 		min-width: 0;
 		flex: 1;
-	}
-	.toolbar-actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2);
-		flex-shrink: 0;
 	}
 </style>

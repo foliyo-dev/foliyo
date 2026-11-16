@@ -10,6 +10,16 @@ Rules:
 - Bio/summary: 2–4 sentences, ~40–80 words, resume third-person-implied style (no "I am…").
 - No URLs. No buzzword stuffing.`;
 
+const PORTFOLIO_SYSTEM = `You write a short public portfolio headline and bio in the FIRST PERSON — as if the portfolio owner is speaking about themselves.
+Return ONLY JSON: {"headline":"...","bio":"..."} with no markdown.
+Rules:
+- Use ONLY facts from the library context. Do not invent employers, titles, degrees, metrics, tools, clients, or years.
+- Voice: first person ("I", "my", "I've"). NEVER write third person ("Rakesh is…", "He/She is…", or use their name as the subject).
+- This is a public portfolio voice (not JD-tailored): emphasize strengths, craft, and notable work already present.
+- Headline: one line, max ~12 words, role-oriented (e.g. "Senior engineer · scalable backends"); do not start with "I am".
+- Bio: 2–4 sentences, ~40–80 words, first person throughout (e.g. "I build…", "I specialize in…").
+- No URLs. No buzzword stuffing. Do not mention job descriptions or "seeking roles".`;
+
 export type SummaryResult = {
   headline: string;
   bio: string;
@@ -18,7 +28,7 @@ export type SummaryResult = {
   tokensOut: number;
 };
 
-type LibraryContext = {
+export type LibraryContext = {
   name: string;
   existingHeadline: string;
   existingBio: string;
@@ -32,7 +42,28 @@ type LibraryContext = {
     blurb: string;
   }>;
   projects: Array<{ title: string; skills: string[]; blurb: string }>;
+  education: Array<{
+    degree: string;
+    field: string;
+    institution: string;
+    span: string;
+    blurb: string;
+  }>;
 };
+
+export type PortfolioSummarySelection = {
+  skill_ids?: string[];
+  project_ids?: string[];
+  experience_ids?: string[];
+  education_ids?: string[];
+};
+
+const PORTFOLIO_CAPS = {
+  skills: 40,
+  experience: 8,
+  projects: 8,
+  education: 4,
+} as const;
 
 function parseTags(raw: unknown): string[] {
   if (typeof raw !== "string" || !raw.trim()) return [];
@@ -56,6 +87,66 @@ function dateSpan(start: string | null | undefined, end: string | null | undefin
   const b = end ? String(end).trim().slice(0, 7) : "present";
   if (!a) return "";
   return `${a}–${b}`;
+}
+
+function cleanIds(ids: string[] | undefined, limit: number): string[] {
+  if (!ids?.length) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of ids) {
+    const id = String(raw ?? "").trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function orderByIds<T extends { id: string }>(rows: T[], ids: string[]): T[] {
+  if (!ids.length) return [];
+  const byId = new Map(rows.map((row) => [String(row.id), row]));
+  return ids.map((id) => byId.get(id)).filter((row): row is T => row != null);
+}
+
+async function fetchOwnedByIds<T extends { id: string }>(
+  db: FoliyoDb,
+  table: string,
+  userId: string,
+  ids: string[],
+  columns: string,
+): Promise<T[]> {
+  if (!ids.length) return [];
+  const rows = await queryAll<T>(
+    db,
+    `SELECT ${columns} FROM ${table}
+     WHERE user_id = ? AND deleted_at IS NULL AND id IN (${ids.map(() => "?").join(",")})`,
+    [userId, ...ids],
+  );
+  return orderByIds(rows, ids);
+}
+
+function emptyLibrary(partial?: Partial<LibraryContext>): LibraryContext {
+  return {
+    name: "",
+    existingHeadline: "",
+    existingBio: "",
+    skills: [],
+    focusSkills: [],
+    experience: [],
+    projects: [],
+    education: [],
+    ...partial,
+  };
+}
+
+function hasLibraryFacts(ctx: LibraryContext): boolean {
+  return Boolean(
+    ctx.skills.length ||
+      ctx.experience.length ||
+      ctx.projects.length ||
+      ctx.education.length,
+  );
 }
 
 /** Pull grounded library facts for summary generation (server-side only). */
@@ -107,7 +198,7 @@ export async function buildLibraryContext(
 
   const focus = focusSkillNames.map((s) => s.trim()).filter(Boolean).slice(0, 24);
 
-  return {
+  return emptyLibrary({
     name: String(profile?.name ?? "").trim(),
     existingHeadline: String(profile?.headline ?? "").trim(),
     existingBio: String(profile?.bio ?? "").trim(),
@@ -125,7 +216,100 @@ export async function buildLibraryContext(
       skills: parseTags(p.skills_developed).slice(0, 10),
       blurb: truncate(p.description ?? "", 160),
     })),
-  };
+  });
+}
+
+/**
+ * Load ONLY the selected owned library rows for portfolio headline/bio drafting.
+ * Caps: 40 skills, 8 experience, 8 projects, 4 education.
+ */
+export async function buildPortfolioSummaryContext(
+  db: FoliyoDb,
+  userId: string,
+  selection: PortfolioSummarySelection,
+): Promise<LibraryContext> {
+  const skillIds = cleanIds(selection.skill_ids, PORTFOLIO_CAPS.skills);
+  const experienceIds = cleanIds(selection.experience_ids, PORTFOLIO_CAPS.experience);
+  const projectIds = cleanIds(selection.project_ids, PORTFOLIO_CAPS.projects);
+  const educationIds = cleanIds(selection.education_ids, PORTFOLIO_CAPS.education);
+
+  const profile = await queryOne<{ name: string; headline: string; bio: string }>(
+    db,
+    "SELECT name, headline, bio FROM profile WHERE user_id = ?",
+    [userId],
+  );
+
+  const [skills, experience, projects, education] = await Promise.all([
+    fetchOwnedByIds<{ id: string; name: string }>(
+      db,
+      "skills",
+      userId,
+      skillIds,
+      "id, name",
+    ),
+    fetchOwnedByIds<{
+      id: string;
+      role: string;
+      company: string;
+      start_date: string;
+      end_date: string | null;
+      description: string;
+      skills_developed: string;
+    }>(
+      db,
+      "experience",
+      userId,
+      experienceIds,
+      "id, role, company, start_date, end_date, description, skills_developed",
+    ),
+    fetchOwnedByIds<{
+      id: string;
+      title: string;
+      description: string;
+      skills_developed: string;
+    }>(db, "projects", userId, projectIds, "id, title, description, skills_developed"),
+    fetchOwnedByIds<{
+      id: string;
+      institution: string;
+      degree: string;
+      field: string;
+      start_date: string;
+      end_date: string | null;
+      description: string;
+    }>(
+      db,
+      "education",
+      userId,
+      educationIds,
+      "id, institution, degree, field, start_date, end_date, description",
+    ),
+  ]);
+
+  return emptyLibrary({
+    name: String(profile?.name ?? "").trim(),
+    existingHeadline: String(profile?.headline ?? "").trim(),
+    existingBio: String(profile?.bio ?? "").trim(),
+    skills: skills.map((s) => s.name.trim()).filter(Boolean),
+    experience: experience.map((e) => ({
+      role: e.role,
+      company: e.company,
+      span: dateSpan(e.start_date, e.end_date),
+      skills: parseTags(e.skills_developed).slice(0, 12),
+      blurb: truncate(e.description ?? "", 220),
+    })),
+    projects: projects.map((p) => ({
+      title: p.title,
+      skills: parseTags(p.skills_developed).slice(0, 10),
+      blurb: truncate(p.description ?? "", 160),
+    })),
+    education: education.map((e) => ({
+      degree: String(e.degree ?? "").trim(),
+      field: String(e.field ?? "").trim(),
+      institution: String(e.institution ?? "").trim(),
+      span: dateSpan(e.start_date, e.end_date),
+      blurb: truncate(e.description ?? "", 160),
+    })),
+  });
 }
 
 function formatContext(ctx: LibraryContext): string {
@@ -136,7 +320,7 @@ function formatContext(ctx: LibraryContext): string {
   if (ctx.focusSkills.length) {
     lines.push(`JD-matched library skills (prefer these): ${ctx.focusSkills.join(", ")}`);
   }
-  if (ctx.skills.length) lines.push(`Confirmed skills: ${ctx.skills.join(", ")}`);
+  if (ctx.skills.length) lines.push(`Skills: ${ctx.skills.join(", ")}`);
   if (ctx.experience.length) {
     lines.push("Experience:");
     for (const e of ctx.experience) {
@@ -153,17 +337,55 @@ function formatContext(ctx: LibraryContext): string {
       lines.push(`- ${p.title}${skills}${blurb}`);
     }
   }
+  if (ctx.education.length) {
+    lines.push("Education:");
+    for (const e of ctx.education) {
+      const title = [e.degree, e.field].filter(Boolean).join(" in ") || "Studies";
+      const blurb = e.blurb ? ` — ${e.blurb}` : "";
+      const span = e.span ? ` (${e.span})` : "";
+      lines.push(`- ${title} @ ${e.institution}${span}${blurb}`);
+    }
+  }
   return lines.join("\n");
 }
 
-export async function generateSummaryWithOpenRouter(
-  input: { jdSnippet: string; library: LibraryContext },
+function parseSummaryContent(
+  content: string,
   cloud: OpenRouterClientConfig,
-): Promise<SummaryResult> {
-  const libraryBlock = formatContext(input.library);
-  if (!libraryBlock.trim()) {
-    throw new Error("library_empty");
+  model: string | undefined,
+  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined,
+): SummaryResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("openrouter_invalid_json");
+    parsed = JSON.parse(match[0]);
   }
+
+  const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  const headline = String(obj.headline ?? "").trim();
+  const bio = String(obj.bio ?? obj.summary ?? "").trim();
+  if (headline.length < 4 || bio.length < 24) throw new Error("openrouter_empty_summary");
+
+  return {
+    headline: headline.slice(0, 160),
+    bio: bio.slice(0, 1200),
+    model: model ?? cloud.openRouterModel,
+    tokensIn: usage?.prompt_tokens ?? 0,
+    tokensOut: usage?.completion_tokens ?? 0,
+  };
+}
+
+async function callOpenRouterSummary(
+  cloud: OpenRouterClientConfig,
+  opts: {
+    system: string;
+    user: string;
+    title: string;
+  },
+): Promise<SummaryResult> {
   const rewriteMax = cloud.aiRewriteMaxTokens && cloud.aiRewriteMaxTokens > 64
     ? cloud.aiRewriteMaxTokens
     : 400;
@@ -174,7 +396,7 @@ export async function generateSummaryWithOpenRouter(
       Authorization: `Bearer ${cloud.openRouterApiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": cloud.dashboardUrl || "https://foliyo.dev",
-      "X-Title": "Foliyo AI Resume Summary",
+      "X-Title": opts.title,
     },
     body: JSON.stringify({
       model: cloud.openRouterModel,
@@ -182,14 +404,8 @@ export async function generateSummaryWithOpenRouter(
       max_tokens: Math.max(rewriteMax, 500),
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content:
-            `Job description (for alignment only — do not invent from this):\n${input.jdSnippet.slice(0, 2500)}\n\n` +
-            `Candidate library (only source of truth):\n${libraryBlock}\n\n` +
-            `Write headline and bio.`,
-        },
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
       ],
     }),
   });
@@ -208,25 +424,47 @@ export async function generateSummaryWithOpenRouter(
   const content = body.choices?.[0]?.message?.content;
   if (!content) throw new Error("openrouter_empty_response");
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    const match = content.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("openrouter_invalid_json");
-    parsed = JSON.parse(match[0]);
+  return parseSummaryContent(content, cloud, body.model, body.usage);
+}
+
+export async function generateSummaryWithOpenRouter(
+  input: { jdSnippet: string; library: LibraryContext },
+  cloud: OpenRouterClientConfig,
+): Promise<SummaryResult> {
+  const libraryBlock = formatContext(input.library);
+  if (!libraryBlock.trim()) {
+    throw new Error("library_empty");
   }
 
-  const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
-  const headline = String(obj.headline ?? "").trim();
-  const bio = String(obj.bio ?? obj.summary ?? "").trim();
-  if (headline.length < 4 || bio.length < 24) throw new Error("openrouter_empty_summary");
-
-  return {
-    headline: headline.slice(0, 160),
-    bio: bio.slice(0, 1200),
-    model: body.model ?? cloud.openRouterModel,
-    tokensIn: body.usage?.prompt_tokens ?? 0,
-    tokensOut: body.usage?.completion_tokens ?? 0,
-  };
+  return callOpenRouterSummary(cloud, {
+    system: SYSTEM,
+    title: "Foliyo AI Resume Summary",
+    user:
+      `Job description (for alignment only — do not invent from this):\n${input.jdSnippet.slice(0, 2500)}\n\n` +
+      `Candidate library (only source of truth):\n${libraryBlock}\n\n` +
+      `Write headline and bio.`,
+  });
 }
+
+export async function generatePortfolioSummaryWithOpenRouter(
+  library: LibraryContext,
+  cloud: OpenRouterClientConfig,
+): Promise<SummaryResult> {
+  if (!hasLibraryFacts(library)) {
+    throw new Error("library_empty");
+  }
+  const libraryBlock = formatContext(library);
+  if (!libraryBlock.trim()) {
+    throw new Error("library_empty");
+  }
+
+  return callOpenRouterSummary(cloud, {
+    system: PORTFOLIO_SYSTEM,
+    title: "Foliyo AI Portfolio Summary",
+    user:
+      `Selected portfolio library (only source of truth):\n${libraryBlock}\n\n` +
+      `Write a public portfolio headline and first-person bio (I/my — never third person or the person's name as subject).`,
+  });
+}
+
+export { hasLibraryFacts };

@@ -8,6 +8,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
+	import FolioSummaryAssist from '$lib/components/portfolio/FolioSummaryAssist.svelte';
 	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
 	import StorytellingPanel from '$lib/components/portfolio/StorytellingPanel.svelte';
 	import EditorWithPortfolioPreview from '$lib/components/preview/EditorWithPortfolioPreview.svelte';
@@ -111,9 +112,6 @@
 
 	$: portfolioId = $page.params.id;
 	$: hasOwnSummary = Boolean(headline.trim() || bio.trim());
-	$: usesBasicsSummary =
-		!hasOwnSummary &&
-		Boolean(String(profile?.headline ?? '').trim() || String(profile?.bio ?? '').trim());
 
 	$: draft = (loading
 		? null
@@ -252,6 +250,24 @@
 		customSummaryOpen = false;
 	}
 
+	function setSummaryMode(mode: 'basics' | 'custom') {
+		if (mode === 'basics') useBasicsSummary();
+		else openCustomSummary();
+	}
+
+	function truncateText(value: string | null | undefined, max = 120): string {
+		const t = String(value ?? '').trim();
+		if (!t) return '';
+		return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+	}
+
+	$: urlPathHint = isDefault
+		? `/u/${$user?.handle ?? 'you'}`
+		: `/u/${$user?.handle ?? 'you'}/${slug.trim() || '…'}`;
+
+	$: basicsHeadlinePreview = truncateText(profile?.headline, 80);
+	$: basicsBioPreview = truncateText(profile?.bio, 140);
+
 	function applyDeveloperPreset() {
 		projectsLayout = 'featured_timeline';
 		showSkillLevels = false;
@@ -383,45 +399,113 @@
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else if portfolio}
-	<PageHeader
-		title={portfolio.name}
-		description="Choose what visitors will see, theme, and publish."
-	/>
-
-	{#if isPublic && liveUrl}
-		<p class="url-banner">
-			Live at
-			<a href={liveUrl} target="_blank" rel="noreferrer">{liveUrl}</a>
-		</p>
-	{:else}
-		<p class="url-banner muted">
-			Private — turn on publish below to go live. Preview still works on the right.
-		</p>
-	{/if}
-
 	<EditorWithPortfolioPreview
 		portfolioId={portfolio.id}
 		{draft}
 		portfolioName={name.trim() || portfolio.name}
 		{liveUrl}
 	>
+		<PageHeader
+			title={portfolio.name}
+			description="Choose what visitors will see, theme, and publish."
+		>
+			{#snippet actions()}
+				<span class="status-chip" class:published={isPublic}>
+					{isPublic ? 'Public' : 'Private'}
+				</span>
+				{#if isPublic && liveUrl}
+					<Button
+						variant="ghost"
+						size="sm"
+						on:click={() => window.open(liveUrl, '_blank', 'noopener,noreferrer')}
+					>
+						Open live
+					</Button>
+				{/if}
+				<Button size="sm" disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save'}</Button>
+			{/snippet}
+		</PageHeader>
+
+		{#if isPublic && liveUrl}
+			<p class="url-banner">
+				Live at
+				<a href={liveUrl} target="_blank" rel="noreferrer">{liveUrl}</a>
+			</p>
+		{:else}
+			<p class="url-banner muted">
+				Private — turn on publish below to go live. Preview still works on the right.
+			</p>
+		{/if}
+
 		<Card variant="panel">
-			<details class="block" open>
-				<summary>Details &amp; identity</summary>
-				<div class="fields">
+			<div class="card-head">
+				<span class="card-icon" aria-hidden="true">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						><circle cx="12" cy="8" r="3.5" /><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" /></svg
+					>
+				</span>
+				<h2 class="card-title">Identity</h2>
+			</div>
+			<div class="fields">
+				<div class="row">
 					<Input label="Name" bind:value={name} />
-					<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-					<div class="summary-section">
+					<div class="slug-field">
+						<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+						<p class="url-hint">{urlPathHint}</p>
+					</div>
+				</div>
+
+				<div class="summary-section">
+					<div class="summary-head">
 						<h3 class="summary-title">Folio summary</h3>
-						{#if !customSummaryOpen && !hasOwnSummary && usesBasicsSummary}
-							<p class="summary-using">This folio uses Basics headline and summary.</p>
-							<div class="summary-actions">
-								<Button variant="secondary" on:click={openCustomSummary}>
-									Add separate summary
-								</Button>
-								<a class="summary-link" href="/basics">Edit Basics</a>
-							</div>
-						{:else}
+						<div class="seg" role="tablist" aria-label="Folio summary source">
+							<button
+								type="button"
+								class="seg-btn"
+								class:active={!customSummaryOpen}
+								role="tab"
+								aria-selected={!customSummaryOpen}
+								on:click={() => setSummaryMode('basics')}
+							>
+								Use Basics
+							</button>
+							<button
+								type="button"
+								class="seg-btn"
+								class:active={customSummaryOpen}
+								role="tab"
+								aria-selected={customSummaryOpen}
+								on:click={() => setSummaryMode('custom')}
+							>
+								Custom for this folio
+							</button>
+						</div>
+					</div>
+
+					{#if !customSummaryOpen}
+						<div class="basics-preview">
+							{#if basicsHeadlinePreview || basicsBioPreview}
+								{#if basicsHeadlinePreview}
+									<p class="preview-headline">{basicsHeadlinePreview}</p>
+								{/if}
+								{#if basicsBioPreview}
+									<p class="preview-bio">{basicsBioPreview}</p>
+								{/if}
+							{:else}
+								<p class="summary-using">No Basics headline or summary yet.</p>
+							{/if}
+							<a class="summary-link" href="/basics">Edit Basics</a>
+						</div>
+					{:else}
+						<div class="custom-summary">
+							<FolioSummaryAssist
+								bind:headline
+								bind:bio
+								skillIds={[...selectedSkills]}
+								projectIds={[...selectedProjects]}
+								experienceIds={[...selectedExperience]}
+								educationIds={[...selectedEducation]}
+							/>
 							<Input
 								label="Headline"
 								bind:value={headline}
@@ -433,140 +517,162 @@
 								rows={4}
 								placeholder="Short summary for this folio…"
 							/>
-							{#if usesBasicsSummary || customSummaryOpen}
-								<button type="button" class="linkish" on:click={useBasicsSummary}>
-									Use Basics instead
-								</button>
-							{/if}
-						{/if}
-					</div>
-					<ThemeLayoutPanel bind:themeSlug bind:themeConfig portfolioId={portfolio?.id} />
-					<div class="toggles">
-						<label class="checkbox"
-							><input type="checkbox" bind:checked={isPublic} /> Publish publicly</label
-						>
-						<label class="checkbox"
-							><input type="checkbox" bind:checked={isDefault} /> Default portfolio</label
-						>
-					</div>
+						</div>
+					{/if}
 				</div>
-			</details>
+			</div>
 		</Card>
 
 		<Card variant="panel">
-			<details class="block" open>
-				<summary>Storytelling</summary>
-				<div class="fields">
-					<StorytellingPanel
-						bind:projectsLayout
-						bind:showSkillLevels
-						bind:heroCtaPrimary
-						bind:heroCtaSecondary
-						showPreset
-						onApplyDeveloperPreset={applyDeveloperPreset}
-					/>
-				</div>
-			</details>
-		</Card>
-
-		<Card variant="panel">
-			<details class="block" open>
-				<summary>Sharing</summary>
-				<div class="fields">
-					<label class="field">
-						<span class="label">Download resume button</span>
-						<select bind:value={resumeId}>
-							<option value={null}>None</option>
-							{#each resumes as r (r.id)}
-								<option value={r.id}>{r.name}</option>
-							{/each}
-						</select>
-						<span class="hint">
-							{#if linkedResume && linkedResume.is_public !== 1}
-								“{linkedResume.name}” is private — mark it public on the Resumes page for the
-								button to appear on this portfolio.
-							{:else if resumeId}
-								Adds a “Download resume” button linking to this resume’s share page.
-							{:else}
-								Optional — visitors can download a linked, public resume as PDF.
-							{/if}
-						</span>
-					</label>
-
-					<div class="field">
-						<span class="label">Private link</span>
-						{#if privateUrl}
-							<div class="link-row">
-								<code class="link-code">{privateUrl}</code>
-								<Button variant="ghost" size="sm" on:click={() => copyLink(privateUrl ?? '')}>Copy</Button>
-								<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
-									>Regenerate</Button
-								>
-								<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={revokeLink}
-									>Revoke</Button
-								>
-							</div>
-							<span class="hint"
-								>Anyone with this link can view the portfolio, even while private —
-								regenerating breaks the old link.</span
-							>
-						{:else}
-							<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
-								>{tokenBusy ? 'Creating…' : 'Create private link'}</Button
-							>
-							<span class="hint"
-								>Share this portfolio with one person (e.g. a client) without publishing it or
-								making it guessable at /u/{$user?.handle ?? 'you'}.</span
-							>
-						{/if}
-					</div>
-				</div>
-			</details>
-		</Card>
-
-		<Card variant="panel">
-			<details class="block" open>
-				<summary>
-					What visitors will see
-					<span class="step-meta">{selectedSummary}</span>
-				</summary>
-				<PortfolioLibraryPicker
-					{skills}
-					{projects}
-					{experiences}
-					{educations}
-					{certifications}
-					{languages}
-					bind:selectedSkills
-					bind:selectedProjects
-					bind:selectedExperience
-					bind:selectedEducation
-					bind:selectedCertifications
-					bind:selectedLanguages
-					bind:showSkills
-					bind:showProjects
-					bind:showExperience
-					bind:showEducation
-					bind:showCertifications
-					bind:showLanguages
-					bind:showPosts
-					bind:skillsTitle
-					bind:projectsTitle
-					bind:experienceTitle
-					bind:educationTitle
-					bind:certificationsTitle
-					bind:languagesTitle
-					bind:postsTitle
-					title="Choose what visitors will see"
-					hint="Turn sections on or off, then pick items. Writing is an on/off link to your Blog — manage posts there."
+			<div class="card-head">
+				<span class="card-icon" aria-hidden="true">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M3 10h18" /></svg
+					>
+				</span>
+				<h2 class="card-title">Look</h2>
+			</div>
+			<div class="fields">
+				<ThemeLayoutPanel bind:themeSlug bind:themeConfig portfolioId={portfolio?.id} />
+				<StorytellingPanel
+					bind:projectsLayout
+					bind:showSkillLevels
+					bind:heroCtaPrimary
+					bind:heroCtaSecondary
+					showPreset
+					onApplyDeveloperPreset={applyDeveloperPreset}
 				/>
-			</details>
+			</div>
 		</Card>
 
-		<div class="actions sticky">
-			<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save portfolio'}</Button>
-			<Button variant="ghost" size="sm" on:click={() => goto('/portfolios')}>Back</Button>
-			<Button variant="ghost" size="sm" on:click={remove}>Delete</Button>
+		<Card variant="panel">
+			<div class="card-head">
+				<span class="card-icon" aria-hidden="true">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle
+							cx="18"
+							cy="19"
+							r="2.5"
+						/><path d="M8.5 10.5 15.5 6.5M8.5 13.5l7 4" /></svg
+					>
+				</span>
+				<h2 class="card-title">Share</h2>
+			</div>
+			<div class="share-body">
+				<label class="share-item share-resume">
+					<span class="label">Resume download</span>
+					<select class="resume-select" bind:value={resumeId}>
+						<option value={null}>None</option>
+						{#each resumes as r (r.id)}
+							<option value={r.id}>{r.name}</option>
+						{/each}
+					</select>
+					{#if linkedResume && linkedResume.is_public !== 1}
+						<span class="hint"
+							>“{linkedResume.name}” is private — mark public on
+							<a href="/resume">Resumes</a>.</span
+						>
+					{:else}
+						<span class="hint">Optional. Manage on <a href="/resume">Resumes</a>.</span>
+					{/if}
+				</label>
+				<div class="share-item share-link">
+					<span class="label">Private link</span>
+					{#if privateUrl}
+						<div class="link-row">
+							<code class="link-code">{privateUrl}</code>
+							<Button variant="ghost" size="sm" on:click={() => copyLink(privateUrl ?? '')}
+								>Copy</Button
+							>
+							<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
+								>Regen</Button
+							>
+							<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={revokeLink}
+								>Revoke</Button
+							>
+						</div>
+					{:else}
+						<Button variant="ghost" size="sm" disabled={tokenBusy} on:click={generateLink}
+							>{tokenBusy ? 'Creating…' : 'Create private link'}</Button
+						>
+					{/if}
+				</div>
+			</div>
+		</Card>
+
+		<Card variant="panel">
+			<div class="card-head">
+				<span class="card-icon" aria-hidden="true">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						><path d="M4 6h16M4 12h10M4 18h14" /></svg
+					>
+				</span>
+				<h2 class="card-title">Content</h2>
+				<span class="step-meta">{selectedSummary}</span>
+			</div>
+			<PortfolioLibraryPicker
+				{skills}
+				{projects}
+				{experiences}
+				{educations}
+				{certifications}
+				{languages}
+				bind:selectedSkills
+				bind:selectedProjects
+				bind:selectedExperience
+				bind:selectedEducation
+				bind:selectedCertifications
+				bind:selectedLanguages
+				bind:showSkills
+				bind:showProjects
+				bind:showExperience
+				bind:showEducation
+				bind:showCertifications
+				bind:showLanguages
+				bind:showPosts
+				bind:skillsTitle
+				bind:projectsTitle
+				bind:experienceTitle
+				bind:educationTitle
+				bind:certificationsTitle
+				bind:languagesTitle
+				bind:postsTitle
+				title="Choose what visitors will see"
+				hint="Turn sections on or off, then pick items. Writing is an on/off link to your Blog — manage posts there."
+			/>
+		</Card>
+
+		<div class="actions sticky" role="region" aria-label="Portfolio actions">
+			<div class="dock">
+				<div class="dock-status" aria-live="polite">
+					<span class="status-chip" class:live={isPublic} class:private={!isPublic}>
+						<span class="status-dot" aria-hidden="true"></span>
+						{isPublic ? 'Public' : 'Private'}
+					</span>
+					{#if isDefault}
+						<span class="status-chip default">Default</span>
+					{/if}
+				</div>
+
+				<div class="dock-toggles" role="group" aria-label="Publishing">
+					<label class="dock-switch" title="Publish this portfolio at your public URL">
+						<input type="checkbox" bind:checked={isPublic} aria-label="Publish publicly" />
+						<span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+						<span class="switch-label">Publish</span>
+					</label>
+					<label class="dock-switch" title="Show this portfolio at /u/your-handle">
+						<input type="checkbox" bind:checked={isDefault} aria-label="Default portfolio" />
+						<span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+						<span class="switch-label">Default</span>
+					</label>
+				</div>
+
+				<div class="dock-actions">
+					<button type="button" class="dock-danger" on:click={remove}>Delete</button>
+					<Button variant="ghost" size="sm" on:click={() => goto('/portfolios')}>Back</Button>
+					<Button disabled={saving} on:click={save}>{saving ? 'Saving…' : 'Save'}</Button>
+				</div>
+			</div>
 		</div>
 	</EditorWithPortfolioPreview>
 {/if}
@@ -579,30 +685,57 @@
 		margin: 0 0 var(--space-3);
 		font-size: 0.8125rem;
 	}
-	.block {
-		margin: 0;
-	}
-	.block summary {
-		cursor: pointer;
-		font-weight: 600;
-		font-size: 0.9375rem;
+	.card-head {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
-		margin-bottom: 0;
-	}
-	.block[open] summary {
 		margin-bottom: var(--space-3);
+	}
+	.card-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border);
+		background: var(--color-bg);
+		color: var(--color-muted);
+		flex-shrink: 0;
+	}
+	.card-title {
+		margin: 0;
+		font-size: 0.9375rem;
+		font-weight: 600;
 	}
 	.step-meta {
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--color-muted);
+		margin-left: auto;
 	}
 	.fields {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-3);
+		align-items: start;
+	}
+	.slug-field {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	.url-hint {
+		margin: 0;
+		font-size: 0.75rem;
+		font-family: ui-monospace, monospace;
+		color: var(--color-muted);
+		line-height: 1.35;
 	}
 	.summary-section {
 		display: flex;
@@ -613,10 +746,63 @@
 		border-radius: var(--radius);
 		background: var(--color-bg);
 	}
+	.summary-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+	}
 	.summary-title {
 		margin: 0;
 		font-size: 0.8125rem;
 		font-weight: 600;
+	}
+	.seg {
+		display: inline-flex;
+		padding: 0.15rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		gap: 0.15rem;
+	}
+	.seg-btn {
+		border: 0;
+		background: transparent;
+		color: var(--color-muted);
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.35rem 0.65rem;
+		border-radius: calc(var(--radius) - 2px);
+		cursor: pointer;
+		line-height: 1.2;
+	}
+	.seg-btn.active {
+		background: var(--color-bg);
+		color: var(--color-text, inherit);
+		box-shadow: var(--shadow-xs);
+	}
+	.seg-btn:hover:not(.active) {
+		color: var(--color-text, inherit);
+	}
+	.basics-preview,
+	.custom-summary {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+	.preview-headline {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.35;
+	}
+	.preview-bio {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-muted);
+		line-height: 1.45;
 	}
 	.summary-using {
 		margin: 0;
@@ -624,33 +810,14 @@
 		color: var(--color-muted);
 		line-height: 1.45;
 	}
-	.summary-actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2) var(--space-3);
-	}
 	.summary-link {
 		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-primary);
 		text-decoration: none;
+		align-self: flex-start;
 	}
 	.summary-link:hover {
-		text-decoration: underline;
-	}
-	.linkish {
-		border: 0;
-		background: none;
-		padding: 0;
-		font: inherit;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-primary);
-		cursor: pointer;
-		text-align: left;
-	}
-	.linkish:hover {
 		text-decoration: underline;
 	}
 	.field {
@@ -673,6 +840,38 @@
 		font-size: 0.75rem;
 		color: var(--color-muted);
 	}
+	.hint a {
+		color: var(--color-primary);
+		font-weight: 600;
+		text-decoration: none;
+	}
+	.hint a:hover {
+		text-decoration: underline;
+	}
+	.share-body {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: var(--space-3) var(--space-4);
+	}
+	.share-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+	.share-resume {
+		flex: 0 0 auto;
+		width: min(14rem, 100%);
+	}
+	.share-link {
+		flex: 1 1 16rem;
+		min-width: 0;
+	}
+	.resume-select {
+		width: 100%;
+		max-width: 14rem;
+	}
 	.link-row {
 		display: flex;
 		flex-wrap: wrap;
@@ -687,37 +886,187 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
 		word-break: break-all;
-	}
-	.toggles {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2) var(--space-4);
-	}
-	.checkbox {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-size: 0.8125rem;
-	}
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-		margin-top: var(--space-3);
+		flex: 1;
+		min-width: 0;
 	}
 	.actions.sticky {
 		position: sticky;
 		bottom: 0;
-		z-index: 5;
+		z-index: 8;
 		margin-top: var(--space-4);
-		padding: var(--space-3) 0 var(--space-1);
+		padding: var(--space-3) 0 0.35rem;
 		background: linear-gradient(
 			to top,
-			var(--color-bg) 70%,
+			var(--color-bg) 55%,
 			color-mix(in srgb, var(--color-bg) 0%, transparent)
 		);
 	}
+	.dock {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1rem;
+		padding: 0.65rem 0.85rem;
+		border: 1px solid var(--color-border);
+		border-radius: calc(var(--radius) + 4px);
+		background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 -4px 24px color-mix(in srgb, var(--color-text) 6%, transparent);
+	}
+	.dock-status {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.status-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 650;
+		border: 1px solid var(--color-border);
+		background: var(--color-bg, var(--color-surface));
+		color: var(--color-muted);
+	}
+	.status-chip.live {
+		color: color-mix(in srgb, #15803d 80%, var(--color-text));
+		border-color: color-mix(in srgb, #15803d 35%, var(--color-border));
+		background: color-mix(in srgb, #15803d 10%, var(--color-surface));
+	}
+	.status-chip.private {
+		color: var(--color-muted);
+	}
+	.status-chip.default {
+		color: var(--color-primary);
+		border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+		background: color-mix(in srgb, var(--color-primary-light) 70%, var(--color-surface));
+	}
+	.status-dot {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.status-chip.live .status-dot {
+		box-shadow: 0 0 0 3px color-mix(in srgb, #15803d 22%, transparent);
+	}
+	.dock-toggles {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.65rem 0.85rem;
+		margin-right: auto;
+	}
+	.dock-switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		cursor: pointer;
+		user-select: none;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-text);
+	}
+	.dock-switch input {
+		position: absolute;
+		opacity: 0;
+		width: 1px;
+		height: 1px;
+		pointer-events: none;
+	}
+	.switch-track {
+		position: relative;
+		width: 2.1rem;
+		height: 1.2rem;
+		border-radius: 999px;
+		background: var(--color-border);
+		transition: background 0.15s ease;
+		flex-shrink: 0;
+	}
+	.switch-thumb {
+		position: absolute;
+		top: 0.15rem;
+		left: 0.15rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 50%;
+		background: #fff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+		transition: transform 0.15s ease;
+	}
+	.dock-switch input:checked + .switch-track {
+		background: var(--color-primary);
+	}
+	.dock-switch input:checked + .switch-track .switch-thumb {
+		transform: translateX(0.9rem);
+	}
+	.dock-switch input:focus-visible + .switch-track {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+	.switch-label {
+		white-space: nowrap;
+	}
+	.dock-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.45rem;
+		margin-left: auto;
+	}
+	.dock-danger {
+		border: 0;
+		background: transparent;
+		padding: 0.35rem 0.55rem;
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-muted);
+		cursor: pointer;
+		border-radius: var(--radius);
+	}
+	.dock-danger:hover {
+		color: #b91c1c;
+		background: color-mix(in srgb, #b91c1c 8%, transparent);
+	}
 	:global(.card + .card) {
 		margin-top: var(--space-3);
+	}
+	@media (max-width: 640px) {
+		.row {
+			grid-template-columns: 1fr;
+		}
+		.summary-head {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.seg {
+			width: 100%;
+		}
+		.seg-btn {
+			flex: 1;
+			text-align: center;
+		}
+		.dock {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.dock-toggles,
+		.dock-actions {
+			margin: 0;
+			width: 100%;
+			justify-content: space-between;
+		}
+		.dock-actions :global(button.primary) {
+			flex: 1;
+		}
+		.share-resume,
+		.resume-select {
+			width: 100%;
+			max-width: none;
+		}
 	}
 </style>

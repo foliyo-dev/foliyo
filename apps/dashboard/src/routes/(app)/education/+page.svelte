@@ -91,7 +91,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit education' : 'Education'}
 		description="Degrees and schools — list order is how they appear on folios and resumes."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add education</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedEducation}
@@ -107,12 +113,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add education</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<ContentFormCard title={$editingId ? 'Edit education' : 'Add education'}>
@@ -170,9 +170,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
-	}
 	.row {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

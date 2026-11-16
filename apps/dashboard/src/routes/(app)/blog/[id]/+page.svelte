@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import PostBodyEditor from '$lib/components/blog/PostBodyEditor.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import {
+		libraryPreviewChrome,
+		setLibraryPreviewChrome
+	} from '$lib/stores/libraryPreviewChrome';
 	import {
 		getPost,
 		listPosts,
@@ -42,7 +46,6 @@
 	let saving = $state(false);
 	let uploading = $state(false);
 	let post = $state<BlogPost | null>(null);
-	let previewHidden = $state(false);
 	let mobilePreviewOpen = $state(false);
 	let detailsOpen = $state(true);
 	let themeSlug = $state('minimal');
@@ -170,6 +173,7 @@
 			}
 			post = loaded;
 			fillForm(loaded);
+			registerPreviewChrome();
 		} catch {
 			showToast('Failed to load post', 'error');
 			goto('/blog');
@@ -178,7 +182,50 @@
 		}
 	}
 
-	onMount(load);
+	const STORAGE_KEY = 'foliyo.preview.library.hidden';
+	/** Local state — avoid `$libraryPreviewChrome` in `$derived`/`$effect` on this page (wedges updates). */
+	let previewHidden = $state(false);
+	let previewChromeReady = false;
+	let destroyed = false;
+
+	function registerPreviewChrome() {
+		if (destroyed || previewChromeReady) return;
+		let hidden = false;
+		try {
+			hidden = localStorage.getItem(STORAGE_KEY) === '1';
+		} catch {
+			/* ignore */
+		}
+		previewHidden = hidden;
+		setLibraryPreviewChrome({ hidden });
+		previewChromeReady = true;
+	}
+
+	onMount(() => {
+		destroyed = false;
+		void load();
+		const unsub = libraryPreviewChrome.subscribe((chrome) => {
+			if (!chrome || destroyed) return;
+			previewHidden = chrome.hidden;
+			try {
+				localStorage.setItem(STORAGE_KEY, chrome.hidden ? '1' : '0');
+			} catch {
+				/* ignore */
+			}
+		});
+		return () => {
+			destroyed = true;
+			unsub();
+			setLibraryPreviewChrome(null);
+			previewChromeReady = false;
+		};
+	});
+
+	onDestroy(() => {
+		destroyed = true;
+		setLibraryPreviewChrome(null);
+		previewChromeReady = false;
+	});
 
 	function syncSlugFromTitle(e: Event) {
 		const next = (e.currentTarget as HTMLInputElement).value;
@@ -371,26 +418,27 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
+<svelte:head>
+	{#if post}
+		{@html `<style data-foliyo-blog-theme>${themeCss}</style>`}
+	{/if}
+</svelte:head>
+
 {#if loading}
 	<p class="muted">Loading…</p>
 {:else if post}
 	<div class="editor-with-preview" class:preview-hidden={previewHidden}>
 		<div class="editor">
-			<div class="preview-toggle-bar desktop-only">
-				<button type="button" class="toggle" onclick={() => (previewHidden = !previewHidden)}>
-					{previewHidden ? 'Show preview' : 'Hide preview'}
-				</button>
-			</div>
-
-			<div class="title-row">
-				<PageHeader
-					title="Edit post"
-					description="Write visually — content is saved as Markdown and styled by your portfolio theme."
-				/>
-				<span class="status-chip" class:published={status === 'published'}>
-					{status === 'published' ? 'Published' : 'Draft'}
-				</span>
-			</div>
+			<PageHeader
+				title="Edit post"
+				description="Write visually — content is saved as Markdown and styled by your portfolio theme."
+			>
+				{#snippet actions()}
+					<span class="status-chip" class:published={status === 'published'}>
+						{status === 'published' ? 'Published' : 'Draft'}
+					</span>
+				{/snippet}
+			</PageHeader>
 
 			<Card variant="panel">
 				<div class="fields">
@@ -522,7 +570,6 @@
 				</div>
 				<div class="preview-scroll">
 					<div class={themeClass}>
-						{@html `<style>${themeCss}</style>`}
 						{#key coverEpoch}
 							{#if coverPreview}
 								<img class="post-cover post-cover-hero" src={coverPreview} alt="" />
@@ -563,7 +610,6 @@
 				</div>
 				<div class="preview-scroll drawer-scroll">
 					<div class={themeClass}>
-						{@html `<style>${themeCss}</style>`}
 						{#if title.trim()}
 							<header class="hero"><div><h1>{title}</h1></div></header>
 						{/if}
@@ -598,54 +644,6 @@
 	.editor-with-preview.preview-hidden .editor {
 		flex: 1 1 auto;
 		max-width: 44rem;
-	}
-	.preview-toggle-bar {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: var(--space-2);
-	}
-	.toggle {
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		border-radius: var(--radius);
-		padding: 0.25rem 0.65rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-muted);
-		cursor: pointer;
-	}
-	.toggle:hover {
-		border-color: var(--color-primary-muted);
-		color: var(--color-primary);
-		background: var(--color-primary-light);
-	}
-	.title-row {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: var(--space-3);
-		margin-bottom: var(--space-2);
-	}
-	.title-row :global(.page-header) {
-		margin-bottom: 0;
-	}
-	.status-chip {
-		flex-shrink: 0;
-		margin-top: 0.35rem;
-		padding: 0.2rem 0.55rem;
-		border-radius: 999px;
-		font-size: 0.6875rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		border: 1px solid var(--color-border);
-		color: var(--color-muted);
-		background: var(--color-surface);
-	}
-	.status-chip.published {
-		border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-		color: var(--color-primary);
-		background: var(--color-primary-light);
 	}
 	.fields {
 		display: flex;
@@ -834,6 +832,21 @@
 		justify-content: space-between;
 		gap: var(--space-2);
 		flex-shrink: 0;
+	}
+	.toggle {
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius);
+		padding: 0.25rem 0.65rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-muted);
+		cursor: pointer;
+	}
+	.toggle:hover {
+		border-color: var(--color-primary-muted);
+		color: var(--color-primary);
+		background: var(--color-primary-light);
 	}
 	.preview-title {
 		font-size: 0.75rem;

@@ -153,7 +153,7 @@
 	>
 		{#snippet actions()}
 			{#if canBlog}
-				<Button disabled={creating} on:click={newPost}
+				<Button size="sm" disabled={creating} on:click={newPost}
 					>{creating ? 'Creating…' : 'New post'}</Button
 				>
 			{/if}

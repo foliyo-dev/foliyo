@@ -262,7 +262,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit skill' : 'Skills'}
 		description="Confirm suggestions in bulk, then browse your library by category or search — pick what visitors see in each portfolio."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add skill</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedSkills}
@@ -275,12 +281,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add skill</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<Card>
@@ -552,11 +552,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
 	.block {
 		margin-top: 1.25rem;
 	}

@@ -24,6 +24,7 @@ import {
   renderGalleryGridBody,
   renderGlassmorphicBody,
   renderPhotoHeroBody,
+  resolveImage,
 } from "./recipes.js";
 
 const PORTFOLIO_SLUGS = new Set([
@@ -248,6 +249,62 @@ function safeMediaUrl(raw: unknown): string | null {
   if (/^\/uploads\/[a-f0-9]{32}\.(jpe?g|png|webp)$/i.test(s)) return s;
   return null;
 }
+
+function absMediaUrl(raw: string | undefined, siteUrl: string): string | null {
+  const src = safeMediaUrl(raw);
+  if (!src) return null;
+  return src.startsWith("/uploads/") ? `${siteUrl.replace(/\/$/, "")}${src}` : src;
+}
+
+function truncateMeta(text: string, max = 160): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trimEnd()}…`;
+}
+
+function portfolioMetaDescription(data: PublicPortfolio): string | undefined {
+  const headline = displayHeadline(data).trim();
+  if (headline) return truncateMeta(headline);
+  const bio = displayBio(data).trim();
+  if (!bio) return undefined;
+  return truncateMeta(bio);
+}
+
+function portfolioCanonical(data: PublicPortfolio, siteUrl: string): string {
+  const site = siteUrl.replace(/\/$/, "");
+  const handle = encodeURIComponent(data.handle);
+  if (Number(data.portfolio.is_default) === 1) {
+    return `${site}/u/${handle}`;
+  }
+  const slug = String(data.portfolio.slug ?? "").trim();
+  return slug
+    ? `${site}/u/${handle}/${encodeURIComponent(slug)}`
+    : `${site}/u/${handle}`;
+}
+
+function portfolioOgImage(
+  data: PublicPortfolio,
+  themeConfig: ThemeConfig,
+  siteUrl: string,
+): string | undefined {
+  const hero = resolveImage(data, siteUrl, {
+    projectId: themeConfig.content.hero?.image_project_id,
+    url: themeConfig.content.hero?.image_url,
+  });
+  if (hero) return hero;
+  const fromProject = resolveImage(data, siteUrl, { fallbackProject: true });
+  if (fromProject) return fromProject;
+  const avatar = resolveAvatarUrl(
+    data.profile.avatar_url as string | null | undefined,
+    data.profile.email as string | null | undefined,
+    512,
+  );
+  return absMediaUrl(avatar, siteUrl) ?? undefined;
+}
+
+export type DocumentSeoOpts = {
+  robots?: string;
+};
 
 function projectMediaHtml(
   pr: Record<string, unknown>,
@@ -822,11 +879,15 @@ function documentShell(opts: {
   ogImage?: string;
   canonical?: string;
   ogType?: "article" | "website";
+  robots?: string;
 }): string {
   const shellCss = opts.variant === "site" ? SITE_SHELL_CSS : DOCUMENT_SHELL_CSS;
   const mainClass = opts.variant === "document" ? "page resume-page" : "page";
   const description = opts.description?.trim();
   const seoBits: string[] = [];
+  if (opts.robots?.trim()) {
+    seoBits.push(`<meta name="robots" content="${esc(opts.robots.trim())}">`);
+  }
   if (description) {
     seoBits.push(`<meta name="description" content="${esc(description)}">`);
   }
@@ -841,11 +902,21 @@ function documentShell(opts: {
     if (description) {
       seoBits.push(`<meta property="og:description" content="${esc(description)}">`);
     }
+    if (opts.canonical) {
+      seoBits.push(`<meta property="og:url" content="${esc(opts.canonical)}">`);
+    }
     if (opts.ogImage) {
       seoBits.push(`<meta property="og:image" content="${esc(opts.ogImage)}">`);
       seoBits.push(`<meta name="twitter:card" content="summary_large_image">`);
     } else if (description) {
       seoBits.push(`<meta name="twitter:card" content="summary">`);
+    }
+    seoBits.push(`<meta name="twitter:title" content="${opts.title}">`);
+    if (description) {
+      seoBits.push(`<meta name="twitter:description" content="${esc(description)}">`);
+    }
+    if (opts.ogImage) {
+      seoBits.push(`<meta name="twitter:image" content="${esc(opts.ogImage)}">`);
     }
   }
   const seo = seoBits.filter(Boolean).join("\n  ");
@@ -907,7 +978,11 @@ function exoticBody(
   return renderGlassmorphicBody(data, themeConfig, siteUrl, sections);
 }
 
-export function renderPortfolioHtml(data: PublicPortfolio, config: Config): string {
+export function renderPortfolioHtml(
+  data: PublicPortfolio,
+  config: Config,
+  seo: DocumentSeoOpts = {},
+): string {
   const themeConfig = resolveThemeConfig(
     data.portfolio.theme_config,
     data.portfolio.theme_slug,
@@ -957,6 +1032,11 @@ export function renderPortfolioHtml(data: PublicPortfolio, config: Config): stri
     body,
     chrome,
     footer,
+    description: portfolioMetaDescription(data),
+    canonical: portfolioCanonical(data, config.siteUrl),
+    ogType: "website",
+    ogImage: portfolioOgImage(data, themeConfig, config.siteUrl),
+    robots: seo.robots,
   });
 }
 
@@ -964,6 +1044,7 @@ export function renderResumeHtml(
   data: PublicPortfolio,
   resume: ResumeMeta,
   config: Config,
+  seo: DocumentSeoOpts = {},
 ): string {
   const slug = normalizeSlug("resume", resume.theme_slug);
   const css = loadThemeCss("resume", slug);
@@ -989,6 +1070,8 @@ export function renderResumeHtml(
     body: resumeBodyHtml(data, slug, config.siteUrl),
     chrome,
     footer,
+    description: portfolioMetaDescription(data),
+    robots: seo.robots,
   });
 }
 
@@ -1021,12 +1104,6 @@ export type BlogPostPage = {
     tags: string;
   };
 };
-
-function absMediaUrl(raw: string | undefined, siteUrl: string): string | null {
-  const src = safeMediaUrl(raw);
-  if (!src) return null;
-  return src.startsWith("/uploads/") ? `${siteUrl.replace(/\/$/, "")}${src}` : src;
-}
 
 function writingChrome(handle: string, authorName: string, writingLabel = "Writing"): string {
   const h = esc(handle);
@@ -1084,6 +1161,10 @@ export function renderBlogListHtml(
     ? siteNavHtml(portfolio, "posts")
     : writingChrome(data.handle, data.authorName, writingLabel);
 
+  const firstCover = data.posts
+    .map((p) => absMediaUrl(p.cover_image, site))
+    .find((url): url is string => Boolean(url));
+
   return documentShell({
     title: `${esc(data.authorName)} · ${esc(writingLabel)} · Foliyo`,
     themeClass: `theme-portfolio theme-${portfolio ? normalizeSlug("portfolio", portfolio.portfolio.theme_slug) : "minimal"}`,
@@ -1093,6 +1174,7 @@ export function renderBlogListHtml(
     description: `${writingLabel} by ${data.authorName}`,
     canonical: `${site}/u/${encodeURIComponent(data.handle)}/blog`,
     ogType: "website",
+    ogImage: firstCover,
     body: `<header class="hero"><div><h1>${esc(writingLabel)}</h1><p class="headline">By ${esc(data.authorName)}</p></div></header>
       <section class="section section-posts" id="posts">${items}</section>`,
     footer,
@@ -1134,7 +1216,8 @@ export function renderBlogPostHtml(
     ? `<img class="post-cover post-cover-hero" src="${esc(coverAbs)}" alt="" />`
     : "";
   const canonical = `${site}/u/${encodeURIComponent(data.handle)}/blog/${encodeURIComponent(data.post.slug)}`;
-  const description = data.post.excerpt?.trim() || undefined;
+  const description =
+    data.post.excerpt?.trim() || truncateMeta(String(data.post.title ?? "").trim()) || undefined;
   const topbar = portfolio
     ? siteNavHtml(portfolio, "posts")
     : writingChrome(data.handle, data.authorName, writingLabel);

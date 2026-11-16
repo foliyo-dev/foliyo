@@ -5,7 +5,6 @@
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import ThemeLayoutPanel from '$lib/components/portfolio/ThemeLayoutPanel.svelte';
@@ -393,60 +392,6 @@
 	$: showExposureWarning = !!publicDefault && hasOtherPublic;
 </script>
 
-<PageHeader
-	title="Portfolios"
-	description="Public presentations of your library. Choose what visitors will see — default portfolio powers /u/your-handle."
-/>
-
-{#if showWelcome}
-	<div class="welcome-banner" role="status">
-		<div>
-			<strong>
-				{#if $user?.handle}
-					You’re live at /u/{$user.handle}
-				{:else}
-					You’re in — create your first portfolio
-				{/if}
-			</strong>
-			<p>
-				{#if items.length === 0}
-					Name it, pick a theme, choose what visitors will see, then publish when you’re ready.
-				{:else}
-					Publish or polish a portfolio so visitors have somewhere to land.
-				{/if}
-			</p>
-		</div>
-		<button type="button" class="welcome-dismiss" on:click={dismissWelcome}>Dismiss</button>
-	</div>
-{/if}
-
-{#if showExposureWarning}
-	<div class="exposure-banner" role="status">
-		<strong>Your default portfolio is public</strong>
-		<p>
-			Anyone who shortens one of your other portfolio links down to <code
-				>/u/{$user?.handle ?? 'you'}</code
-			> will land on “{publicDefault?.name}” instead. If a specific link (e.g. for a client) should
-			stay separate, either keep the default private or share a <em>private link</em> for that portfolio
-			from its edit page instead of its public URL.
-		</p>
-	</div>
-{/if}
-
-{#if atLimit}
-	<UpgradePrompt
-		title={overLimit ? 'Pro expired — over Free portfolio limit' : 'Portfolio limit reached'}
-		message={overLimit
-			? `Free includes ${FREE_PORTFOLIO_LIMIT} portfolio. Your ${items.length} portfolios stay live and editable — delete extras or renew Pro to create more.`
-			: `Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
-		pricing={planPricing}
-		billingAvailable={billingAvailable}
-		on:upgraded={() => {
-			pro = true;
-		}}
-	/>
-{/if}
-
 <EditorWithPortfolioPreview
 	portfolioId={showCreateForm ? null : previewingId}
 	draft={createDraft}
@@ -455,6 +400,66 @@
 		: previewPortfolio?.name ?? 'Portfolio'}
 	liveUrl={showCreateForm ? null : previewLiveUrl}
 >
+	<PageHeader
+		title="Portfolios"
+		description="Public presentations of your library. Choose what visitors will see — default portfolio powers /u/your-handle."
+	>
+		{#snippet actions()}
+			{#if !atLimit && !showCreateForm}
+				<Button size="sm" on:click={openCreate}>New portfolio</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
+
+	{#if showWelcome}
+		<div class="welcome-banner" role="status">
+			<div>
+				<strong>
+					{#if $user?.handle}
+						You’re live at /u/{$user.handle}
+					{:else}
+						You’re in — create your first portfolio
+					{/if}
+				</strong>
+				<p>
+					{#if items.length === 0}
+						Name it, pick a theme, choose what visitors will see, then publish when you’re ready.
+					{:else}
+						Publish or polish a portfolio so visitors have somewhere to land.
+					{/if}
+				</p>
+			</div>
+			<button type="button" class="welcome-dismiss" on:click={dismissWelcome}>Dismiss</button>
+		</div>
+	{/if}
+
+	{#if showExposureWarning}
+		<div class="exposure-banner" role="status">
+			<strong>Your default portfolio is public</strong>
+			<p>
+				Anyone who shortens one of your other portfolio links down to <code
+					>/u/{$user?.handle ?? 'you'}</code
+				> will land on “{publicDefault?.name}” instead. If a specific link (e.g. for a client) should
+				stay separate, either keep the default private or share a <em>private link</em> for that portfolio
+				from its edit page instead of its public URL.
+			</p>
+		</div>
+	{/if}
+
+	{#if atLimit}
+		<UpgradePrompt
+			title={overLimit ? 'Pro expired — over Free portfolio limit' : 'Portfolio limit reached'}
+			message={overLimit
+				? `Free includes ${FREE_PORTFOLIO_LIMIT} portfolio. Your ${items.length} portfolios stay live and editable — delete extras or renew Pro to create more.`
+				: `Free plan includes ${FREE_PORTFOLIO_LIMIT} portfolio. Upgrade to Pro for unlimited portfolios (different audiences, roles, or themes).`}
+			pricing={planPricing}
+			billingAvailable={billingAvailable}
+			on:upgraded={() => {
+				pro = true;
+			}}
+		/>
+	{/if}
+
 	{#if loading}
 		<p class="muted">Loading…</p>
 	{:else if items.length === 0}
@@ -510,11 +515,7 @@
 	{/if}
 
 	{#if !atLimit}
-		{#if !showCreateForm}
-			<div class="create-cta">
-				<Button on:click={openCreate}>New portfolio</Button>
-			</div>
-		{:else}
+		{#if showCreateForm}
 			<div class="create-wrap previewing">
 			<Card variant="panel">
 				<div class="create-head">
@@ -531,21 +532,24 @@
 				</div>
 
 				<details class="step" open>
-					<summary>1. Details</summary>
+					<summary>1. Identity</summary>
 					<div class="fields">
-						<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
-						<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
-						<ThemeLayoutPanel bind:themeSlug bind:themeConfig />
-						<label class="checkbox">
-							<input type="checkbox" bind:checked={isPublic} />
-							Publish publicly
-						</label>
+						<div class="id-row">
+							<Input label="Name" bind:value={name} placeholder="Backend engineer folio" />
+							<div class="slug-field">
+								<Input label="Slug" bind:value={slug} on:input={() => (slugTouched = true)} />
+								<p class="url-hint">
+									/u/{$user?.handle ?? 'you'}/{slug.trim() || '…'}
+								</p>
+							</div>
+						</div>
 					</div>
 				</details>
 
 				<details class="step" open>
-					<summary>2. Storytelling</summary>
+					<summary>2. Look</summary>
 					<div class="fields">
+						<ThemeLayoutPanel bind:themeSlug bind:themeConfig />
 						<StorytellingPanel
 							bind:projectsLayout
 							bind:showSkillLevels
@@ -559,7 +563,7 @@
 
 				<details class="step" open>
 					<summary>
-						3. What visitors will see
+						3. Content
 						<span class="step-meta">{selectedSummary}</span>
 					</summary>
 					<PortfolioLibraryPicker
@@ -594,10 +598,23 @@
 					/>
 				</details>
 
-				<div class="form-actions">
-					<Button disabled={creating} on:click={add}
-						>{creating ? 'Creating…' : 'Create portfolio'}</Button
-					>
+				<div class="form-actions sticky-actions" role="region" aria-label="Create portfolio">
+					<div class="dock">
+						<span class="status-chip" class:live={isPublic} class:private={!isPublic}>
+							<span class="status-dot" aria-hidden="true"></span>
+							{isPublic ? 'Public' : 'Private'}
+						</span>
+						<label class="dock-switch" title="Publish this portfolio at your public URL">
+							<input type="checkbox" bind:checked={isPublic} aria-label="Publish publicly" />
+							<span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+							<span class="switch-label">Publish</span>
+						</label>
+						<div class="dock-actions">
+							<Button disabled={creating} on:click={add}
+								>{creating ? 'Creating…' : 'Create portfolio'}</Button
+							>
+						</div>
+					</div>
 				</div>
 			</Card>
 			</div>
@@ -621,9 +638,6 @@
 		align-items: center;
 		gap: var(--space-3);
 		margin-bottom: var(--space-3);
-	}
-	.create-cta {
-		margin-top: var(--space-4);
 	}
 	.step {
 		border: 1px solid var(--color-border);
@@ -654,30 +668,130 @@
 		gap: var(--space-3);
 		margin-bottom: var(--space-1);
 	}
-	.field {
+	.id-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-3);
+		align-items: start;
+	}
+	.slug-field {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-1);
 	}
-	.label {
-		font-size: 0.8125rem;
-		font-weight: 500;
+	.url-hint {
+		margin: 0;
+		font-size: 0.75rem;
+		font-family: ui-monospace, monospace;
+		color: var(--color-muted);
+		line-height: 1.35;
 	}
-	select {
-		min-height: var(--control-height);
-		padding: 0 var(--space-3);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		background: var(--color-surface);
-	}
-	.checkbox {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-size: 0.8125rem;
-	}
-	.form-actions {
+	.form-actions.sticky-actions {
+		position: sticky;
+		bottom: 0;
+		z-index: 8;
 		margin-top: var(--space-4);
+		padding: var(--space-3) 0 0.35rem;
+		background: linear-gradient(
+			to top,
+			var(--color-bg) 55%,
+			color-mix(in srgb, var(--color-bg) 0%, transparent)
+		);
+	}
+	.dock {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1rem;
+		width: 100%;
+		padding: 0.65rem 0.85rem;
+		border: 1px solid var(--color-border);
+		border-radius: calc(var(--radius) + 4px);
+		background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 -4px 24px color-mix(in srgb, var(--color-text) 6%, transparent);
+		box-sizing: border-box;
+	}
+	.status-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 650;
+		border: 1px solid var(--color-border);
+		background: var(--color-bg, var(--color-surface));
+		color: var(--color-muted);
+	}
+	.status-chip.live {
+		color: color-mix(in srgb, #15803d 80%, var(--color-text));
+		border-color: color-mix(in srgb, #15803d 35%, var(--color-border));
+		background: color-mix(in srgb, #15803d 10%, var(--color-surface));
+	}
+	.status-dot {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.status-chip.live .status-dot {
+		box-shadow: 0 0 0 3px color-mix(in srgb, #15803d 22%, transparent);
+	}
+	.dock-switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		cursor: pointer;
+		user-select: none;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-text);
+		margin-right: auto;
+	}
+	.dock-switch input {
+		position: absolute;
+		opacity: 0;
+		width: 1px;
+		height: 1px;
+		pointer-events: none;
+	}
+	.switch-track {
+		position: relative;
+		width: 2.1rem;
+		height: 1.2rem;
+		border-radius: 999px;
+		background: var(--color-border);
+		transition: background 0.15s ease;
+		flex-shrink: 0;
+	}
+	.switch-thumb {
+		position: absolute;
+		top: 0.15rem;
+		left: 0.15rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 50%;
+		background: #fff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+		transition: transform 0.15s ease;
+	}
+	.dock-switch input:checked + .switch-track {
+		background: var(--color-primary);
+	}
+	.dock-switch input:checked + .switch-track .switch-thumb {
+		transform: translateX(0.9rem);
+	}
+	.dock-switch input:focus-visible + .switch-track {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+	.switch-label {
+		white-space: nowrap;
+	}
+	.dock-actions {
+		display: flex;
+		margin-left: auto;
 	}
 	.muted {
 		color: var(--color-muted);
@@ -823,6 +937,9 @@
 		}
 		.welcome-dismiss {
 			align-self: flex-end;
+		}
+		.id-row {
+			grid-template-columns: 1fr;
 		}
 		.actions {
 			width: 100%;

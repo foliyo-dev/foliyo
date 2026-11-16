@@ -351,6 +351,7 @@
 	}
 </script>
 
+<div class="settings-page">
 <PageHeader title="Settings" description="Account, plan, billing, and privacy." />
 
 {#if loading}
@@ -661,8 +662,13 @@
 	{/if}
 	</div>
 {/if}
+</div>
 
 <style>
+	.settings-page {
+		max-width: 40rem;
+		min-height: 100%;
+	}
 	.settings-stack {
 		display: flex;
 		flex-direction: column;

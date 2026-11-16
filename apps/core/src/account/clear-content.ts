@@ -17,6 +17,7 @@ export type ClearContentCounts = {
   blog_posts: number;
   job_analyses: number;
   import_snapshots: number;
+  media_assets: number;
   profile_reset: boolean;
 };
 
@@ -56,6 +57,7 @@ export async function clearUserContent(
     blog_posts: await count("blog_posts"),
     job_analyses: await count("job_analyses"),
     import_snapshots: await count("import_snapshots"),
+    media_assets: await count("media_assets"),
     profile_reset: resetProfile,
   };
 
@@ -73,6 +75,8 @@ export async function clearUserContent(
   await run(db, "DELETE FROM languages WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM social_links WHERE user_id = ?", [userId]);
   await run(db, "DELETE FROM import_snapshots WHERE user_id = ?", [userId]);
+  // Storage blobs are intentionally left on disk (no GC).
+  await run(db, "DELETE FROM media_assets WHERE user_id = ?", [userId]);
 
   if (resetProfile) {
     await run(

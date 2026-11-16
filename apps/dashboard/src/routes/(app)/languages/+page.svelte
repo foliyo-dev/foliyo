@@ -66,7 +66,13 @@
 	<PageHeader
 		title={$editingId ? 'Edit language' : 'Languages'}
 		description="Spoken and written languages for your public profile and resume."
-	/>
+	>
+		{#snippet actions()}
+			{#if !$formOpen}
+				<Button size="sm" on:click={crud.openAdd}>+ Add language</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 	<RecentlyDeleted
 		bind:this={trash}
 		listDeleted={listDeletedLanguages}
@@ -79,12 +85,6 @@
 			await shell?.refreshPreview();
 		}}
 	/>
-
-	{#if !$formOpen}
-		<div class="toolbar">
-			<Button on:click={crud.openAdd}>+ Add language</Button>
-		</div>
-	{/if}
 
 	{#if $formOpen}
 		<ContentFormCard title={$editingId ? 'Edit language' : 'Add language'}>
@@ -123,9 +123,6 @@
 </EditorWithPreview>
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
-	}
 	.field {
 		display: flex;
 		flex-direction: column;

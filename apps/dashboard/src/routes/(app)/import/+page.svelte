@@ -489,6 +489,7 @@
 
 </script>
 
+<div class="library-page">
 <PageHeader
 	title="Import resume"
 	description={isSaas
@@ -938,8 +939,13 @@
 		</Card>
 	{/if}
 {/if}
+</div>
 
 <style>
+	.library-page {
+		max-width: 40rem;
+		min-height: 100%;
+	}
 	.muted {
 		color: var(--color-muted);
 		margin: 0;

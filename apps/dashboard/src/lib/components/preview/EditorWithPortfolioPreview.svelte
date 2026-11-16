@@ -1,8 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import PortfolioPreview from './PortfolioPreview.svelte';
 	import type { PortfolioDraftPreview } from '$lib/api/preview';
+	import {
+		libraryPreviewChrome,
+		setLibraryPreviewChrome
+	} from '$lib/stores/libraryPreviewChrome';
 
 	type Props = {
 		portfolioId?: string | null;
@@ -24,37 +28,54 @@
 
 	let preview: PortfolioPreview | undefined = $state();
 	let root: HTMLDivElement | undefined = $state();
-	let previewHidden = $state(false);
+
+	const previewHidden = $derived($libraryPreviewChrome?.hidden ?? false);
 
 	onMount(() => {
+		let hidden = false;
 		try {
-			previewHidden = localStorage.getItem(STORAGE_KEY) === '1';
+			hidden = localStorage.getItem(STORAGE_KEY) === '1';
+		} catch {
+			/* ignore */
+		}
+		setLibraryPreviewChrome({ hidden });
+	});
+
+	$effect(() => {
+		const chrome = $libraryPreviewChrome;
+		if (!chrome) return;
+		try {
+			localStorage.setItem(STORAGE_KEY, chrome.hidden ? '1' : '0');
 		} catch {
 			/* ignore */
 		}
 	});
 
-	function togglePreview() {
-		previewHidden = !previewHidden;
-		try {
-			localStorage.setItem(STORAGE_KEY, previewHidden ? '1' : '0');
-		} catch {
-			/* ignore */
-		}
-	}
+	onDestroy(() => {
+		setLibraryPreviewChrome(null);
+	});
 
 	export async function refreshPreview(): Promise<void> {
 		await preview?.refresh();
+	}
+
+	/** Scroll the app content pane to the top so the edit form is visible. */
+	export function scrollToForm(): void {
+		let el: HTMLElement | null = root?.parentElement ?? null;
+		while (el) {
+			const { overflowY } = getComputedStyle(el);
+			if (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') {
+				el.scrollTo({ top: 0, behavior: 'smooth' });
+				return;
+			}
+			el = el.parentElement;
+		}
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 </script>
 
 <div class="editor-with-preview" class:preview-hidden={previewHidden} bind:this={root}>
 	<div class="editor">
-		<div class="preview-toggle-bar desktop-only">
-			<button type="button" class="toggle" onclick={togglePreview}>
-				{previewHidden ? 'Show preview' : 'Hide preview'}
-			</button>
-		</div>
 		{#if children}
 			{@render children()}
 		{/if}
@@ -91,34 +112,11 @@
 		min-width: 0;
 		max-width: none;
 	}
-	.preview-toggle-bar {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: var(--space-2);
-	}
-	.toggle {
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		border-radius: var(--radius);
-		padding: 0.25rem 0.65rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-muted);
-		cursor: pointer;
-	}
-	.toggle:hover {
-		border-color: var(--color-primary-muted);
-		color: var(--color-primary);
-		background: var(--color-primary-light);
-	}
 
 	@media (max-width: 1099px) {
 		.editor-with-preview {
 			display: block;
 			min-height: 0;
-		}
-		.desktop-only {
-			display: none;
 		}
 	}
 </style>
