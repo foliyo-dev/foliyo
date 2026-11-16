@@ -356,7 +356,6 @@ export async function runJobAnalyze(
   const baseline = await resolveBaseline(db, userId, input.resumeId, input.portfolioId);
   const baselineSkillSet = new Set(baseline.content.skill_ids);
   const baselineProjectSet = new Set(baseline.content.project_ids);
-  const baselineExperienceSet = new Set(baseline.content.experience_ids);
 
   const matches: SkillMatch[] = resolvedReqs.map(({ requirement, skill, matchType }) => {
     const evidence = skill ? (evidenceBySkill.get(skill.id) ?? []) : [];
@@ -435,11 +434,13 @@ export async function runJobAnalyze(
   );
   for (const p of projects) {
     const tags = parseTags(p.skills_developed).map((t) => normalizeSkillKey(t));
-    if (!tags.some((t) => matchedCanonical.has(t))) continue;
+    const matchesJd = tags.some((t) => matchedCanonical.has(t));
+    // Baseline projects stay on the tailored resume even without JD tag overlap.
     if (baselineProjectSet.has(p.id)) {
       keepProjectIds.push(p.id);
       continue;
     }
+    if (!matchesJd) continue;
     proposed_changes.push({
       id: `add_project:${p.id}`,
       action: "add_project",
@@ -451,32 +452,14 @@ export async function runJobAnalyze(
     });
   }
 
-  const experiences = await queryAll<{
-    id: string;
-    company: string;
-    role: string;
-    skills_developed: string;
-  }>(
+  // Experience always attaches on tailored resumes (like education); no tag gate.
+  const experiences = await queryAll<{ id: string }>(
     db,
-    "SELECT id, company, role, skills_developed FROM experience WHERE user_id = ? AND deleted_at IS NULL",
+    "SELECT id FROM experience WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
     [userId],
   );
   for (const e of experiences) {
-    const tags = parseTags(e.skills_developed).map((t) => normalizeSkillKey(t));
-    if (!tags.some((t) => matchedCanonical.has(t))) continue;
-    if (baselineExperienceSet.has(e.id)) {
-      keepExperienceIds.push(e.id);
-      continue;
-    }
-    proposed_changes.push({
-      id: `add_experience:${e.id}`,
-      action: "add_experience",
-      label: `${e.role} — ${e.company}`,
-      detail: "Role tagged with skills this JD asks for.",
-      entity_id: e.id,
-      entity_type: "experience",
-      default_accepted: true,
-    });
+    keepExperienceIds.push(e.id);
   }
 
   const confirmedById = new Map(confirmed.map((s) => [s.id, s]));

@@ -40,7 +40,6 @@ export async function computeTailorSelection(
   );
 
   let project_ids: string[] = [];
-  let experience_ids: string[] = [];
 
   if (includeMatching && skillKeys.size > 0) {
     const projects = await queryAll<{ id: string; skills_developed: string }>(
@@ -53,19 +52,16 @@ export async function computeTailorSelection(
         parseTags(p.skills_developed).some((t) => skillKeys.has(normalizeSkillKey(t))),
       )
       .map((p) => p.id);
-
-    const experiences = await queryAll<{ id: string; skills_developed: string }>(
-      db,
-      "SELECT id, skills_developed FROM experience WHERE user_id = ? AND deleted_at IS NULL",
-      [userId],
-    );
-    experience_ids = experiences
-      .filter((e) =>
-        parseTags(e.skills_developed).some((t) => skillKeys.has(normalizeSkillKey(t))),
-      )
-      .map((e) => e.id);
   }
 
+  // Career history + credentials always attach (projects stay JD/skill-tag gated).
+  const experience_ids = (
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM experience WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
+      [userId],
+    )
+  ).map((r) => r.id);
   const education_ids = (
     await queryAll<{ id: string }>(
       db,
@@ -100,7 +96,7 @@ export async function computeTailorSelection(
 
 /**
  * Apply a user-reviewed change-set. Only confirmed Library IDs are kept.
- * Education / certifications / languages are always included (same as auto-tailor).
+ * Experience / education / certifications / languages are always included (same as auto-tailor).
  */
 export async function computeApprovedSelection(
   db: FoliyoDb,
@@ -114,36 +110,44 @@ export async function computeApprovedSelection(
   const owned = await filterOwnedContent(db, userId, {
     skill_ids: approved.skill_ids,
     project_ids: approved.project_ids ?? [],
-    experience_ids: approved.experience_ids ?? [],
+    experience_ids: [],
     education_ids: [],
     certification_ids: [],
     language_ids: [],
   });
 
+  const experience_ids = (
+    await queryAll<{ id: string }>(
+      db,
+      "SELECT id FROM experience WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
+      [userId],
+    )
+  ).map((r) => r.id);
   const education_ids = (
     await queryAll<{ id: string }>(
       db,
-      "SELECT id FROM education WHERE user_id = ? AND deleted_at IS NULL",
+      "SELECT id FROM education WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
       [userId],
     )
   ).map((r) => r.id);
   const certification_ids = (
     await queryAll<{ id: string }>(
       db,
-      "SELECT id FROM certifications WHERE user_id = ? AND deleted_at IS NULL",
+      "SELECT id FROM certifications WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
       [userId],
     )
   ).map((r) => r.id);
   const language_ids = (
     await queryAll<{ id: string }>(
       db,
-      "SELECT id FROM languages WHERE user_id = ? AND deleted_at IS NULL",
+      "SELECT id FROM languages WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, id",
       [userId],
     )
   ).map((r) => r.id);
 
   return {
     ...owned,
+    experience_ids,
     education_ids,
     certification_ids,
     language_ids,
