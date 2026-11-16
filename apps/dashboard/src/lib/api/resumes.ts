@@ -3,6 +3,23 @@ import { get } from 'svelte/store';
 import { accessToken } from '$lib/stores/token';
 import { corePublicUrl } from './portfolios';
 
+export type ResumeSectionKey =
+	| 'skills'
+	| 'projects'
+	| 'experience'
+	| 'education'
+	| 'certifications'
+	| 'languages';
+
+export const DEFAULT_RESUME_SECTION_ORDER: ResumeSectionKey[] = [
+	'skills',
+	'projects',
+	'experience',
+	'education',
+	'certifications',
+	'languages'
+];
+
 export type Resume = {
 	id: string;
 	portfolio_id: string | null;
@@ -13,6 +30,7 @@ export type Resume = {
 	view_count: number;
 	headline?: string;
 	bio?: string;
+	section_order?: ResumeSectionKey[];
 };
 
 export type ResumeContent = {
@@ -28,8 +46,15 @@ export const listResumes = () => api<Resume[]>('/resumes');
 export const createResume = (
 	data: Partial<Resume> & { content?: ResumeContent; portfolio_id?: string | null }
 ) => api<Resume[]>('/resumes', { method: 'POST', body: JSON.stringify(data) });
-export const updateResume = (id: string, data: Partial<Resume>) =>
-	api<{ ok: boolean }>(`/resumes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const updateResume = (
+	id: string,
+	data: Partial<
+		Omit<Resume, 'section_order'> & {
+			section_order?: ResumeSectionKey[];
+			is_public?: number;
+		}
+	>
+) => api<{ ok: boolean }>(`/resumes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteResume = (id: string) => api<void>(`/resumes/${id}`, { method: 'DELETE' });
 export const regenerateResumeToken = (id: string) =>
 	api<{ share_token: string }>(`/resumes/${id}/regenerate-token`, { method: 'POST' });

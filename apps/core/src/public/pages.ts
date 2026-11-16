@@ -11,6 +11,7 @@ import {
   sortIdsByLibraryOrder,
 } from "../content-order.js";
 import { defaultThemeConfig, serializeThemeConfig } from "../spec/theme-config.js";
+import { normalizeResumeSectionOrder } from "../resume/section-order.js";
 import { renderPortfolioHtml } from "./themes.js";
 
 export type PublicPortfolio = {
@@ -251,6 +252,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
     portfolio_id: string | null;
     headline: string | null;
     bio: string | null;
+    section_order: string | null;
   }>(db, "SELECT * FROM resumes WHERE id = ?", [resumeId]);
   if (!resume) return null;
 
@@ -268,12 +270,14 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
 
   const resumeHeadline = String(resume.headline ?? "").trim();
   const resumeBio = String(resume.bio ?? "").trim();
+  const sectionOrder = normalizeResumeSectionOrder(resume.section_order);
 
   const portfolioShell: Record<string, unknown> = portfolio
     ? {
         ...portfolio,
         headline: resumeHeadline || String(portfolio.headline ?? ""),
         bio: resumeBio || String(portfolio.bio ?? ""),
+        section_order: sectionOrder,
       }
     : {
         id: `resume-shell-${resume.id}`,
@@ -292,6 +296,7 @@ export async function loadResumeContent(db: FoliyoDb, resumeId: string): Promise
         show_education: 1,
         show_certifications: 1,
         show_languages: 1,
+        section_order: sectionOrder,
       };
 
   return {

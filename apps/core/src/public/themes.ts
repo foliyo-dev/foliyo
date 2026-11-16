@@ -26,6 +26,11 @@ import {
   renderPhotoHeroBody,
   resolveImage,
 } from "./recipes.js";
+import {
+  DEFAULT_RESUME_SECTION_ORDER,
+  normalizeResumeSectionOrder,
+  type ResumeSectionKey,
+} from "../resume/section-order.js";
 
 const PORTFOLIO_SLUGS = new Set([
   "minimal",
@@ -653,13 +658,47 @@ function sparseSectionHtml(mode: "portfolio" | "resume"): string {
   return `<section class="section section-sparse" aria-label="Empty"><p class="muted sparse-copy">${copy}</p></section>`;
 }
 
+function htmlForResumeSection(p: SectionParts, key: ResumeSectionKey): string {
+  switch (key) {
+    case "skills":
+      return p.skillsHtml;
+    case "projects":
+      return p.projectsHtml;
+    case "experience":
+      return p.expHtml;
+    case "education":
+      return p.eduHtml;
+    case "certifications":
+      return p.certHtml;
+    case "languages":
+      return p.langHtml;
+    default:
+      return "";
+  }
+}
+
+function resumeSectionOrder(data: PublicPortfolio): ResumeSectionKey[] {
+  return normalizeResumeSectionOrder(data.portfolio.section_order ?? DEFAULT_RESUME_SECTION_ORDER);
+}
+
+/** Preserve relative user order while filtering to a theme region. */
+function orderWithinRegion(order: ResumeSectionKey[], region: ResumeSectionKey[]): ResumeSectionKey[] {
+  const allow = new Set(region);
+  return order.filter((key) => allow.has(key));
+}
+
 function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume", siteUrl = ""): string {
   const p = sectionParts(data, mode, siteUrl);
-  // Portfolio: work-first (projects before skills). Resume keeps classic CV order.
-  const body =
-    mode === "portfolio"
-      ? `${p.contactHtml}${p.projectsHtml}${p.skillsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`
-      : `${p.contactHtml}${p.skillsHtml}${p.projectsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`;
+  // Portfolio: work-first (projects before skills). Resume honors per-resume section_order.
+  let body: string;
+  if (mode === "portfolio") {
+    body = `${p.contactHtml}${p.projectsHtml}${p.skillsHtml}${p.expHtml}${p.eduHtml}${p.certHtml}${p.langHtml}${p.postsHtml}`;
+  } else {
+    const ordered = resumeSectionOrder(data)
+      .map((key) => htmlForResumeSection(p, key))
+      .join("");
+    body = `${p.contactHtml}${ordered}${p.postsHtml}`;
+  }
   if (mode === "portfolio" && isSparsePortfolio(data) && !body.trim()) {
     return sparseSectionHtml(mode);
   }
@@ -669,6 +708,9 @@ function sectionsHtml(data: PublicPortfolio, mode: "portfolio" | "resume", siteU
   return body;
 }
 
+const SIDEBAR_ASIDE_SECTIONS: ResumeSectionKey[] = ["skills", "languages", "certifications"];
+const SIDEBAR_MAIN_SECTIONS: ResumeSectionKey[] = ["experience", "education", "projects"];
+
 function resumeBodyHtml(data: PublicPortfolio, slug: string, siteUrl = ""): string {
   const hero = heroHtml(data, "resume");
   if (slug !== "sidebar") {
@@ -676,18 +718,21 @@ function resumeBodyHtml(data: PublicPortfolio, slug: string, siteUrl = ""): stri
   }
 
   const p = sectionParts(data, "resume", siteUrl);
+  const order = resumeSectionOrder(data);
+  const asideHtml = orderWithinRegion(order, SIDEBAR_ASIDE_SECTIONS)
+    .map((key) => htmlForResumeSection(p, key))
+    .join("");
+  const mainHtml = orderWithinRegion(order, SIDEBAR_MAIN_SECTIONS)
+    .map((key) => htmlForResumeSection(p, key))
+    .join("");
   return `<div class="resume-sheet">
     <div class="resume-layout">
       <aside class="resume-sidebar">
         ${hero}
-        ${p.skillsHtml}
-        ${p.langHtml}
-        ${p.certHtml}
+        ${asideHtml}
       </aside>
       <div class="resume-main">
-        ${p.expHtml}
-        ${p.eduHtml}
-        ${p.projectsHtml}
+        ${mainHtml}
       </div>
     </div>
   </div>`;

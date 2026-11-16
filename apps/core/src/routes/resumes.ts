@@ -37,6 +37,10 @@ import {
   getResumeContentIds,
   setResumeContent,
 } from "../resume/content.js";
+import {
+  normalizeResumeSectionOrder,
+  serializeResumeSectionOrder,
+} from "../resume/section-order.js";
 import { buildFioFromPortfolio, FIO_MIME } from "../spec/fio.js";
 import {
   buildTailorAnalysis,
@@ -101,6 +105,8 @@ const createResumeSchema = resumeSchema.superRefine((d, ctx) => {
   }
 });
 
+const sectionOrderSchema = z.array(z.string()).optional();
+
 const resumeUpdateSchema = z.object({
   portfolio_id: portfolioIdSchema.optional(),
   name: z.string().min(1).optional(),
@@ -108,6 +114,7 @@ const resumeUpdateSchema = z.object({
   is_public: z.number().int().optional(),
   headline: z.string().max(200).optional(),
   bio: z.string().max(2000).optional(),
+  section_order: sectionOrderSchema,
 });
 
 const approvedSchema = z.object({
@@ -147,8 +154,17 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
 
   r.get("/", async (c) => {
     const userId = c.get("userId");
-    const items = await queryAll(db, "SELECT * FROM resumes WHERE user_id = ? ORDER BY created_at DESC", [userId]);
-    return c.json(items);
+    const items = await queryAll<Record<string, unknown>>(
+      db,
+      "SELECT * FROM resumes WHERE user_id = ? ORDER BY created_at DESC",
+      [userId],
+    );
+    return c.json(
+      items.map((row) => ({
+        ...row,
+        section_order: normalizeResumeSectionOrder(row.section_order),
+      })),
+    );
   });
 
   /**
@@ -238,10 +254,11 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
 
     await setResumeContent(db, resume.id, content);
 
-    const full = await queryOne(db, "SELECT * FROM resumes WHERE id = ? AND user_id = ?", [
-      resume.id,
-      userId,
-    ]);
+    const full = await queryOne<Record<string, unknown>>(
+      db,
+      "SELECT * FROM resumes WHERE id = ? AND user_id = ?",
+      [resume.id, userId],
+    );
 
     const analysis = buildTailorAnalysis({
       confirmed,
@@ -254,7 +271,9 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
 
     return c.json(
       {
-        resume: full,
+        resume: full
+          ? { ...full, section_order: normalizeResumeSectionOrder(full.section_order) }
+          : full,
         content,
         matched_skill_ids: content.skill_ids,
         analysis,
@@ -317,8 +336,18 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
       }
     }
 
-    const items = await queryAll(db, "SELECT * FROM resumes WHERE user_id = ? ORDER BY created_at DESC", [userId]);
-    return c.json(items, 201);
+    const items = await queryAll<Record<string, unknown>>(
+      db,
+      "SELECT * FROM resumes WHERE user_id = ? ORDER BY created_at DESC",
+      [userId],
+    );
+    return c.json(
+      items.map((row) => ({
+        ...row,
+        section_order: normalizeResumeSectionOrder(row.section_order),
+      })),
+      201,
+    );
   });
 
   r.get("/:id/content", async (c) => {
@@ -358,6 +387,9 @@ export function resumesRoutes(db: FoliyoDb, config: Config) {
       if (col === "portfolio_id") return body.data.portfolio_id ?? null;
       if (col === "headline") return String(body.data.headline ?? "").trim();
       if (col === "bio") return String(body.data.bio ?? "").trim();
+      if (col === "section_order") {
+        return serializeResumeSectionOrder(normalizeResumeSectionOrder(body.data.section_order));
+      }
       return (body.data as Record<string, SqlValue>)[col];
     });
     const sets = cols.map((col) => `${col}=?`).join(", ");

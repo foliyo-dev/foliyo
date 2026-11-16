@@ -118,6 +118,22 @@ export async function setResumeContent(
   const certification_ids = await sortIdsByLibraryOrder(db, "certifications", content.certification_ids);
   const language_ids = await sortIdsByLibraryOrder(db, "languages", content.language_ids);
 
+  // When skill_labels is omitted, keep ATS labels for skills that remain on the resume.
+  let skillLabels = content.skill_labels;
+  if (skillLabels === undefined) {
+    const existing = await queryAll<{ skill_id: string; label: string }>(
+      db,
+      "SELECT skill_id, label FROM resume_skills WHERE resume_id = ?",
+      [resumeId],
+    );
+    const keep = new Set(skill_ids);
+    skillLabels = {};
+    for (const row of existing) {
+      const label = (row.label ?? "").trim();
+      if (label && keep.has(row.skill_id)) skillLabels[row.skill_id] = label;
+    }
+  }
+
   await withTransaction(db, async () => {
     await run(db, "DELETE FROM resume_skills WHERE resume_id = ?", [resumeId]);
     await run(db, "DELETE FROM resume_projects WHERE resume_id = ?", [resumeId]);
@@ -127,7 +143,7 @@ export async function setResumeContent(
     await run(db, "DELETE FROM resume_languages WHERE resume_id = ?", [resumeId]);
 
     for (const id of skill_ids) {
-      const label = (content.skill_labels?.[id] ?? "").trim();
+      const label = (skillLabels?.[id] ?? "").trim();
       await run(db, "INSERT INTO resume_skills (resume_id, skill_id, label) VALUES (?, ?, ?)", [
         resumeId,
         id,

@@ -7,24 +7,50 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import EditorWithResumePreview from '$lib/components/preview/EditorWithResumePreview.svelte';
+	import PortfolioLibraryPicker from '$lib/components/portfolio/PortfolioLibraryPicker.svelte';
 	import {
 		listResumes,
 		updateResume,
+		updateResumeContent,
+		getResumeContent,
 		deleteResume,
 		regenerateResumeToken,
 		resumeThemes,
 		resumeShareUrl,
 		downloadResumeFio,
-		type Resume
+		DEFAULT_RESUME_SECTION_ORDER,
+		type Resume,
+		type ResumeSectionKey
 	} from '$lib/api/resumes';
 	import { listPortfolios, type Portfolio } from '$lib/api/portfolios';
 	import { getProfile, type Profile } from '$lib/api/profile';
+	import { listSkills, type Skill } from '$lib/api/skills';
+	import { listProjects, type Project } from '$lib/api/projects';
+	import { listExperience, type Experience } from '$lib/api/experience';
+	import { listEducation, type Education } from '$lib/api/education';
+	import { listCertifications, type Certification } from '$lib/api/certifications';
+	import { listLanguages, type Language } from '$lib/api/languages';
 	import { showToast } from '$lib/stores/toast';
 	import { confirmDelete } from '$lib/stores/confirm';
+
+	const SECTION_LABELS: Record<ResumeSectionKey, string> = {
+		skills: 'Skills',
+		projects: 'Projects',
+		experience: 'Experience',
+		education: 'Education',
+		certifications: 'Certifications',
+		languages: 'Languages'
+	};
 
 	let items: Resume[] = [];
 	let portfolios: Portfolio[] = [];
 	let profile: Profile | null = null;
+	let skills: Skill[] = [];
+	let projects: Project[] = [];
+	let experiences: Experience[] = [];
+	let educations: Education[] = [];
+	let certifications: Certification[] = [];
+	let languages: Language[] = [];
 	let loading = true;
 	let saving = false;
 	let exportingId: string | null = null;
@@ -39,6 +65,13 @@
 	let themeSlug: (typeof resumeThemes)[number] = 'classic';
 	let isPublic = false;
 	let customSummaryOpen = false;
+	let sectionOrder: ResumeSectionKey[] = [...DEFAULT_RESUME_SECTION_ORDER];
+	let selectedSkills = new Set<string>();
+	let selectedProjects = new Set<string>();
+	let selectedExperience = new Set<string>();
+	let selectedEducation = new Set<string>();
+	let selectedCertifications = new Set<string>();
+	let selectedLanguages = new Set<string>();
 
 	$: previewResume = items.find((r) => r.id === previewingId) ?? null;
 	$: hasOwnSummary = Boolean(headline.trim() || bio.trim());
@@ -80,14 +113,26 @@
 	async function load() {
 		loading = true;
 		try {
-			const [resumes, p, prof] = await Promise.all([
+			const [resumes, p, prof, sk, pr, ex, ed, cert, lang] = await Promise.all([
 				listResumes(),
 				listPortfolios(),
-				getProfile().catch(() => null)
+				getProfile().catch(() => null),
+				listSkills('confirmed'),
+				listProjects(),
+				listExperience(),
+				listEducation(),
+				listCertifications(),
+				listLanguages()
 			]);
 			items = resumes;
 			portfolios = p;
 			profile = prof;
+			skills = sk.filter((s) => s.status !== 'dismissed' && s.status !== 'pending');
+			projects = pr;
+			experiences = ex;
+			educations = ed;
+			certifications = cert;
+			languages = lang;
 			const fromUrl = $page.url.searchParams.get('preview');
 			if (fromUrl && items.some((r) => r.id === fromUrl)) previewingId = fromUrl;
 			if (previewingId && !items.some((r) => r.id === previewingId)) previewingId = null;
@@ -109,6 +154,16 @@
 		previewingId = previewingId === id ? null : id;
 	}
 
+	function clearContentSelection() {
+		selectedSkills = new Set();
+		selectedProjects = new Set();
+		selectedExperience = new Set();
+		selectedEducation = new Set();
+		selectedCertifications = new Set();
+		selectedLanguages = new Set();
+		sectionOrder = [...DEFAULT_RESUME_SECTION_ORDER];
+	}
+
 	function resetEdit() {
 		editingId = null;
 		name = '';
@@ -118,9 +173,19 @@
 		themeSlug = 'classic';
 		isPublic = false;
 		customSummaryOpen = false;
+		clearContentSelection();
 	}
 
-	function startEdit(r: Resume) {
+	function moveSection(index: number, delta: number) {
+		const next = index + delta;
+		if (next < 0 || next >= sectionOrder.length) return;
+		const copy = [...sectionOrder];
+		const [item] = copy.splice(index, 1);
+		copy.splice(next, 0, item);
+		sectionOrder = copy;
+	}
+
+	async function startEdit(r: Resume) {
 		editingId = r.id;
 		name = r.name;
 		headline = r.headline ?? '';
@@ -129,7 +194,21 @@
 		portfolioId = r.portfolio_id ?? '';
 		themeSlug = r.theme_slug as (typeof resumeThemes)[number];
 		isPublic = r.is_public === 1;
+		sectionOrder = [...(r.section_order ?? DEFAULT_RESUME_SECTION_ORDER)];
 		previewingId = r.id;
+		try {
+			const content = await getResumeContent(r.id);
+			selectedSkills = new Set(content.skill_ids);
+			selectedProjects = new Set(content.project_ids);
+			selectedExperience = new Set(content.experience_ids);
+			selectedEducation = new Set(content.education_ids);
+			selectedCertifications = new Set(content.certification_ids);
+			selectedLanguages = new Set(content.language_ids);
+		} catch {
+			clearContentSelection();
+			sectionOrder = [...(r.section_order ?? DEFAULT_RESUME_SECTION_ORDER)];
+			showToast('Failed to load resume content', 'error');
+		}
 	}
 
 	function openCustomSummary() {
@@ -152,13 +231,23 @@
 		try {
 			const trimmedHeadline = headline.trim();
 			const trimmedBio = bio.trim();
+			const order = [...sectionOrder];
 			await updateResume(editingId, {
 				name: name.trim(),
 				headline: trimmedHeadline,
 				bio: trimmedBio,
 				portfolio_id: portfolioId || null,
 				theme_slug: themeSlug,
-				is_public: isPublic ? 1 : 0
+				is_public: isPublic ? 1 : 0,
+				section_order: order
+			});
+			await updateResumeContent(editingId, {
+				skill_ids: [...selectedSkills],
+				project_ids: [...selectedProjects],
+				experience_ids: [...selectedExperience],
+				education_ids: [...selectedEducation],
+				certification_ids: [...selectedCertifications],
+				language_ids: [...selectedLanguages]
 			});
 			items = items.map((r) =>
 				r.id === editingId
@@ -169,7 +258,8 @@
 							bio: trimmedBio,
 							portfolio_id: portfolioId || null,
 							theme_slug: themeSlug,
-							is_public: isPublic ? 1 : 0
+							is_public: isPublic ? 1 : 0,
+							section_order: order
 						}
 					: r
 			);
@@ -300,7 +390,7 @@
 						<span class="label">Linked folio (optional)</span>
 						<select bind:value={portfolioId}>
 							<option value="">None</option>
-							{#each portfolios as p}
+							{#each portfolios as p (p.id)}
 								<option value={p.id}>{p.name}</option>
 							{/each}
 						</select>
@@ -309,7 +399,7 @@
 					<label class="field">
 						<span class="label">Theme</span>
 						<select bind:value={themeSlug}>
-							{#each resumeThemes as t}
+							{#each resumeThemes as t (t)}
 								<option value={t}>{t}</option>
 							{/each}
 						</select>
@@ -332,6 +422,62 @@
 							Public
 						</button>
 					</div>
+					<div class="section-order">
+						<h3 class="section-order-title">Section order</h3>
+						<p class="hint">Use Up/Down to change the order sections appear on the resume.</p>
+						{#if themeSlug === 'sidebar'}
+							<p class="hint">
+								Sidebar keeps skills/languages/certs in the side column and
+								experience/education/projects in the main column; reorder still applies
+								inside each column.
+							</p>
+						{/if}
+						<ul class="section-order-list">
+							{#each sectionOrder as key, i (key)}
+								<li class="section-order-row">
+									<span class="section-order-label">{SECTION_LABELS[key]}</span>
+									<div class="section-order-actions">
+										<button
+											type="button"
+											class="section-order-btn"
+											disabled={i === 0}
+											on:click={() => moveSection(i, -1)}
+											aria-label="Move {SECTION_LABELS[key]} up"
+										>
+											Up
+										</button>
+										<button
+											type="button"
+											class="section-order-btn"
+											disabled={i === sectionOrder.length - 1}
+											on:click={() => moveSection(i, 1)}
+											aria-label="Move {SECTION_LABELS[key]} down"
+										>
+											Down
+										</button>
+									</div>
+								</li>
+							{/each}
+						</ul>
+					</div>
+					<PortfolioLibraryPicker
+						{skills}
+						{projects}
+						{experiences}
+						{educations}
+						{certifications}
+						{languages}
+						bind:selectedSkills
+						bind:selectedProjects
+						bind:selectedExperience
+						bind:selectedEducation
+						bind:selectedCertifications
+						bind:selectedLanguages
+						showSectionVisibility={false}
+						showPostsSection={false}
+						title="Included on this resume"
+						hint="Check items to include. Unchecked items stay in your library but won’t appear on this resume."
+					/>
 				</div>
 				<div class="form-actions">
 					<Button disabled={saving} on:click={saveEdit}
@@ -539,6 +685,54 @@
 		background: var(--color-surface);
 		color: var(--color-text);
 		box-shadow: var(--shadow-xs);
+	}
+	.section-order {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+	.section-order-title {
+		margin: 0;
+		font-size: 0.8125rem;
+		font-weight: 600;
+	}
+	.section-order-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	.section-order-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		padding: var(--space-1) 0;
+	}
+	.section-order-label {
+		font-size: 0.8125rem;
+		font-weight: 500;
+	}
+	.section-order-actions {
+		display: flex;
+		gap: var(--space-1);
+	}
+	.section-order-btn {
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius-sm);
+		padding: 0.2rem 0.45rem;
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text);
+		cursor: pointer;
+	}
+	.section-order-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 	.form-actions {
 		display: flex;
